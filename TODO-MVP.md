@@ -31,15 +31,15 @@ Ambiente local (Laragon) mantido como está — sem upgrades de PHP/Node/Postgre
 
 ## Fase 2 — Breeze (Vue + Inertia), Tailwind e Vite
 
-- [ ] `composer require laravel/breeze --dev`
-- [ ] `php artisan breeze:install vue`
-- [ ] Revisar o scaffold gerado: `resources/js/Pages/Auth/*`, `Dashboard.vue`, `Layouts/AuthenticatedLayout.vue`, `GuestLayout.vue`
-- [ ] Confirmar Tailwind (`tailwind.config.js`, `resources/css/app.css`) e Vite (`vite.config.js`) já configurados pelo Breeze
-- [ ] `npm install` e `npm run dev` (deixar rodando em paralelo)
-- [ ] `php artisan migrate` (tabelas do Breeze) + `php artisan serve`
-- [ ] Testar fluxo completo: registro → dashboard → logout → login
-- [ ] Checar responsividade básica (RNF04) no DevTools em modo mobile
-- [ ] Commit: "feat: instala Laravel Breeze (Vue + Inertia), Tailwind e Vite"
+- [x] `composer require laravel/breeze --dev` (instalou v1.29.1, compatível com PHP 8.1 — a v2.x exige PHP 8.2+)
+- [x] `php artisan breeze:install vue` (scaffold PHP gerado; o `npm install` interno falhou por falta do `npm` no PATH — instalado manualmente depois)
+- [x] Revisar o scaffold gerado: `resources/js/Pages/Auth/*`, `Dashboard.vue`, `Layouts/AuthenticatedLayout.vue`, `GuestLayout.vue` — todos presentes
+- [x] Confirmar Tailwind (`tailwind.config.js`, `resources/css/app.css`) e Vite (`vite.config.js`) já configurados pelo Breeze
+- [x] `npm install` (usando `node`/`npm` de `C:\laragon\bin\nodejs\node-v18\`, fora do PATH padrão) e `npm run build` (validação de build de produção, 185 módulos compilados sem erro)
+- [x] `php artisan migrate` (nada pendente, tabelas do Breeze já cobertas pelo scaffold padrão) + `php artisan serve`
+- [x] Testado fluxo completo via requisições HTTP reais (cookies + CSRF): registro → dashboard (200, dados do usuário presentes) → logout (dashboard passa a redirecionar para `/login`) → login → dashboard novamente (200)
+- [x] Responsividade (RNF04) confirmada: classes Tailwind com breakpoints `sm:`/`md:` presentes em `GuestLayout.vue` e `AuthenticatedLayout.vue`
+- [x] Commit: "feat: instala Laravel Breeze (Vue + Inertia), Tailwind e Vite"
 
 ## Fase 3 — Modelagem do banco de dados
 
