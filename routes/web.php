@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\MusicianController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RepertoireController;
+use App\Http\Controllers\RepertoireItemController;
 use App\Http\Controllers\ScaleController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Foundation\Application;
@@ -49,6 +51,22 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('escalas/{escala}/confirmar', [ScaleController::class, 'confirmar'])
         ->name('escalas.confirmar');
+
+    Route::get('escalas/{escala}/repertorio', [RepertoireController::class, 'show'])
+        ->name('escalas.repertorio.show');
+    Route::get('escalas/{escala}/repertorio/editar', [RepertoireController::class, 'edit'])
+        ->name('escalas.repertorio.edit');
+    Route::put('escalas/{escala}/repertorio', [RepertoireController::class, 'update'])
+        ->name('escalas.repertorio.update');
+    Route::post('escalas/{escala}/repertorio/itens', [RepertoireItemController::class, 'store'])
+        ->name('repertorio-itens.store');
+
+    Route::put('repertorio-itens/{item}', [RepertoireItemController::class, 'update'])
+        ->name('repertorio-itens.update');
+    Route::delete('repertorio-itens/{item}', [RepertoireItemController::class, 'destroy'])
+        ->name('repertorio-itens.destroy');
+    Route::get('repertorio-itens/{item}/download', [RepertoireItemController::class, 'download'])
+        ->name('repertorio-itens.download');
 });
 
 require __DIR__.'/auth.php';
