@@ -15,7 +15,7 @@ defineProps({
 });
 
 const form = useForm({
-    data: '',
+    data_celebracao: '',
     horario: '',
     celebracao: '',
     team_id: null,
@@ -25,7 +25,9 @@ const form = useForm({
 });
 
 function submit() {
-    form.post(route('escalas.store'));
+    form
+        .transform(({ data_celebracao, ...rest }) => ({ ...rest, data: data_celebracao }))
+        .post(route('escalas.store'));
 }
 </script>
 

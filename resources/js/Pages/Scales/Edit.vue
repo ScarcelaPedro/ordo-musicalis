@@ -19,7 +19,7 @@ const props = defineProps({
 });
 
 const form = useForm({
-    data: props.scale.data.substring(0, 10),
+    data_celebracao: props.scale.data.substring(0, 10),
     horario: props.scale.horario,
     celebracao: props.scale.celebracao,
     team_id: props.scale.team_id,
@@ -32,7 +32,9 @@ const form = useForm({
 });
 
 function submit() {
-    form.put(route('escalas.update', props.scale.id));
+    form
+        .transform(({ data_celebracao, ...rest }) => ({ ...rest, data: data_celebracao }))
+        .put(route('escalas.update', props.scale.id));
 }
 </script>
 

@@ -32,7 +32,7 @@ defineEmits(['submit']);
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
                 <InputLabel for="data" value="Data" />
-                <TextInput id="data" type="date" class="mt-1 block w-full" v-model="form.data" required />
+                <TextInput id="data" type="date" class="mt-1 block w-full" v-model="form.data_celebracao" required />
                 <InputError class="mt-2" :message="form.errors.data" />
             </div>
 
@@ -87,7 +87,7 @@ defineEmits(['submit']);
 
         <div>
             <InputLabel value="Músicos escalados" />
-            <ScaleMusicianPicker :musicians="musicians" v-model="form.musicians" :data="form.data" class="mt-1" />
+            <ScaleMusicianPicker :musicians="musicians" v-model="form.musicians" :data="form.data_celebracao" class="mt-1" />
             <InputError class="mt-2" :message="form.errors.musicians" />
         </div>
 
