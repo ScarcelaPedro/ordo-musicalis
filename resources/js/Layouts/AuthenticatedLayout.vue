@@ -1,13 +1,15 @@
 <script setup>
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
+
+const isStaff = computed(() => ['admin', 'coordenador'].includes(usePage().props.auth.user.role));
 </script>
 
 <template>
@@ -31,6 +33,21 @@ const showingNavigationDropdown = ref(false);
                             <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
                                     Dashboard
+                                </NavLink>
+                                <NavLink :href="route('escalas.index')" :active="route().current('escalas.*')">
+                                    Escalas
+                                </NavLink>
+                                <NavLink v-if="isStaff" :href="route('musicos.index')" :active="route().current('musicos.*')">
+                                    Músicos
+                                </NavLink>
+                                <NavLink v-if="isStaff" :href="route('equipes.index')" :active="route().current('equipes.*')">
+                                    Equipes
+                                </NavLink>
+                                <NavLink
+                                    :href="isStaff ? route('disponibilidade.index') : route('disponibilidade.form')"
+                                    :active="route().current('disponibilidade.*')"
+                                >
+                                    Disponibilidade
                                 </NavLink>
                             </div>
                         </div>
@@ -114,6 +131,21 @@ const showingNavigationDropdown = ref(false);
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('escalas.index')" :active="route().current('escalas.*')">
+                            Escalas
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="isStaff" :href="route('musicos.index')" :active="route().current('musicos.*')">
+                            Músicos
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="isStaff" :href="route('equipes.index')" :active="route().current('equipes.*')">
+                            Equipes
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            :href="isStaff ? route('disponibilidade.index') : route('disponibilidade.form')"
+                            :active="route().current('disponibilidade.*')"
+                        >
+                            Disponibilidade
                         </ResponsiveNavLink>
                     </div>
 
