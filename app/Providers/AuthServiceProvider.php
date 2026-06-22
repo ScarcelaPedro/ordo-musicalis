@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Models\Musician;
+use App\Models\Repertoire;
+use App\Models\Scale;
+use App\Policies\MusicianPolicy;
+use App\Policies\RepertoirePolicy;
+use App\Policies\ScalePolicy;
 // use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -13,7 +19,9 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        //
+        Musician::class => MusicianPolicy::class,
+        Scale::class => ScalePolicy::class,
+        Repertoire::class => RepertoirePolicy::class,
     ];
 
     /**
