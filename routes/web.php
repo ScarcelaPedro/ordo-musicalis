@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MusicianController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TeamController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -37,6 +38,10 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('musicos', MusicianController::class)
         ->parameters(['musicos' => 'musico']);
+
+    Route::resource('equipes', TeamController::class)
+        ->parameters(['equipes' => 'equipe'])
+        ->except('show');
 });
 
 require __DIR__.'/auth.php';
