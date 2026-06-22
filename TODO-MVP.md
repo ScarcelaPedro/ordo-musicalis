@@ -85,15 +85,15 @@ Ambiente local (Laragon) mantido como está — sem upgrades de PHP/Node/Postgre
 
 ## Fase 4 — Páginas Vue/Inertia por requisito funcional
 
-- [ ] **RF01**: Middleware de role aplicado nas rotas; `Dashboard.vue` com conteúdo condicional por perfil; desabilitar autoregistro público
-- [ ] **RF02**: `MusicianController` resource + rotas `musicos`; páginas `Musicians/Index.vue`, `Create.vue`, `Edit.vue`, `Show.vue`; `StoreMusicianRequest`/`UpdateMusicianRequest`
-- [ ] **RF03**: `TeamController` resource + rotas `equipes`; páginas `Teams/Index.vue`, `Create.vue`/`Edit.vue`
-- [ ] **RF04**: `ScaleController` resource + rotas `escalas`; páginas `Scales/Index.vue`, `Create.vue`, `Edit.vue`, `Show.vue`; rota `PATCH /escalas/{escala}/confirmar`
-- [ ] **RF06**: `RepertoireController` + `RepertoireItemController`; páginas `Repertoires/Show.vue` e `Edit.vue`
-- [ ] **RF07**: upload de PDF validado em `RepertoireItemController`; rota/método de download via `Storage::disk('public')->download(...)`; botão de download em `Repertoires/Show.vue`
-- [ ] **Disponibilidade (extra)**: `AvailabilityController`; página `Availability/Form.vue` (músico) e `Availability/Index.vue` (Coordenador)
-- [ ] **Compartilhado**: menu de navegação condicional por `role` em `AuthenticatedLayout.vue`; componentes reutilizáveis (`Badge`, `MultiSelect`, tabela paginada)
-- [ ] Commits incrementais por RF
+- [x] **RF01**: Middleware `EnsureUserHasRole` (alias `role`) já existia da Fase 3; autoregistro público removido de `routes/auth.php`
+- [x] **RF02**: `MusicianController` resource + rotas `musicos`; páginas `Musicians/Index.vue`, `Create.vue`, `Edit.vue`, `Show.vue`; `StoreMusicianRequest`/`UpdateMusicianRequest` — testado via HTTP (CRUD completo + autorização por perfil)
+- [x] **RF03**: `TeamController` resource + rotas `equipes`; páginas `Teams/Index.vue`, `Create.vue`/`Edit.vue` — **achado:** foi preciso criar `TeamPolicy` (não prevista na Fase 3) para o `$this->authorize()` funcionar
+- [x] **RF04**: `ScaleController` resource + rotas `escalas`; páginas `Scales/Index.vue`, `Create.vue`/`Edit.vue` (com `ScaleMusicianPicker.vue` sugerindo músicos disponíveis com base em `Availability`), `Show.vue`; rota `PATCH /escalas/{escala}/confirmar` testada (autoriza só o próprio músico vinculado)
+- [x] **RF06**: `RepertoireController` (upsert por escala) + `RepertoireItemController`; páginas `Repertoires/Show.vue` (músico) e `Edit.vue` (Coordenador, com `RepertoireItemRow.vue` para edição inline)
+- [x] **RF07**: upload de PDF validado (`mimes:pdf`, máx. 10MB) testado com arquivo real; download testado byte-a-byte idêntico ao original; rejeição de arquivo não-PDF confirmada
+- [x] **Disponibilidade (extra)**: `AvailabilityController`; página `Availability/Form.vue` (grade de dias×períodos para o músico) e `Availability/Index.vue` (resumo consolidado para o Coordenador) — testado de ponta a ponta
+- [x] **Compartilhado**: `AuthenticatedLayout.vue` com navegação condicional (`isStaff`) e `Dashboard.vue` com atalhos por perfil; componentes reutilizáveis `Badge`, `MultiSelect`, `Pagination`, `ScaleMusicianPicker` criados e usados em várias páginas
+- [x] Commits incrementais por RF (7 commits ao todo, um por funcionalidade)
 
 ## Fase 5 — Notificações (RF05)
 
