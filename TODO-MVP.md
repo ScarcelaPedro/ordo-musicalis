@@ -44,42 +44,44 @@ Ambiente local (Laragon) mantido como está — sem upgrades de PHP/Node/Postgre
 ## Fase 3 — Modelagem do banco de dados
 
 ### 3.1 Perfis de usuário (RF01)
-- [ ] Migration para adicionar coluna `role` à tabela `users` (`admin`, `coordenador`, `musico`)
-- [ ] Criar `app/Enums/UserRole.php` e usar como cast em `User::$casts`
-- [ ] Adicionar a `User`: `isAdmin()`, `isCoordenador()`, `isMusico()`, relacionamento `hasOne(Musician::class)`
-- [ ] Criar Policies (`MusicianPolicy`, `ScalePolicy`, `RepertoirePolicy`) e registrá-las em `app/Providers/AuthServiceProvider.php`
-- [ ] Criar Middleware `EnsureUserHasRole` e registrar como alias em `app/Http/Kernel.php`
+- [x] Migration para adicionar coluna `role` à tabela `users` (`admin`, `coordenador`, `musico`)
+- [x] Criar `app/Enums/UserRole.php` e usar como cast em `User::$casts`
+- [x] Adicionar a `User`: `isAdmin()`, `isCoordenador()`, `isMusico()`, relacionamento `musician()` (hasOne)
+- [x] Criar Policies (`MusicianPolicy`, `ScalePolicy` com `confirm()`, `RepertoirePolicy`) e registrá-las em `app/Providers/AuthServiceProvider.php`
+- [x] Criar Middleware `EnsureUserHasRole` (aceita roles variádicos) e registrar como alias `role` em `app/Http/Kernel.php`
 
 ### 3.2 Músicos e instrumentos (RF02)
-- [ ] Migration `musicians` (`id`, `user_id` FK nullable, `nome`, `telefone`, `email` nullable, `ativo`, `observacoes`, timestamps)
-- [ ] Migration `instruments` (`id`, `nome`) + pivot `instrument_musician`
-- [ ] Models `Musician` e `Instrument` com relacionamentos
-- [ ] Seeder `InstrumentSeeder` (Violão, Teclado/Piano, Voz, Bateria, Baixo, Flauta, Violino, Cajón) e `MusicianFactory`
+- [x] Migration `musicians` (`id`, `user_id` FK nullable, `nome`, `telefone`, `email` nullable, `ativo`, `observacoes`, timestamps)
+- [x] Migration `instruments` (`id`, `nome`) + pivot `instrument_musician`
+- [x] Models `Musician` e `Instrument` com relacionamentos
+- [x] Seeder `InstrumentSeeder` (Violão, Teclado/Piano, Voz, Bateria, Baixo, Flauta, Violino, Cajón) e `MusicianFactory`
 
 ### 3.3 Equipes musicais (RF03)
-- [ ] Migration `teams` (`id`, `nome`, `descricao`, `ativo`) + pivot `musician_team`
-- [ ] Model `Team` com `belongsToMany(Musician)` e `hasMany(Scale)`
+- [x] Migration `teams` (`id`, `nome`, `descricao`, `ativo`) + pivot `musician_team`
+- [x] Model `Team` com `belongsToMany(Musician)` e `hasMany(Scale)`
 
 ### 3.4 Escalas (RF04)
-- [ ] Migration `scales` (`id`, `data`, `horario`, `celebracao`, `team_id` FK nullable, `observacoes`, `status`)
-- [ ] Migration pivot `scale_musician` (`scale_id`, `musician_id`, `instrument_id` nullable, `confirmado` boolean)
-- [ ] Model `Scale` (`belongsTo(Team)`, `belongsToMany(Musician)->withPivot('instrument_id','confirmado')`)
-- [ ] Enum `ScaleStatus` (`Rascunho`, `Confirmada`)
+- [x] Migration `scales` (`id`, `data`, `horario`, `celebracao`, `team_id` FK nullable, `observacoes`, `status`)
+- [x] Migration pivot `scale_musician` (`scale_id`, `musician_id`, `instrument_id` nullable, `confirmado` boolean) — **achado:** Eloquent monta o nome da pivot em ordem alfabética por padrão (`musician_scale`), foi preciso especificar `'scale_musician'` explicitamente em ambos os `belongsToMany`
+- [x] Model `Scale` (`belongsTo(Team)`, `belongsToMany(Musician)->withPivot('instrument_id','confirmado')`)
+- [x] Enum `ScaleStatus` (`Rascunho`, `Confirmada`)
 
 ### 3.5 Repertórios e partituras (RF06, RF07)
-- [ ] Migration `repertoires` (`id`, `scale_id` FK, `titulo`, `observacoes`)
-- [ ] Migration `repertoire_items` (`id`, `repertoire_id` FK, `ordem`, `titulo_musica`, `tom` nullable, `arquivo_pdf_path` nullable, `link_externo` nullable)
-- [ ] Models `Repertoire` e `RepertoireItem`
-- [ ] Configurar disco `public` em `config/filesystems.php` + `php artisan storage:link`
+- [x] Migration `repertoires` (`id`, `scale_id` FK, `titulo`, `observacoes`)
+- [x] Migration `repertoire_items` (`id`, `repertoire_id` FK, `ordem`, `titulo_musica`, `tom` nullable, `arquivo_pdf_path` nullable, `link_externo` nullable)
+- [x] Models `Repertoire` e `RepertoireItem`
+- [x] Configurar disco `public` em `config/filesystems.php` (já vem configurado por padrão) + `php artisan storage:link`
 
 ### 3.6 Disponibilidade dos músicos (extra)
-- [ ] Migration `availabilities` (`id`, `musician_id` FK, `tipo` enum [`data_especifica`,`recorrente_semanal`], `dia_semana`/`data`, `periodo` [`manha`,`tarde`,`noite`], `disponivel`, `observacao`)
-- [ ] Model `Availability` (`belongsTo(Musician)`)
+- [x] Migration `availabilities` (`id`, `musician_id` FK, `tipo` enum [`data_especifica`,`recorrente_semanal`], `dia_semana`/`data`, `periodo` [`manha`,`tarde`,`noite`], `disponivel`, `observacao`)
+- [x] Model `Availability` (`belongsTo(Musician)`)
 
 ### 3.7 Fechamento
-- [ ] `php artisan migrate` completo e validação das FKs no HeidiSQL
-- [ ] Seeders consolidados (`InstrumentSeeder` + `AdminUserSeeder` de teste) via `DatabaseSeeder`
-- [ ] Commit: "feat: modelagem completa do banco (músicos, equipes, escalas, repertórios, disponibilidade)"
+- [x] `php artisan migrate` completo (15 tabelas no total) e validação das FKs via `psql`
+- [x] Seeders consolidados (`InstrumentSeeder` + `AdminUserSeeder`, admin: `admin@escaladmusicos.test` / senha `password`) via `DatabaseSeeder`
+- [x] Teste funcional via Tinker: criado músico → instrumento → equipe → escala → repertório → item → disponibilidade, todos os relacionamentos validados, dados de teste limpos depois
+- [x] **Achado e corrigido:** o `phpunit.xml` padrão do Laravel vinha com SQLite em memória comentado, então `php artisan test` rodava `RefreshDatabase` contra o Postgres real e **apagou os dados** (incluindo um usuário de teste cadastrado manualmente na Fase 2). Habilitei a extensão `pdo_sqlite` no `php.ini` e descomentei `DB_CONNECTION=sqlite`/`DB_DATABASE=:memory:` no `phpunit.xml` — testes agora rodam isolados, sem tocar no banco de desenvolvimento
+- [x] Commit: "feat: modelagem completa do banco (músicos, equipes, escalas, repertórios, disponibilidade)"
 
 ## Fase 4 — Páginas Vue/Inertia por requisito funcional
 
