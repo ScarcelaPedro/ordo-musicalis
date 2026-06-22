@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\MusicianController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ScaleController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +43,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('equipes', TeamController::class)
         ->parameters(['equipes' => 'equipe'])
         ->except('show');
+
+    Route::resource('escalas', ScaleController::class)
+        ->parameters(['escalas' => 'escala']);
+
+    Route::patch('escalas/{escala}/confirmar', [ScaleController::class, 'confirmar'])
+        ->name('escalas.confirmar');
 });
 
 require __DIR__.'/auth.php';
