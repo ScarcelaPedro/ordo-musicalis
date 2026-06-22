@@ -9,24 +9,25 @@ Ambiente local (Laragon) mantido como está — sem upgrades de PHP/Node/Postgre
 
 ## Fase 0 — Verificação do ambiente (sem upgrades)
 
-- [ ] Confirmar versões ativas no terminal do Laragon: `php -v` → 8.1.10, `composer -V` → 2.10.1, `node -v` → v18.x
-- [ ] Iniciar o serviço PostgreSQL 14.5 pelo painel do Laragon e validar conexão via HeidiSQL ou `psql`
-- [ ] Criar o banco de dados do projeto: `CREATE DATABASE escala_musicos;`
-- [ ] (Opcional, recomendado) Criar um usuário/role dedicado da aplicação (`escala_app`) em vez de usar o superusuário `postgres`
-- [ ] Confirmar Git instalado e configurado (`git --version`, `user.name`, `user.email`)
+- [x] Confirmar versões ativas: `php -v` → 8.1.10, `composer -V` → 2.10.1
+- [x] Confirmar PostgreSQL 14.5 rodando (serviço já ativo) e conexão via `psql` (usuário padrão do Laragon: `postgres`/`root`)
+- [x] Criar o banco de dados do projeto: `CREATE DATABASE escala_musicos;`
+- [ ] (Opcional) Criar um usuário/role dedicado da aplicação (`escala_app`) em vez de usar o superusuário `postgres` — pulado por simplicidade no MVP/dev
+- [x] Confirmar Git instalado e configurado (`user.name`/`user.email` já presentes)
 
 ## Fase 1 — Criação e configuração inicial do projeto Laravel 10
 
-- [ ] No terminal do Laragon, navegar até a pasta do projeto
-- [ ] Criar o projeto: `composer create-project laravel/laravel:^10.0 .`
-- [ ] Mover o `readme.txt` para `docs/arquitetura.md`
-- [ ] `git init` (se necessário) + primeiro commit do scaffold limpo
-- [ ] Copiar `.env.example` → `.env` e rodar `php artisan key:generate`
-- [ ] Ajustar no `.env`: `APP_NAME`, `APP_URL`, `APP_TIMEZONE=America/Sao_Paulo`, `APP_LOCALE=pt_BR`
-- [ ] Configurar conexão Postgres no `.env`: `DB_CONNECTION=pgsql`, `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `DB_DATABASE=escala_musicos`, `DB_USERNAME`, `DB_PASSWORD`
-- [ ] Testar conexão: `php artisan migrate`
-- [ ] `php artisan serve` e validar a tela inicial do Laravel em `http://127.0.0.1:8000`
-- [ ] Commit: configuração de ambiente e `.env.example` atualizado (nunca commitar `.env` real)
+- [x] Criar o projeto: `composer create-project laravel/laravel:^10.0 .` (movendo `readme.txt`/`TODO-MVP.md` para fora e de volta, já que o Composer exige diretório vazio)
+- [x] **Achado importante:** toda a série Laravel 10.x está marcada pelo Composer com avisos de segurança não corrigidos (framework em fim de vida). Para a instalação não ser bloqueada, foi desativado o bloqueio via `composer config policy.advisories.block false` (só neste projeto). Decisão do usuário: aceitável para este MVP de teste, mas **não é recomendado para produção** — ver nota de fase futura.
+- [x] Mover o `readme.txt` para `docs/arquitetura.md`
+- [x] `git init` + primeiro commit do scaffold limpo (`chore: scaffold inicial Laravel 10`)
+- [x] Copiar `.env.example` → `.env` e rodar `php artisan key:generate`
+- [x] Ajustar `APP_NAME`, `APP_URL` no `.env`; `timezone`/`locale` ajustados direto em `config/app.php` (no Laravel 10 esses campos não lêem do `.env`)
+- [x] Configurar conexão Postgres no `.env`: `DB_CONNECTION=pgsql`, `DB_HOST=127.0.0.1`, `DB_PORT=5432`, `DB_DATABASE=escala_musicos`, `DB_USERNAME=postgres`, `DB_PASSWORD=root`
+- [x] Habilitar extensões `pdo_pgsql` e `pgsql` no `php.ini` do PHP 8.1.10 do Laragon (estavam comentadas/desativadas por padrão)
+- [x] Testar conexão: `php artisan migrate` (rodou as migrations padrão sem erro)
+- [x] `php artisan serve` e validar a tela inicial do Laravel em `http://127.0.0.1:8000` (HTTP 200, título "Laravel")
+- [x] Commit do scaffold inicial (cobriu também a configuração de ambiente, sem diffs extras pendentes)
 
 ## Fase 2 — Breeze (Vue + Inertia), Tailwind e Vite
 
