@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\MusicianController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RepertoireController;
@@ -67,6 +68,10 @@ Route::middleware('auth')->group(function () {
         ->name('repertorio-itens.destroy');
     Route::get('repertorio-itens/{item}/download', [RepertoireItemController::class, 'download'])
         ->name('repertorio-itens.download');
+
+    Route::get('disponibilidade', [AvailabilityController::class, 'form'])->name('disponibilidade.form');
+    Route::post('disponibilidade', [AvailabilityController::class, 'store'])->name('disponibilidade.store');
+    Route::get('disponibilidade/painel', [AvailabilityController::class, 'index'])->name('disponibilidade.index');
 });
 
 require __DIR__.'/auth.php';
