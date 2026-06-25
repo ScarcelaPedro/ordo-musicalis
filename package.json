@@ -1,20 +1,48 @@
 {
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "vite build"
-    },
-    "devDependencies": {
-        "@inertiajs/vue3": "^1.0.0",
-        "@tailwindcss/forms": "^0.5.3",
-        "@vitejs/plugin-vue": "^5.0.0",
-        "autoprefixer": "^10.4.12",
-        "axios": "^1.6.4",
-        "laravel-vite-plugin": "^1.0.0",
-        "postcss": "^8.4.31",
-        "tailwindcss": "^3.2.1",
-        "vite": "^5.0.0",
-        "vue": "^3.4.0"
-    }
+  "name": "ordo-musicalis",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "api:dev": "ts-node --project tsconfig.api.json api/server.ts",
+    "db:generate": "prisma generate --schema=api/prisma/schema.prisma",
+    "db:migrate": "prisma migrate deploy --schema=api/prisma/schema.prisma",
+    "db:seed": "ts-node --project tsconfig.api.json api/prisma/seed.ts",
+    "db:studio": "prisma studio --schema=api/prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "@vercel/blob": "^0.23.4",
+    "axios": "^1.7.2",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.2.0",
+    "pinia": "^2.1.7",
+    "resend": "^3.5.0",
+    "vue": "^3.4.29",
+    "vue-router": "^4.3.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.7",
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/multer": "^2.1.0",
+    "@types/node": "^20.14.9",
+    "@vitejs/plugin-vue": "^5.0.5",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "prisma": "^5.14.0",
+    "tailwindcss": "^3.4.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1",
+    "vue-tsc": "^2.0.21"
+  }
 }

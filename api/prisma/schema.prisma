@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  admin
+  coordenador
+  musico
+}
+
+enum ScaleStatus {
+  rascunho
+  confirmada
+}
+
+enum AvailabilityType {
+  data_especifica
+  recorrente_semanal
+}
+
+enum Period {
+  manha
+  tarde
+  noite
+}
+
+model User {
+  id                Int       @id @default(autoincrement())
+  name              String
+  email             String    @unique
+  emailVerifiedAt   DateTime? @map("email_verified_at")
+  password          String
+  role              UserRole  @default(musico)
+  passwordResetToken String?  @map("password_reset_token")
+  passwordResetAt   DateTime? @map("password_reset_at")
+  rememberToken     String?   @map("remember_token")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  musician Musician?
+
+  @@map("users")
+}
+
+model Musician {
+  id          Int     @id @default(autoincrement())
+  userId      Int?    @unique @map("user_id")
+  nome        String
+  telefone    String?
+  email       String?
+  ativo       Boolean @default(true)
+  observacoes String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user          User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  instruments   InstrumentMusician[]
+  teams         MusicianTeam[]
+  availabilities Availability[]
+  scales        ScaleMusician[]
+
+  @@map("musicians")
+}
+
+model Instrument {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  musicians InstrumentMusician[]
+  scales    ScaleMusician[]
+
+  @@map("instruments")
+}
+
+model InstrumentMusician {
+  id           Int @id @default(autoincrement())
+  instrumentId Int @map("instrument_id")
+  musicianId   Int @map("musician_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  instrument Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+  musician   Musician   @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+
+  @@unique([instrumentId, musicianId])
+  @@map("instrument_musician")
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  descricao String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  musicians MusicianTeam[]
+  scales    Scale[]
+
+  @@map("teams")
+}
+
+model MusicianTeam {
+  id         Int @id @default(autoincrement())
+  musicianId Int @map("musician_id")
+  teamId     Int @map("team_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  musician Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([musicianId, teamId])
+  @@map("musician_team")
+}
+
+model Scale {
+  id          Int         @id @default(autoincrement())
+  dataCelebracao DateTime @map("data_celebracao") @db.Date
+  horario     String
+  celebracao  String
+  teamId      Int?        @map("team_id")
+  observacoes String?
+  status      ScaleStatus @default(rascunho)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  team       Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  musicians  ScaleMusician[]
+  repertoire Repertoire?
+
+  @@map("scales")
+}
+
+model ScaleMusician {
+  id           Int      @id @default(autoincrement())
+  scaleId      Int      @map("scale_id")
+  musicianId   Int      @map("musician_id")
+  instrumentId Int?     @map("instrument_id")
+  confirmado   Boolean  @default(false)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  scale      Scale      @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  musician   Musician   @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+  instrument Instrument? @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+
+  @@unique([scaleId, musicianId])
+  @@map("scale_musician")
+}
+
+model Repertoire {
+  id          Int      @id @default(autoincrement())
+  scaleId     Int      @unique @map("scale_id")
+  titulo      String
+  observacoes String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  scale Scale           @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  items RepertoireItem[]
+
+  @@map("repertoires")
+}
+
+model RepertoireItem {
+  id             Int      @id @default(autoincrement())
+  repertoireId   Int      @map("repertoire_id")
+  ordem          Int      @default(0)
+  tituloMusica   String   @map("titulo_musica")
+  tom            String?
+  arquivoPdfPath String?  @map("arquivo_pdf_path")
+  linkExterno    String?  @map("link_externo")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  repertoire Repertoire @relation(fields: [repertoireId], references: [id], onDelete: Cascade)
+
+  @@map("repertoire_items")
+}
+
+model Availability {
+  id          Int              @id @default(autoincrement())
+  musicianId  Int              @map("musician_id")
+  tipo        AvailabilityType
+  diaSemana   Int?             @map("dia_semana") @db.SmallInt
+  data        DateTime?        @db.Date
+  periodo     Period
+  disponivel  Boolean          @default(true)
+  observacao  String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  musician Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+
+  @@map("availabilities")
+}

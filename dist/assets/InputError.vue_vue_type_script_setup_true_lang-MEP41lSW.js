@@ -1,0 +1,1 @@
+import{d as t,j as s,t as a,k as o,o as r}from"./index-T408go-P.js";const n={key:0,class:"mt-1 text-sm text-red-600"},_=t({__name:"InputError",props:{message:{}},setup(e){return(m,c)=>e.message?(r(),s("p",n,a(e.message),1)):o("",!0)}});export{_};
