@@ -39,7 +39,7 @@ async function submit() {
   loading.value = true
   try {
     await client.patch(`/teams/${route.params.id}`, form.value)
-    flash.set('success', 'Equipe atualizada!')
+    flash.set('success', 'Ministério atualizado!')
     router.push('/equipes')
   } catch (e: any) {
     flash.set('error', e.response?.data?.message ?? 'Erro ao atualizar')
@@ -51,7 +51,7 @@ async function submit() {
 
 <template>
   <AuthenticatedLayout>
-    <template #header><h2 class="font-semibold text-xl text-gray-800">Editar Equipe</h2></template>
+    <template #header><h2 class="font-semibold text-xl text-gray-800">Editar Ministério</h2></template>
     <div class="bg-white shadow-sm rounded-lg p-6">
       <form @submit.prevent="submit" class="space-y-6">
         <div>
@@ -64,7 +64,7 @@ async function submit() {
         </div>
         <div class="flex items-center gap-3">
           <input v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-          <InputLabel value="Equipe ativa" />
+          <InputLabel value="Ministério ativo" />
         </div>
 
         <div>

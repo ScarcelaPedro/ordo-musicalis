@@ -76,7 +76,7 @@ async function confirmar() {
             <dd class="mt-1"><Badge :color="scale.status === 'confirmada' ? 'green' : 'yellow'">{{ scale.status }}</Badge></dd>
           </div>
           <div v-if="scale.team">
-            <dt class="text-sm font-medium text-gray-500">Equipe</dt>
+            <dt class="text-sm font-medium text-gray-500">Ministério</dt>
             <dd class="mt-1 text-sm text-gray-900">{{ scale.team.nome }}</dd>
           </div>
           <div v-if="scale.observacoes" class="sm:col-span-2">

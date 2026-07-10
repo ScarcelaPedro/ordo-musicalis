@@ -26,7 +26,7 @@ async function logout() {
                 Ordo Musicalis
               </RouterLink>
             </div>
-            <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+            <div class="hidden space-x-6 lg:space-x-8 md:-my-px md:ml-6 lg:ml-10 md:flex">
               <RouterLink
                 to="/dashboard"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition duration-150 ease-in-out"
@@ -62,7 +62,7 @@ async function logout() {
                     ? 'border-indigo-400 text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'"
                 >
-                  Equipes
+                  Ministérios
                 </RouterLink>
                 <RouterLink
                   to="/disponibilidade/painel"
@@ -88,14 +88,14 @@ async function logout() {
             </div>
           </div>
 
-          <div class="hidden sm:flex sm:items-center sm:ml-6 gap-4">
+          <div class="hidden md:flex md:items-center md:ml-4 gap-4">
             <ThemeToggle />
-            <span class="text-sm text-gray-600 dark:text-gray-300">{{ auth.user?.name }}</span>
+            <span class="text-sm text-gray-600 dark:text-gray-300 hidden lg:inline">{{ auth.user?.name }}</span>
             <RouterLink to="/profile" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Perfil</RouterLink>
             <button @click="logout" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">Sair</button>
           </div>
 
-          <div class="flex items-center gap-2 sm:hidden">
+          <div class="flex items-center gap-2 md:hidden">
             <ThemeToggle />
             <button
               @click="mobileMenuOpen = !mobileMenuOpen"
@@ -110,13 +110,13 @@ async function logout() {
         </div>
       </div>
 
-      <div v-show="mobileMenuOpen" class="sm:hidden">
+      <div v-show="mobileMenuOpen" class="md:hidden">
         <div class="pt-2 pb-3 space-y-1">
           <RouterLink to="/dashboard" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Dashboard</RouterLink>
           <RouterLink to="/escalas" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Escalas</RouterLink>
           <template v-if="auth.isStaff">
             <RouterLink to="/musicos" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Músicos</RouterLink>
-            <RouterLink to="/equipes" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Equipes</RouterLink>
+            <RouterLink to="/equipes" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Ministérios</RouterLink>
             <RouterLink to="/disponibilidade/painel" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Disponibilidade</RouterLink>
           </template>
           <template v-else>

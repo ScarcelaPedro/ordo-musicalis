@@ -96,9 +96,9 @@ function setInstrument(musicianId: number, instrumentId: number) {
         <TextInput v-model="form.celebracao" class="mt-1" />
       </div>
       <div>
-        <InputLabel value="Equipe" />
+        <InputLabel value="Ministério" />
         <select v-model="form.teamId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
-          <option :value="null">Nenhuma</option>
+          <option :value="null">Nenhum</option>
           <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
         </select>
       </div>
@@ -118,7 +118,7 @@ function setInstrument(musicianId: number, instrumentId: number) {
     <div>
       <InputLabel value="Músicos da escala" />
       <div class="mt-2 space-y-2">
-        <p v-if="form.teamId && filteredMusicians.length === 0" class="text-sm text-gray-500">Nenhum músico cadastrado nesta equipe.</p>
+        <p v-if="form.teamId && filteredMusicians.length === 0" class="text-sm text-gray-500">Nenhum músico cadastrado neste ministério.</p>
         <div v-for="m in filteredMusicians" :key="m.id" class="flex items-center gap-3 p-3 border rounded-md" :class="isSelected(m.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
           <input
             type="checkbox"

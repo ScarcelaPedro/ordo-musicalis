@@ -107,7 +107,7 @@ function toggleTeam(id: number) {
     </div>
 
     <div>
-      <InputLabel value="Equipes" />
+      <InputLabel value="Ministérios" />
       <div class="mt-2 flex flex-wrap gap-2">
         <button
           v-for="team in teams"

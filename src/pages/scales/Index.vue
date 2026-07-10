@@ -41,7 +41,7 @@ async function destroy(id: number) {
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <div class="flex justify-between items-center">
+      <div class="flex flex-wrap justify-between items-center gap-3">
         <h2 class="font-semibold text-xl text-gray-800">Escalas</h2>
         <RouterLink v-if="auth.isStaff" to="/escalas/criar" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
           Nova Escala
@@ -53,24 +53,25 @@ async function destroy(id: number) {
       <div class="p-4 border-b flex flex-wrap gap-4">
         <input v-model="filterMes" @change="load" type="month" class="border-gray-300 rounded-md shadow-sm text-sm" />
         <select v-model="filterTeam" @change="load" class="border-gray-300 rounded-md shadow-sm text-sm">
-          <option value="">Todas as equipes</option>
+          <option value="">Todos os ministérios</option>
           <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
         </select>
       </div>
 
+      <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Celebração</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Equipe</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ministério</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             <th class="px-6 py-3"></th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="s in scales" :key="s.id">
-            <td class="px-6 py-4 text-sm text-gray-900">{{ formatDate(s.dataCelebracao) }}</td>
+            <td class="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{{ formatDate(s.dataCelebracao) }}</td>
             <td class="px-6 py-4">
               <RouterLink :to="`/escalas/${s.id}`" class="text-indigo-600 hover:text-indigo-900 font-medium">
                 {{ s.celebracao }}
@@ -81,7 +82,7 @@ async function destroy(id: number) {
             <td class="px-6 py-4">
               <Badge :color="s.status === 'confirmada' ? 'green' : 'yellow'">{{ s.status }}</Badge>
             </td>
-            <td class="px-6 py-4 text-right space-x-3">
+            <td class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
               <RouterLink :to="`/escalas/${s.id}`" class="text-gray-600 hover:text-gray-900 text-sm">Ver</RouterLink>
               <template v-if="auth.isStaff">
                 <RouterLink :to="`/escalas/${s.id}/editar`" class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</RouterLink>
@@ -94,6 +95,7 @@ async function destroy(id: number) {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </AuthenticatedLayout>
 </template>

@@ -30,10 +30,10 @@ async function submit() {
   loading.value = true
   try {
     await client.post('/teams', form.value)
-    flash.set('success', 'Equipe criada com sucesso!')
+    flash.set('success', 'Ministério criado com sucesso!')
     router.push('/equipes')
   } catch (e: any) {
-    flash.set('error', e.response?.data?.message ?? 'Erro ao criar equipe')
+    flash.set('error', e.response?.data?.message ?? 'Erro ao criar ministério')
   } finally {
     loading.value = false
   }
@@ -42,7 +42,7 @@ async function submit() {
 
 <template>
   <AuthenticatedLayout>
-    <template #header><h2 class="font-semibold text-xl text-gray-800">Nova Equipe</h2></template>
+    <template #header><h2 class="font-semibold text-xl text-gray-800">Novo Ministério</h2></template>
     <div class="bg-white shadow-sm rounded-lg p-6">
       <form @submit.prevent="submit" class="space-y-6">
         <div>
@@ -55,7 +55,7 @@ async function submit() {
         </div>
         <div class="flex items-center gap-3">
           <input id="ativo" v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-          <InputLabel value="Equipe ativa" />
+          <InputLabel value="Ministério ativo" />
         </div>
 
         <div>

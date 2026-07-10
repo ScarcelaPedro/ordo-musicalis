@@ -29,7 +29,7 @@ async function destroy(id: number) {
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <div class="flex justify-between items-center">
+      <div class="flex flex-wrap justify-between items-center gap-3">
         <h2 class="font-semibold text-xl text-gray-800">Músicos</h2>
         <RouterLink v-if="auth.isStaff" to="/musicos/criar" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
           Novo Músico
@@ -50,7 +50,8 @@ async function destroy(id: number) {
 
       <div v-if="loading" class="p-8 text-center text-gray-500">Carregando...</div>
 
-      <table v-else class="min-w-full divide-y divide-gray-200">
+      <div v-else class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
@@ -75,7 +76,7 @@ async function destroy(id: number) {
             <td class="px-6 py-4">
               <Badge :color="m.ativo ? 'green' : 'gray'">{{ m.ativo ? 'Ativo' : 'Inativo' }}</Badge>
             </td>
-            <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3">
+            <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
               <RouterLink :to="`/musicos/${m.id}/editar`" class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</RouterLink>
               <button @click="destroy(m.id)" class="text-red-600 hover:text-red-900 text-sm">Excluir</button>
             </td>
@@ -85,6 +86,7 @@ async function destroy(id: number) {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </AuthenticatedLayout>
 </template>

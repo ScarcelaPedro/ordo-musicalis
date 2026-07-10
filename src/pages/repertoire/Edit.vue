@@ -104,13 +104,13 @@ function onPdfChange(e: Event) {
         <h3 class="font-medium text-gray-700 mb-4">Músicas ({{ repertoire.items.length }})</h3>
 
         <div class="space-y-2 mb-6">
-          <div v-for="item in repertoire.items" :key="item.id" class="flex items-center gap-3 py-2 border-b">
+          <div v-for="item in repertoire.items" :key="item.id" class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 border-b">
             <span class="text-gray-400 text-sm w-5">{{ item.ordem }}.</span>
-            <span class="flex-1 text-sm font-medium">{{ item.tituloMusica }}</span>
+            <span class="flex-1 min-w-[40%] text-sm font-medium">{{ item.tituloMusica }}</span>
             <span v-if="item.tom" class="text-xs bg-gray-100 px-2 py-0.5 rounded">{{ item.tom }}</span>
             <a v-if="item.arquivoPdfPath" :href="item.arquivoPdfPath" target="_blank" class="text-xs text-red-600">PDF</a>
             <a v-if="item.linkExterno" :href="item.linkExterno" target="_blank" class="text-xs text-blue-600">Link</a>
-            <DangerButton @click="removeItem(item.id)" class="!py-1 !px-2 text-xs">Remover</DangerButton>
+            <DangerButton @click="removeItem(item.id)" class="!py-1 !px-2 text-xs ml-auto sm:ml-0">Remover</DangerButton>
           </div>
           <p v-if="!repertoire.items.length" class="text-sm text-gray-500">Nenhuma música ainda.</p>
         </div>

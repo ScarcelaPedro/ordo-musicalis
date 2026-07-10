@@ -133,10 +133,10 @@ function formatFullDate(iso: string) {
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <div class="flex items-center justify-between">
-        <div>
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="min-w-0">
           <h2 class="font-bold text-xl text-gray-800">Dashboard</h2>
-          <p class="text-sm text-gray-400 mt-0.5">Bem-vindo, {{ auth.user?.name }}</p>
+          <p class="text-sm text-gray-400 mt-0.5 truncate">Bem-vindo, {{ auth.user?.name }}</p>
         </div>
         <RouterLink v-if="auth.isStaff" to="/escalas/criar"
           class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-indigo-700 active:scale-95 transition">
@@ -151,7 +151,7 @@ function formatFullDate(iso: string) {
     <div class="space-y-6">
 
       <!-- Stats -->
-      <div class="grid grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest">Total</p>
           <p class="mt-2 text-4xl font-extrabold text-gray-800">{{ totalScales }}</p>
@@ -237,6 +237,9 @@ function formatFullDate(iso: string) {
           </button>
         </div>
 
+        <div class="overflow-x-auto">
+        <div class="min-w-[560px]">
+
         <!-- Cabeçalho dias da semana -->
         <div class="grid grid-cols-7 border-b border-gray-100">
           <div v-for="(name, i) in DAY_NAMES" :key="name"
@@ -251,7 +254,7 @@ function formatFullDate(iso: string) {
           <div
             v-for="(day, idx) in calendarCells"
             :key="idx"
-            class="min-h-[108px] p-1.5"
+            class="min-h-[90px] sm:min-h-[108px] p-1.5"
             :class="[
               day === null       ? 'bg-gray-50/80'     : '',
               day && isToday(day)    ? 'bg-indigo-50/50'   : '',
@@ -300,6 +303,9 @@ function formatFullDate(iso: string) {
             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
           </svg>
           <p class="text-sm">Carregando calendário...</p>
+        </div>
+
+        </div>
         </div>
 
         <!-- Legenda -->

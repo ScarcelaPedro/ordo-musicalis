@@ -16,25 +16,26 @@ onMounted(async () => {
 })
 
 async function destroy(id: number) {
-  if (!confirm('Confirma a exclusão desta equipe?')) return
+  if (!confirm('Confirma a exclusão deste ministério?')) return
   await client.delete(`/teams/${id}`)
   teams.value = teams.value.filter((t) => t.id !== id)
-  flash.set('success', 'Equipe excluída.')
+  flash.set('success', 'Ministério excluído.')
 }
 </script>
 
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800">Equipes</h2>
+      <div class="flex flex-wrap justify-between items-center gap-3">
+        <h2 class="font-semibold text-xl text-gray-800">Ministérios</h2>
         <RouterLink v-if="auth.isStaff" to="/equipes/criar" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
-          Nova Equipe
+          Novo Ministério
         </RouterLink>
       </div>
     </template>
 
     <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
@@ -48,17 +49,18 @@ async function destroy(id: number) {
           <tr v-for="t in teams" :key="t.id">
             <td class="px-6 py-4 font-medium text-gray-900">{{ t.nome }}</td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ t._count.musicians }}</td>
-            <td class="px-6 py-4"><Badge :color="t.ativo ? 'green' : 'gray'">{{ t.ativo ? 'Ativa' : 'Inativa' }}</Badge></td>
-            <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3">
+            <td class="px-6 py-4"><Badge :color="t.ativo ? 'green' : 'gray'">{{ t.ativo ? 'Ativo' : 'Inativo' }}</Badge></td>
+            <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
               <RouterLink :to="`/equipes/${t.id}/editar`" class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</RouterLink>
               <button @click="destroy(t.id)" class="text-red-600 hover:text-red-900 text-sm">Excluir</button>
             </td>
           </tr>
           <tr v-if="teams.length === 0">
-            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhuma equipe cadastrada.</td>
+            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhum ministério cadastrado.</td>
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </AuthenticatedLayout>
 </template>

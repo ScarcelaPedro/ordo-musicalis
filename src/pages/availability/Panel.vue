@@ -32,6 +32,7 @@ const byMusician = computed(() => {
     </template>
 
     <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+      <div class="overflow-x-auto">
       <table class="min-w-full text-sm divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
@@ -59,6 +60,7 @@ const byMusician = computed(() => {
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   </AuthenticatedLayout>
 </template>

@@ -23,8 +23,8 @@ function formatDate(d: string) {
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <div class="flex justify-between items-center">
-        <h2 class="font-semibold text-xl text-gray-800">{{ musician?.nome ?? '...' }}</h2>
+      <div class="flex flex-wrap justify-between items-center gap-3">
+        <h2 class="font-semibold text-xl text-gray-800 min-w-0 truncate">{{ musician?.nome ?? '...' }}</h2>
         <RouterLink v-if="auth.isStaff && musician" :to="`/musicos/${musician.id}/editar`"
           class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
           Editar
@@ -54,10 +54,10 @@ function formatDate(d: string) {
             </dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Equipes</dt>
+            <dt class="text-sm font-medium text-gray-500">Ministérios</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
               <Badge v-for="t in musician.teams" :key="t.id" color="green">{{ t.team.nome }}</Badge>
-              <span v-if="!musician.teams.length" class="text-sm text-gray-400">Nenhuma</span>
+              <span v-if="!musician.teams.length" class="text-sm text-gray-400">Nenhum</span>
             </dd>
           </div>
           <div v-if="musician.observacoes">
