@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import GuestLayout from '@/layouts/GuestLayout.vue'
 import InputLabel from '@/components/InputLabel.vue'
@@ -10,23 +10,29 @@ import PrimaryButton from '@/components/PrimaryButton.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
-const route = useRoute()
 
+const name = ref('')
 const email = ref('')
 const password = ref('')
+const passwordConfirmation = ref('')
 const error = ref('')
 const loading = ref(false)
 
 async function submit() {
-  loading.value = true
   error.value = ''
+
+  if (password.value !== passwordConfirmation.value) {
+    error.value = 'As senhas não coincidem'
+    return
+  }
+
+  loading.value = true
   try {
-    await auth.login(email.value, password.value)
-    const redirect = (route.query.redirect as string) ?? '/dashboard'
-    router.push(redirect)
+    await auth.register(name.value, email.value, password.value)
+    router.push('/dashboard')
   } catch (e: unknown) {
     const err = e as { response?: { data?: { message?: string } } }
-    error.value = err.response?.data?.message ?? 'Erro ao fazer login'
+    error.value = err.response?.data?.message ?? 'Erro ao criar conta'
   } finally {
     loading.value = false
   }
@@ -37,8 +43,13 @@ async function submit() {
   <GuestLayout>
     <form @submit.prevent="submit" class="space-y-6">
       <div>
+        <InputLabel value="Nome" :required="true" />
+        <TextInput v-model="name" type="text" class="mt-1" autofocus />
+      </div>
+
+      <div>
         <InputLabel value="Email" :required="true" />
-        <TextInput v-model="email" type="email" class="mt-1" autofocus />
+        <TextInput v-model="email" type="email" class="mt-1" />
       </div>
 
       <div>
@@ -46,23 +57,21 @@ async function submit() {
         <TextInput v-model="password" type="password" class="mt-1" />
       </div>
 
+      <div>
+        <InputLabel value="Confirmar senha" :required="true" />
+        <TextInput v-model="passwordConfirmation" type="password" class="mt-1" />
+      </div>
+
       <InputError :message="error" />
 
       <div class="flex items-center justify-between">
-        <RouterLink to="/forgot-password" class="text-sm text-gray-600 hover:text-gray-900 underline">
-          Esqueceu a senha?
+        <RouterLink to="/login" class="text-sm text-gray-600 hover:text-gray-900 underline dark:text-gray-400 dark:hover:text-gray-200">
+          Já tem conta? Entrar
         </RouterLink>
         <PrimaryButton :disabled="loading">
-          {{ loading ? 'Entrando...' : 'Entrar' }}
+          {{ loading ? 'Criando conta...' : 'Criar conta' }}
         </PrimaryButton>
       </div>
-
-      <p class="text-center text-sm text-gray-600 dark:text-gray-400">
-        Não tem conta?
-        <RouterLink to="/register" class="text-gray-800 hover:text-gray-900 underline dark:text-gray-200 dark:hover:text-gray-100">
-          Cadastre-se
-        </RouterLink>
-      </p>
     </form>
   </GuestLayout>
 </template>

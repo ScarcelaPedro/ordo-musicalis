@@ -9,13 +9,10 @@ async function main() {
     'Baixo', 'Flauta', 'Violino', 'Cajón',
   ]
 
-  for (const nome of instruments) {
-    await prisma.instrument.upsert({
-      where: { nome },
-      update: {},
-      create: { nome },
-    })
-  }
+  await prisma.instrument.createMany({
+    data: instruments.map((nome) => ({ nome })),
+    skipDuplicates: true,
+  })
   console.log('Instrumentos criados')
 
   const hash = await bcrypt.hash('password', 12)

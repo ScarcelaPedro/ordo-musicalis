@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 
-interface Musician { id: number; nome: string; instruments: { instrumentId: number; instrument: { id: number; nome: string } }[] }
+interface Musician {
+  id: number
+  nome: string
+  instruments: { instrumentId: number; instrument: { id: number; nome: string } }[]
+  teams: { teamId: number }[]
+}
 interface Team { id: number; nome: string }
 
 interface ScaleMusician { musicianId: number; instrumentId: number | null }
@@ -40,6 +45,16 @@ const form = ref<FormData>({
 })
 
 watch(() => props.initialData, (val) => { if (val) Object.assign(form.value, val) })
+
+const filteredMusicians = computed(() => {
+  if (!form.value.teamId) return props.musicians
+  return props.musicians.filter((m) => m.teams.some((t) => t.teamId === form.value.teamId))
+})
+
+watch(() => form.value.teamId, () => {
+  const validIds = new Set(filteredMusicians.value.map((m) => m.id))
+  form.value.musicians = form.value.musicians.filter((m) => validIds.has(m.musicianId))
+})
 
 function isSelected(musicianId: number) {
   return form.value.musicians.some((m) => m.musicianId === musicianId)
@@ -103,7 +118,8 @@ function setInstrument(musicianId: number, instrumentId: number) {
     <div>
       <InputLabel value="Músicos da escala" />
       <div class="mt-2 space-y-2">
-        <div v-for="m in musicians" :key="m.id" class="flex items-center gap-3 p-3 border rounded-md" :class="isSelected(m.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
+        <p v-if="form.teamId && filteredMusicians.length === 0" class="text-sm text-gray-500">Nenhum músico cadastrado nesta equipe.</p>
+        <div v-for="m in filteredMusicians" :key="m.id" class="flex items-center gap-3 p-3 border rounded-md" :class="isSelected(m.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
           <input
             type="checkbox"
             :checked="isSelected(m.id)"

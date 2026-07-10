@@ -8,6 +8,7 @@ import repertoireRoutes from './routes/repertoire'
 import repertoireItemRoutes from './routes/repertoireItems'
 import availabilityRoutes from './routes/availability'
 import profileRoutes from './routes/profile'
+import instrumentRoutes from './routes/instruments'
 
 const app = express()
 
@@ -26,6 +27,7 @@ app.use('/api/scales/:scaleId/repertoire/items', repertoireItemRoutes)
 app.use('/api/scales/:scaleId/repertoire', repertoireRoutes)
 app.use('/api/availability', availabilityRoutes)
 app.use('/api/profile', profileRoutes)
+app.use('/api/instruments', instrumentRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 

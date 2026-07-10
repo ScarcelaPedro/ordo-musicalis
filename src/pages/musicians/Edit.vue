@@ -28,7 +28,7 @@ const initialData = computed(() => musician.value ? {
 onMounted(async () => {
   const [m, inst, tm] = await Promise.all([
     client.get(`/musicians/${route.params.id}`),
-    client.get('/musicians'),
+    client.get('/instruments'),
     client.get('/teams'),
   ])
   musician.value = m.data

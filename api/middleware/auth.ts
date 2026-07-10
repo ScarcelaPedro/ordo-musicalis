@@ -21,7 +21,7 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
 
   const token = header.slice(7)
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as { sub: number }
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as unknown as { sub: number }
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
       include: { musician: { select: { id: true } } },

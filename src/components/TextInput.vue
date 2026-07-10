@@ -19,7 +19,7 @@ onMounted(() => { if (props.autofocus) input.value?.focus() })
     :type="type ?? 'text'"
     :value="modelValue ?? ''"
     @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full"
+    class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
     v-bind="$attrs"
   />
 </template>

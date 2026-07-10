@@ -11,9 +11,47 @@ const prisma = new PrismaClient()
 
 function signToken(userId: number) {
   return jwt.sign({ sub: userId }, process.env.JWT_SECRET!, {
-    expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as string,
+    expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any,
   })
 }
+
+router.post('/register', async (req: Request, res: Response) => {
+  const { name, email, password } = req.body
+  if (!name || !email || !password) {
+    return res.status(422).json({ message: 'Nome, email e senha são obrigatórios' })
+  }
+  if (password.length < 8) {
+    return res.status(422).json({ message: 'A senha deve ter pelo menos 8 caracteres' })
+  }
+
+  const existing = await prisma.user.findUnique({ where: { email } })
+  if (existing) {
+    return res.status(422).json({ message: 'Este email já está em uso' })
+  }
+
+  const hash = await bcrypt.hash(password, 12)
+  const { user, musician } = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: { name, email, password: hash },
+    })
+    const musician = await tx.musician.create({
+      data: { nome: name, email, userId: user.id },
+    })
+    return { user, musician }
+  })
+
+  const token = signToken(user.id)
+  return res.status(201).json({
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      musicianId: musician.id,
+    },
+  })
+})
 
 router.post('/login', async (req: Request, res: Response) => {
   const { email, password } = req.body

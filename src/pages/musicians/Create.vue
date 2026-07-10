@@ -14,7 +14,7 @@ const loading = ref(false)
 const errors = ref<Record<string, string>>({})
 
 onMounted(async () => {
-  const [inst, tm] = await Promise.all([client.get('/musicians'), client.get('/teams')])
+  const [inst, tm] = await Promise.all([client.get('/instruments'), client.get('/teams')])
   instruments.value = inst.data
   teams.value = tm.data
 })
