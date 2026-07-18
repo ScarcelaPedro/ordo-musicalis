@@ -2,8 +2,8 @@ import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import multer from 'multer'
 import { put, del } from '@vercel/blob'
-import { authenticate, AuthRequest } from '../middleware/auth'
-import { requireRole } from '../middleware/roles'
+import { authenticate, AuthRequest } from '../_middleware/auth'
+import { requireRole } from '../_middleware/roles'
 
 const router = Router({ mergeParams: true })
 const prisma = new PrismaClient()

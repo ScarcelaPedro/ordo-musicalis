@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { Resend } from 'resend'
-import { authenticate, AuthRequest } from '../middleware/auth'
+import { authenticate, AuthRequest } from '../_middleware/auth'
 
 const router = Router()
 const prisma = new PrismaClient()

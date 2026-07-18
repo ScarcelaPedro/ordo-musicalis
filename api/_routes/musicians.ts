@@ -1,7 +1,7 @@
 import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
-import { authenticate, AuthRequest } from '../middleware/auth'
-import { requireRole } from '../middleware/roles'
+import { authenticate, AuthRequest } from '../_middleware/auth'
+import { requireRole } from '../_middleware/roles'
 
 const router = Router()
 const prisma = new PrismaClient()

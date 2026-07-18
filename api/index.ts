@@ -1,14 +1,14 @@
 import express from 'express'
 import cors from 'cors'
-import authRoutes from './routes/auth'
-import musicianRoutes from './routes/musicians'
-import teamRoutes from './routes/teams'
-import scaleRoutes from './routes/scales'
-import repertoireRoutes from './routes/repertoire'
-import repertoireItemRoutes from './routes/repertoireItems'
-import availabilityRoutes from './routes/availability'
-import profileRoutes from './routes/profile'
-import instrumentRoutes from './routes/instruments'
+import authRoutes from './_routes/auth'
+import musicianRoutes from './_routes/musicians'
+import teamRoutes from './_routes/teams'
+import scaleRoutes from './_routes/scales'
+import repertoireRoutes from './_routes/repertoire'
+import repertoireItemRoutes from './_routes/repertoireItems'
+import availabilityRoutes from './_routes/availability'
+import profileRoutes from './_routes/profile'
+import instrumentRoutes from './_routes/instruments'
 
 const app = express()
 
