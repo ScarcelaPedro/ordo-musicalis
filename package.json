@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
+    "postinstall": "prisma generate --schema=api/prisma/schema.prisma",
     "preview": "vite preview",
     "api:dev": "ts-node --project tsconfig.api.json api/server.ts",
     "dev:full": "concurrently \"npm run api:dev\" \"npm run dev\"",
