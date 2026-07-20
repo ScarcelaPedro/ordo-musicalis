@@ -11,7 +11,7 @@ import SecondaryButton from '@/components/SecondaryButton.vue'
 
 const router = useRouter()
 const flash = useFlashStore()
-const form = ref({ nome: '', descricao: '', ativo: true, musicians: [] as number[] })
+const form = ref({ nome: '', descricao: '', ativo: true, responsavelId: null as number | null, musicians: [] as number[] })
 const allMusicians = ref<{ id: number; nome: string }[]>([])
 const loading = ref(false)
 
@@ -52,6 +52,13 @@ async function submit() {
         <div>
           <InputLabel value="Descrição" />
           <textarea v-model="form.descricao" rows="3" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
+        </div>
+        <div>
+          <InputLabel value="Responsável/coordenador" />
+          <select v-model="form.responsavelId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+            <option :value="null">Nenhum</option>
+            <option v-for="m in allMusicians" :key="m.id" :value="m.id">{{ m.nome }}</option>
+          </select>
         </div>
         <div class="flex items-center gap-3">
           <input id="ativo" v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />

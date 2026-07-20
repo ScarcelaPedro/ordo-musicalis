@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
 
 router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
   const teams = await prisma.team.findMany({
-    include: { _count: { select: { musicians: true } } },
+    include: { _count: { select: { musicians: true } }, responsavel: { select: { id: true, nome: true } } },
     orderBy: { nome: 'asc' },
   })
   return res.json(teams)
@@ -21,6 +21,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       musicians: {
         include: { musician: { select: { id: true, nome: true } } },
       },
+      responsavel: { select: { id: true, nome: true } },
     },
   })
   if (!team) return res.status(404).json({ message: 'Equipe não encontrada' })
@@ -28,8 +29,10 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 })
 
 router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
-  const { nome, descricao, ativo, musicians } = req.body
-  const team = await prisma.team.create({ data: { nome, descricao, ativo: ativo ?? true } })
+  const { nome, descricao, ativo, responsavelId, musicians } = req.body
+  const team = await prisma.team.create({
+    data: { nome, descricao, ativo: ativo ?? true, responsavelId: responsavelId ?? null },
+  })
 
   if (Array.isArray(musicians) && musicians.length > 0) {
     await prisma.musicianTeam.createMany({
@@ -42,12 +45,12 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
 })
 
 router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
-  const { nome, descricao, ativo, musicians } = req.body
+  const { nome, descricao, ativo, responsavelId, musicians } = req.body
   const teamId = Number(req.params.id)
 
   const team = await prisma.team.update({
     where: { id: teamId },
-    data: { nome, descricao, ativo },
+    data: { nome, descricao, ativo, responsavelId: responsavelId ?? null },
   })
 
   if (Array.isArray(musicians)) {

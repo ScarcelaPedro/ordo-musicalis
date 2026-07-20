@@ -20,6 +20,7 @@ const initialData = computed(() => musician.value ? {
   telefone: musician.value.telefone ?? '',
   email: musician.value.email ?? '',
   ativo: musician.value.ativo,
+  nivel: musician.value.nivel,
   observacoes: musician.value.observacoes ?? '',
   instruments: musician.value.instruments.map((i: any) => i.instrumentId),
   teams: musician.value.teams.map((t: any) => t.teamId),

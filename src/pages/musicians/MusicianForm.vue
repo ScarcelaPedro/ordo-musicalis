@@ -9,14 +9,23 @@ import SecondaryButton from '@/components/SecondaryButton.vue'
 interface Instrument { id: number; nome: string }
 interface Team { id: number; nome: string }
 
+type Nivel = 'em_formacao' | 'apto' | 'lider'
+
 interface FormData {
   nome: string
   telefone: string
   email: string
   ativo: boolean
+  nivel: Nivel
   observacoes: string
   instruments: number[]
   teams: number[]
+}
+
+const NIVEL_LABELS: Record<Nivel, string> = {
+  em_formacao: 'Em formação',
+  apto: 'Apto',
+  lider: 'Líder/Responsável',
 }
 
 const props = defineProps<{
@@ -34,6 +43,7 @@ const form = ref<FormData>({
   telefone: props.initialData?.telefone ?? '',
   email: props.initialData?.email ?? '',
   ativo: props.initialData?.ativo ?? true,
+  nivel: props.initialData?.nivel ?? 'apto',
   observacoes: props.initialData?.observacoes ?? '',
   instruments: props.initialData?.instruments ?? [],
   teams: props.initialData?.teams ?? [],
@@ -71,6 +81,12 @@ function toggleTeam(id: number) {
       <div>
         <InputLabel value="Email" />
         <TextInput v-model="form.email" type="email" class="mt-1" />
+      </div>
+      <div>
+        <InputLabel value="Nível" />
+        <select v-model="form.nivel" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+          <option v-for="(label, value) in NIVEL_LABELS" :key="value" :value="value">{{ label }}</option>
+        </select>
       </div>
       <div class="flex items-center gap-3 mt-6">
         <input id="ativo" v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />

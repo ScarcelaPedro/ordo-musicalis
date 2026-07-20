@@ -113,6 +113,32 @@ const router = createRouter({
       component: () => import('@/pages/scales/Edit.vue'),
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
+    {
+      path: '/minha-escala',
+      name: 'scales.mine',
+      component: () => import('@/pages/scales/MyScales.vue'),
+      meta: { auth: true },
+    },
+
+    // Escalas Recorrentes
+    {
+      path: '/escalas-recorrentes',
+      name: 'scaleTemplates.index',
+      component: () => import('@/pages/scaleTemplates/Index.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/escalas-recorrentes/criar',
+      name: 'scaleTemplates.create',
+      component: () => import('@/pages/scaleTemplates/Create.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/escalas-recorrentes/:id/editar',
+      name: 'scaleTemplates.edit',
+      component: () => import('@/pages/scaleTemplates/Edit.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
 
     // Repertório
     {

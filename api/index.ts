@@ -4,6 +4,7 @@ import authRoutes from './_routes/auth'
 import musicianRoutes from './_routes/musicians'
 import teamRoutes from './_routes/teams'
 import scaleRoutes from './_routes/scales'
+import scaleTemplateRoutes from './_routes/scaleTemplates'
 import repertoireRoutes from './_routes/repertoire'
 import repertoireItemRoutes from './_routes/repertoireItems'
 import availabilityRoutes from './_routes/availability'
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/musicians', musicianRoutes)
 app.use('/api/teams', teamRoutes)
 app.use('/api/scales', scaleRoutes)
+app.use('/api/scale-templates', scaleTemplateRoutes)
 app.use('/api/scales/:scaleId/repertoire/items', repertoireItemRoutes)
 app.use('/api/scales/:scaleId/repertoire', repertoireRoutes)
 app.use('/api/availability', availabilityRoutes)

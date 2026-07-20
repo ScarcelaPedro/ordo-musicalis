@@ -40,6 +40,7 @@ async function destroy(id: number) {
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsável</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Músicos</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             <th v-if="auth.isStaff" class="px-6 py-3"></th>
@@ -48,6 +49,7 @@ async function destroy(id: number) {
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="t in teams" :key="t.id">
             <td class="px-6 py-4 font-medium text-gray-900">{{ t.nome }}</td>
+            <td class="px-6 py-4 text-sm text-gray-500">{{ t.responsavel?.nome ?? '—' }}</td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ t._count.musicians }}</td>
             <td class="px-6 py-4"><Badge :color="t.ativo ? 'green' : 'gray'">{{ t.ativo ? 'Ativo' : 'Inativo' }}</Badge></td>
             <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
@@ -56,7 +58,7 @@ async function destroy(id: number) {
             </td>
           </tr>
           <tr v-if="teams.length === 0">
-            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhum ministério cadastrado.</td>
+            <td colspan="5" class="px-6 py-8 text-center text-gray-500">Nenhum ministério cadastrado.</td>
           </tr>
         </tbody>
       </table>

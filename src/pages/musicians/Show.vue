@@ -18,6 +18,12 @@ onMounted(async () => {
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('pt-BR')
 }
+
+const NIVEL_LABELS: Record<string, string> = {
+  em_formacao: 'Em formação',
+  apto: 'Apto',
+  lider: 'Líder/Responsável',
+}
 </script>
 
 <template>
@@ -46,6 +52,10 @@ function formatDate(d: string) {
           <div>
             <dt class="text-sm font-medium text-gray-500">Status</dt>
             <dd class="mt-1"><Badge :color="musician.ativo ? 'green' : 'gray'">{{ musician.ativo ? 'Ativo' : 'Inativo' }}</Badge></dd>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Nível</dt>
+            <dd class="mt-1"><Badge color="blue">{{ NIVEL_LABELS[musician.nivel] ?? musician.nivel }}</Badge></dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Instrumentos</dt>

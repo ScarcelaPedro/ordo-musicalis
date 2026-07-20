@@ -31,6 +31,17 @@ enum Period {
   noite
 }
 
+enum MusicianLevel {
+  em_formacao
+  apto
+  lider
+}
+
+enum RecurrenceType {
+  semanal
+  mensal_ordinal
+}
+
 model User {
   id                Int       @id @default(autoincrement())
   name              String
@@ -50,12 +61,13 @@ model User {
 }
 
 model Musician {
-  id          Int     @id @default(autoincrement())
-  userId      Int?    @unique @map("user_id")
+  id          Int           @id @default(autoincrement())
+  userId      Int?          @unique @map("user_id")
   nome        String
   telefone    String?
   email       String?
-  ativo       Boolean @default(true)
+  ativo       Boolean       @default(true)
+  nivel       MusicianLevel @default(apto)
   observacoes String?
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -65,6 +77,7 @@ model Musician {
   teams         MusicianTeam[]
   availabilities Availability[]
   scales        ScaleMusician[]
+  teamsResponsavel Team[]           @relation("TeamResponsavel")
 
   @@map("musicians")
 }
@@ -96,15 +109,18 @@ model InstrumentMusician {
 }
 
 model Team {
-  id        Int      @id @default(autoincrement())
-  nome      String
-  descricao String?
-  ativo     Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            Int      @id @default(autoincrement())
+  nome          String
+  descricao     String?
+  ativo         Boolean  @default(true)
+  responsavelId Int?     @map("responsavel_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  musicians MusicianTeam[]
-  scales    Scale[]
+  responsavel Musician? @relation("TeamResponsavel", fields: [responsavelId], references: [id], onDelete: SetNull)
+  musicians   MusicianTeam[]
+  scales      Scale[]
+  scaleTemplates ScaleTemplate[]
 
   @@map("teams")
 }
@@ -203,4 +219,22 @@ model Availability {
   musician Musician @relation(fields: [musicianId], references: [id], onDelete: Cascade)
 
   @@map("availabilities")
+}
+
+model ScaleTemplate {
+  id              Int            @id @default(autoincrement())
+  celebracao      String
+  horario         String
+  diaSemana       Int            @map("dia_semana") @db.SmallInt
+  tipoRecorrencia RecurrenceType @default(semanal) @map("tipo_recorrencia")
+  ordinal         Int?           @db.SmallInt
+  teamId          Int?           @map("team_id")
+  observacoes     String?
+  ativo           Boolean        @default(true)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+
+  team Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  @@map("scale_templates")
 }

@@ -43,9 +43,14 @@ async function destroy(id: number) {
     <template #header>
       <div class="flex flex-wrap justify-between items-center gap-3">
         <h2 class="font-semibold text-xl text-gray-800">Escalas</h2>
-        <RouterLink v-if="auth.isStaff" to="/escalas/criar" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
-          Nova Escala
-        </RouterLink>
+        <div v-if="auth.isStaff" class="flex gap-2">
+          <RouterLink to="/escalas-recorrentes" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
+            Recorrências
+          </RouterLink>
+          <RouterLink to="/escalas/criar" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
+            Nova Escala
+          </RouterLink>
+        </div>
       </div>
     </template>
 

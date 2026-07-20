@@ -24,6 +24,12 @@ async function destroy(id: number) {
   await client.delete(`/musicians/${id}`)
   musicians.value = musicians.value.filter((m) => m.id !== id)
 }
+
+const NIVEL_LABELS: Record<string, string> = {
+  em_formacao: 'Em formação',
+  apto: 'Apto',
+  lider: 'Líder',
+}
 </script>
 
 <template>
@@ -56,6 +62,7 @@ async function destroy(id: number) {
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Instrumentos</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nível</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             <th v-if="auth.isStaff" class="px-6 py-3"></th>
           </tr>
@@ -74,6 +81,9 @@ async function destroy(id: number) {
               </div>
             </td>
             <td class="px-6 py-4">
+              <Badge color="blue">{{ NIVEL_LABELS[m.nivel] ?? m.nivel }}</Badge>
+            </td>
+            <td class="px-6 py-4">
               <Badge :color="m.ativo ? 'green' : 'gray'">{{ m.ativo ? 'Ativo' : 'Inativo' }}</Badge>
             </td>
             <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
@@ -82,7 +92,7 @@ async function destroy(id: number) {
             </td>
           </tr>
           <tr v-if="musicians.length === 0">
-            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhum músico encontrado.</td>
+            <td colspan="5" class="px-6 py-8 text-center text-gray-500">Nenhum músico encontrado.</td>
           </tr>
         </tbody>
       </table>

@@ -17,7 +17,7 @@ const include = {
 }
 
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
-  const { mes, teamId } = req.query as Record<string, string>
+  const { mes, teamId, mine } = req.query as Record<string, string>
   const where: Record<string, unknown> = {}
 
   if (mes) {
@@ -28,6 +28,10 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
     }
   }
   if (teamId) where.teamId = Number(teamId)
+  if (mine === 'true') {
+    if (!req.user!.musicianId) return res.json([])
+    where.musicians = { some: { musicianId: req.user!.musicianId } }
+  }
 
   const scales = await prisma.scale.findMany({
     where,

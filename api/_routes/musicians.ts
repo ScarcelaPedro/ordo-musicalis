@@ -27,7 +27,7 @@ router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
 })
 
 router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
-  const { nome, telefone, email, ativo, observacoes, instruments: instrumentIds, teams: teamIds } = req.body
+  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams: teamIds } = req.body
 
   const musician = await prisma.musician.create({
     data: {
@@ -35,6 +35,7 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
       telefone: telefone ?? null,
       email: email ?? null,
       ativo: ativo ?? true,
+      nivel: nivel ?? 'apto',
       observacoes: observacoes ?? null,
       instruments: {
         create: (instrumentIds as number[]).map((id) => ({ instrumentId: id })),
@@ -66,7 +67,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
 router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
-  const { nome, telefone, email, ativo, observacoes, instruments: instrumentIds, teams: teamIds } = req.body
+  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams: teamIds } = req.body
 
   await prisma.instrumentMusician.deleteMany({ where: { musicianId: id } })
   await prisma.musicianTeam.deleteMany({ where: { musicianId: id } })
@@ -78,6 +79,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (r
       telefone: telefone ?? null,
       email: email ?? null,
       ativo: ativo ?? true,
+      nivel: nivel ?? 'apto',
       observacoes: observacoes ?? null,
       instruments: {
         create: (instrumentIds as number[]).map((iid) => ({ instrumentId: iid })),
