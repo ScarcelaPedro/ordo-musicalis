@@ -1,4 +1,5 @@
-import express from 'express'
+import express, { NextFunction, Request, Response } from 'express'
+import 'express-async-errors'
 import cors from 'cors'
 import authRoutes from './_routes/auth'
 import musicianRoutes from './_routes/musicians'
@@ -32,5 +33,13 @@ app.use('/api/profile', profileRoutes)
 app.use('/api/instruments', instrumentRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
+
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err)
+  if (err?.code === 'P2025') return res.status(404).json({ message: 'Registro não encontrado' })
+  if (err?.code === 'P2002') return res.status(422).json({ message: 'Já existe um registro com esse valor' })
+  if (err?.code === 'P2003') return res.status(422).json({ message: 'Operação inválida: registro relacionado não encontrado' })
+  return res.status(500).json({ message: 'Erro interno no servidor' })
+})
 
 export default app
