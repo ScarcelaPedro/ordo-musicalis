@@ -13,6 +13,9 @@ import availabilityWindowRoutes from './_routes/availabilityWindows'
 import vinculoFixoRoutes from './_routes/vinculosFixos'
 import profileRoutes from './_routes/profile'
 import instrumentRoutes from './_routes/instruments'
+import substituicaoRoutes from './_routes/substituicoes'
+import publicRoutes from './_routes/public'
+import reportRoutes from './_routes/reports'
 
 const app = express()
 
@@ -35,6 +38,9 @@ app.use('/api/availability', availabilityRoutes)
 app.use('/api/vinculos-fixos', vinculoFixoRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/instruments', instrumentRoutes)
+app.use('/api/substituicoes', substituicaoRoutes)
+app.use('/api/public', publicRoutes)
+app.use('/api/reports', reportRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 

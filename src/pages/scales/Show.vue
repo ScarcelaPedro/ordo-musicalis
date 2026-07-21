@@ -7,13 +7,18 @@ import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
+import SecondaryButton from '@/components/SecondaryButton.vue'
 import { parseDateOnly } from '@/utils/date'
+import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
 
 const route = useRoute()
 const auth = useAuthStore()
 const flash = useFlashStore()
 const scale = ref<any>(null)
 const confirming = ref(false)
+const recusando = ref(false)
+const mostrarMotivo = ref(false)
+const motivo = ref('')
 
 onMounted(async () => {
   const { data } = await client.get(`/scales/${route.params.id}`)
@@ -41,6 +46,28 @@ async function confirmar() {
     confirming.value = false
   }
 }
+
+async function recusar() {
+  recusando.value = true
+  try {
+    await client.patch(`/scales/${route.params.id}/recusar`, { motivo: motivo.value || undefined })
+    const { data } = await client.get(`/scales/${route.params.id}`)
+    scale.value = data
+    mostrarMotivo.value = false
+    motivo.value = ''
+    flash.set('success', 'Recusa registrada. O coordenador foi avisado para buscar substituto.')
+  } catch (e: any) {
+    flash.set('error', e.response?.data?.message ?? 'Erro ao recusar')
+  } finally {
+    recusando.value = false
+  }
+}
+
+const isFuture = () => scale.value && scale.value.dataCelebracao.slice(0, 10) >= new Date().toISOString().slice(0, 10)
+
+function imprimir() {
+  window.print()
+}
 </script>
 
 <template>
@@ -48,7 +75,11 @@ async function confirmar() {
     <template #header>
       <div class="flex justify-between items-center flex-wrap gap-2">
         <h2 class="font-semibold text-xl text-gray-800">{{ scale?.celebracao ?? '...' }}</h2>
-        <div class="flex gap-2">
+        <div class="flex gap-2 no-print">
+          <button v-if="scale" @click="imprimir"
+            class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
+            Imprimir
+          </button>
           <RouterLink v-if="auth.isStaff && scale" :to="`/escalas/${scale.id}/editar`"
             class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
             Editar
@@ -90,13 +121,22 @@ async function confirmar() {
       <!-- Confirmação para músico -->
       <div v-if="auth.isMusico && myPivot()" class="bg-white shadow-sm rounded-lg p-6">
         <h3 class="font-semibold text-gray-800 mb-3">Minha confirmação</h3>
-        <div class="flex items-center gap-4">
-          <Badge :color="myPivot()?.confirmado ? 'green' : 'yellow'">
-            {{ myPivot()?.confirmado ? 'Confirmado' : 'Pendente' }}
-          </Badge>
-          <PrimaryButton v-if="!myPivot()?.confirmado" :disabled="confirming" @click="confirmar">
-            {{ confirming ? 'Confirmando...' : 'Confirmar presença' }}
-          </PrimaryButton>
+        <div class="flex items-center gap-4 flex-wrap">
+          <Badge :color="STATUS_COLORS[myPivot()?.status]">{{ STATUS_LABELS[myPivot()?.status] ?? myPivot()?.status }}</Badge>
+          <template v-if="isFuture() && ['convidado'].includes(myPivot()?.status)">
+            <PrimaryButton :disabled="confirming" @click="confirmar">
+              {{ confirming ? 'Confirmando...' : 'Confirmar presença' }}
+            </PrimaryButton>
+            <SecondaryButton v-if="!mostrarMotivo" @click="mostrarMotivo = true">Não posso ir</SecondaryButton>
+          </template>
+        </div>
+        <div v-if="mostrarMotivo" class="mt-4 space-y-2">
+          <textarea v-model="motivo" rows="2" placeholder="Motivo (opcional)"
+            class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+          <div class="flex gap-2">
+            <PrimaryButton :disabled="recusando" @click="recusar">{{ recusando ? 'Enviando...' : 'Confirmar recusa' }}</PrimaryButton>
+            <SecondaryButton @click="mostrarMotivo = false; motivo = ''">Cancelar</SecondaryButton>
+          </div>
         </div>
       </div>
 
@@ -109,7 +149,7 @@ async function confirmar() {
               <span class="text-sm font-medium text-gray-900">{{ m.musician.nome }}</span>
               <span v-if="m.instrument" class="text-xs text-gray-500 ml-2">· {{ m.instrument.nome }}</span>
             </div>
-            <Badge :color="m.confirmado ? 'green' : 'yellow'">{{ m.confirmado ? 'Confirmado' : 'Pendente' }}</Badge>
+            <Badge :color="STATUS_COLORS[m.status]">{{ STATUS_LABELS[m.status] ?? m.status }}</Badge>
           </div>
           <p v-if="!scale.musicians.length" class="text-sm text-gray-500">Nenhum músico na escala.</p>
         </div>

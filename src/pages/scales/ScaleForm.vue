@@ -4,6 +4,7 @@ import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import client from '@/api/client'
 
 interface Musician {
   id: number
@@ -78,6 +79,46 @@ function setInstrument(musicianId: number, instrumentId: number) {
   const entry = form.value.musicians.find((m) => m.musicianId === musicianId)
   if (entry) entry.instrumentId = instrumentId
 }
+
+interface Suggestion { musicianId: number; nome: string; nivel: string; score: number; motivo: string }
+
+const suggestions = ref<Suggestion[]>([])
+const loadingSuggestions = ref(false)
+const suggestionsError = ref('')
+
+async function buscarSugestoes() {
+  if (!form.value.dataCelebracao || !form.value.horario) {
+    suggestionsError.value = 'Preencha data e horário para ver sugestões.'
+    suggestions.value = []
+    return
+  }
+  suggestionsError.value = ''
+  loadingSuggestions.value = true
+  try {
+    const excludeIds = form.value.musicians.map((m) => m.musicianId)
+    const { data } = await client.get('/scales/sugestoes', {
+      params: {
+        data: form.value.dataCelebracao,
+        horario: form.value.horario,
+        teamId: form.value.teamId ?? undefined,
+        excludeIds: excludeIds.length ? excludeIds.join(',') : undefined,
+      },
+    })
+    suggestions.value = data
+  } catch (e: any) {
+    suggestionsError.value = e.response?.data?.message ?? 'Erro ao buscar sugestões'
+  } finally {
+    loadingSuggestions.value = false
+  }
+}
+
+function adicionarSugerido(s: Suggestion) {
+  if (isSelected(s.musicianId)) return
+  const musician = props.musicians.find((m) => m.id === s.musicianId)
+  const firstInstrument = musician?.instruments[0]?.instrumentId ?? null
+  form.value.musicians.push({ musicianId: s.musicianId, instrumentId: firstInstrument })
+  suggestions.value = suggestions.value.filter((sug) => sug.musicianId !== s.musicianId)
+}
 </script>
 
 <template>
@@ -112,6 +153,25 @@ function setInstrument(musicianId: number, instrumentId: number) {
       <div class="sm:col-span-2">
         <InputLabel value="Observações" />
         <textarea v-model="form.observacoes" rows="3" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
+      </div>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between">
+        <InputLabel value="Sugeridos" />
+        <SecondaryButton type="button" :disabled="loadingSuggestions" @click="buscarSugestoes" class="!py-1.5 !px-3 text-xs">
+          {{ loadingSuggestions ? 'Buscando...' : 'Buscar sugestões' }}
+        </SecondaryButton>
+      </div>
+      <p v-if="suggestionsError" class="mt-2 text-sm text-red-600">{{ suggestionsError }}</p>
+      <div v-if="suggestions.length" class="mt-2 space-y-2">
+        <div v-for="s in suggestions" :key="s.musicianId" class="flex items-center justify-between gap-3 p-3 border rounded-md border-gray-200 dark:border-gray-600">
+          <div class="min-w-0">
+            <span class="text-sm font-medium">{{ s.nome }}</span>
+            <p class="text-xs text-gray-500 truncate">{{ s.motivo }}</p>
+          </div>
+          <SecondaryButton type="button" @click="adicionarSugerido(s)" class="!py-1.5 !px-3 text-xs shrink-0">Adicionar</SecondaryButton>
+        </div>
       </div>
     </div>
 

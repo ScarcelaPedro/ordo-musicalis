@@ -65,7 +65,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
       ...(diaSemana !== undefined ? { diaSemana: Number(diaSemana) } : {}),
       ...(tipoRecorrencia !== undefined ? { tipoRecorrencia } : {}),
       ordinal: tipoRecorrencia === 'mensal_ordinal' ? Number(ordinal) : null,
-      teamId: teamId ?? null,
+      ...(teamId !== undefined ? { teamId: teamId ?? null } : {}),
       ...(observacoes !== undefined ? { observacoes } : {}),
       ...(ativo !== undefined ? { ativo } : {}),
     },

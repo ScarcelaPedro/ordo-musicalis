@@ -37,6 +37,12 @@ async function destroy(id: number) {
   scales.value = scales.value.filter((s) => s.id !== id)
   flash.set('success', 'Escala excluída.')
 }
+
+async function copiarLinkPublico() {
+  const url = `${window.location.origin}/publico`
+  await navigator.clipboard.writeText(url)
+  flash.set('success', 'Link público copiado!')
+}
 </script>
 
 <template>
@@ -44,7 +50,10 @@ async function destroy(id: number) {
     <template #header>
       <div class="flex flex-wrap justify-between items-center gap-3">
         <h2 class="font-semibold text-xl text-gray-800">Escalas</h2>
-        <div v-if="auth.isStaff" class="flex gap-2">
+        <div v-if="auth.isStaff" class="flex flex-wrap gap-2">
+          <button @click="copiarLinkPublico" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
+            Copiar link público
+          </button>
           <RouterLink to="/escalas-recorrentes" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
             Recorrências
           </RouterLink>

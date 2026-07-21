@@ -42,6 +42,19 @@ enum RecurrenceType {
   mensal_ordinal
 }
 
+enum StatusEscalacao {
+  convidado
+  confirmado
+  recusado
+  substituido
+}
+
+enum SubstituicaoStatus {
+  pendente
+  aprovada
+  rejeitada
+}
+
 model User {
   id                Int       @id @default(autoincrement())
   name              String
@@ -80,6 +93,7 @@ model Musician {
   teamsResponsavel Team[]           @relation("TeamResponsavel")
   vinculosFixos VinculoFixo[]
   windowResponses AvailabilityWindowResponse[]
+  substituicoesComoSubstituto Substituicao[] @relation("SubstitutoMusico")
 
   @@map("musicians")
 }
@@ -161,20 +175,36 @@ model Scale {
 }
 
 model ScaleMusician {
-  id           Int      @id @default(autoincrement())
-  scaleId      Int      @map("scale_id")
-  musicianId   Int      @map("musician_id")
-  instrumentId Int?     @map("instrument_id")
-  confirmado   Boolean  @default(false)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id           Int             @id @default(autoincrement())
+  scaleId      Int             @map("scale_id")
+  musicianId   Int             @map("musician_id")
+  instrumentId Int?            @map("instrument_id")
+  status       StatusEscalacao @default(convidado)
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
 
-  scale      Scale      @relation(fields: [scaleId], references: [id], onDelete: Cascade)
-  musician   Musician   @relation(fields: [musicianId], references: [id], onDelete: Cascade)
-  instrument Instrument? @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+  scale         Scale          @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  musician      Musician       @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+  instrument    Instrument?    @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+  substituicoes Substituicao[]
 
   @@unique([scaleId, musicianId])
   @@map("scale_musician")
+}
+
+model Substituicao {
+  id              Int                @id @default(autoincrement())
+  scaleMusicianId Int                @map("scale_musician_id")
+  substitutoId    Int?               @map("substituto_id")
+  motivo          String?
+  status          SubstituicaoStatus @default(pendente)
+  createdAt       DateTime           @default(now()) @map("created_at")
+  decidedAt       DateTime?          @map("decided_at")
+
+  scaleMusician ScaleMusician @relation(fields: [scaleMusicianId], references: [id], onDelete: Cascade)
+  substituto    Musician?     @relation("SubstitutoMusico", fields: [substitutoId], references: [id], onDelete: SetNull)
+
+  @@map("substituicoes")
 }
 
 model Repertoire {

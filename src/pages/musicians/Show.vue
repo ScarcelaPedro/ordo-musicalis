@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import { parseDateOnly } from '@/utils/date'
+import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -87,7 +88,7 @@ const NIVEL_LABELS: Record<string, string> = {
             </RouterLink>
             <div class="flex items-center gap-3">
               <span class="text-gray-500">{{ formatDate(s.scale.dataCelebracao) }}</span>
-              <Badge :color="s.confirmado ? 'green' : 'yellow'">{{ s.confirmado ? 'Confirmado' : 'Pendente' }}</Badge>
+              <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
             </div>
           </div>
         </div>

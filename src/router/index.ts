@@ -174,6 +174,29 @@ const router = createRouter({
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
 
+    // Substituições
+    {
+      path: '/substituicoes',
+      name: 'substitutions.index',
+      component: () => import('@/pages/substitutions/Index.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+
+    // Relatórios
+    {
+      path: '/relatorios',
+      name: 'reports.index',
+      component: () => import('@/pages/reports/Index.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+
+    // Público
+    {
+      path: '/publico',
+      name: 'public.calendar',
+      component: () => import('@/pages/public/Calendar.vue'),
+    },
+
     // Perfil
     {
       path: '/profile',

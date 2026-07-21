@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
 import { requireTeamOwnership } from '../_middleware/teamScope'
+import { suggestMusicians } from '../_lib/suggestMusicians'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -71,6 +72,22 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
   return res.status(201).json(scale)
 })
 
+router.get('/sugestoes', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+  const { data, horario, teamId, instrumentId, excludeIds } = req.query as Record<string, string>
+  if (!data || !horario) {
+    return res.status(422).json({ message: 'Informe data e horário' })
+  }
+  const excluded = excludeIds ? excludeIds.split(',').map(Number) : []
+  const suggestions = await suggestMusicians(prisma, {
+    data,
+    horario,
+    teamId: teamId ? Number(teamId) : null,
+    instrumentId: instrumentId ? Number(instrumentId) : null,
+    excludeIds: excluded,
+  })
+  return res.json(suggestions)
+})
+
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   const scale = await prisma.scale.findUnique({
     where: { id: Number(req.params.id) },
@@ -84,8 +101,32 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
   const id = Number(req.params.id)
   const { dataCelebracao, horario, celebracao, teamId, observacoes, status, musicians } = req.body
 
+  // Diff em vez de apagar-e-recriar: preserva o status (confirmado/recusado/
+  // substituído) de quem continua na escala, só mexe em quem entrou ou saiu.
   if (musicians !== undefined) {
-    await prisma.scaleMusician.deleteMany({ where: { scaleId: id } })
+    const newList = musicians as { musicianId: number; instrumentId?: number | null }[]
+    const newIds = new Set(newList.map((m) => m.musicianId))
+    const existing = await prisma.scaleMusician.findMany({ where: { scaleId: id } })
+    const existingIds = new Set(existing.map((e) => e.musicianId))
+
+    const toRemove = existing.filter((e) => !newIds.has(e.musicianId))
+    const toAdd = newList.filter((m) => !existingIds.has(m.musicianId))
+    const toUpdate = newList.filter((m) => existingIds.has(m.musicianId))
+
+    if (toRemove.length) {
+      await prisma.scaleMusician.deleteMany({ where: { id: { in: toRemove.map((r) => r.id) } } })
+    }
+    for (const m of toUpdate) {
+      await prisma.scaleMusician.updateMany({
+        where: { scaleId: id, musicianId: m.musicianId },
+        data: { instrumentId: m.instrumentId ?? null },
+      })
+    }
+    if (toAdd.length) {
+      await prisma.scaleMusician.createMany({
+        data: toAdd.map((m) => ({ scaleId: id, musicianId: m.musicianId, instrumentId: m.instrumentId ?? null })),
+      })
+    }
   }
 
   const scale = await prisma.scale.update({
@@ -94,19 +135,9 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
       ...(dataCelebracao ? { dataCelebracao: new Date(dataCelebracao) } : {}),
       ...(horario !== undefined ? { horario } : {}),
       ...(celebracao !== undefined ? { celebracao } : {}),
-      teamId: teamId ?? null,
+      ...(teamId !== undefined ? { teamId: teamId ?? null } : {}),
       ...(observacoes !== undefined ? { observacoes } : {}),
       ...(status !== undefined ? { status } : {}),
-      ...(musicians?.length
-        ? {
-            musicians: {
-              create: (musicians as { musicianId: number; instrumentId?: number }[]).map((m) => ({
-                musicianId: m.musicianId,
-                instrumentId: m.instrumentId ?? null,
-              })),
-            },
-          }
-        : {}),
     },
     include,
   })
@@ -133,8 +164,34 @@ router.patch('/:id/confirmar', authenticate, async (req: AuthRequest, res: Respo
 
   const updated = await prisma.scaleMusician.update({
     where: { scaleId_musicianId: { scaleId, musicianId } },
-    data: { confirmado: true },
+    data: { status: 'confirmado' },
   })
+  return res.json(updated)
+})
+
+router.patch('/:id/recusar', authenticate, async (req: AuthRequest, res: Response) => {
+  const scaleId = Number(req.params.id)
+  const musicianId = req.user!.musicianId
+  const { motivo } = req.body as { motivo?: string }
+
+  if (!musicianId) {
+    return res.status(403).json({ message: 'Usuário não possui perfil de músico' })
+  }
+
+  const pivot = await prisma.scaleMusician.findUnique({
+    where: { scaleId_musicianId: { scaleId, musicianId } },
+  })
+  if (!pivot) return res.status(403).json({ message: 'Músico não está nesta escala' })
+
+  const [updated] = await prisma.$transaction([
+    prisma.scaleMusician.update({
+      where: { scaleId_musicianId: { scaleId, musicianId } },
+      data: { status: 'recusado' },
+    }),
+    prisma.substituicao.create({
+      data: { scaleMusicianId: pivot.id, motivo: motivo ?? null },
+    }),
+  ])
   return res.json(updated)
 })
 
