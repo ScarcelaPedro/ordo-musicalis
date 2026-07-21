@@ -15,7 +15,10 @@ const generating = ref(false)
 const mesGerar = ref(new Date().toISOString().slice(0, 7))
 
 const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-const ORDINAIS = ['1ª', '2ª', '3ª', '4ª', '5ª']
+// Domingo e Sábado são masculinos; os demais dias (segunda-feira etc.) são femininos.
+const DIA_MASCULINO = [true, false, false, false, false, false, true]
+const ORDINAIS_M = ['1º', '2º', '3º', '4º', '5º']
+const ORDINAIS_F = ['1ª', '2ª', '3ª', '4ª', '5ª']
 
 async function load() {
   loading.value = true
@@ -27,8 +30,12 @@ async function load() {
 onMounted(load)
 
 function recorrenciaLabel(t: any) {
-  if (t.tipoRecorrencia === 'mensal_ordinal') return `${ORDINAIS[t.ordinal - 1]} ${DIAS[t.diaSemana]} do mês`
-  return `Toda ${DIAS[t.diaSemana]}`
+  const masculino = DIA_MASCULINO[t.diaSemana]
+  if (t.tipoRecorrencia === 'mensal_ordinal') {
+    const ordinal = (masculino ? ORDINAIS_M : ORDINAIS_F)[t.ordinal - 1]
+    return `${ordinal} ${DIAS[t.diaSemana]} do mês`
+  }
+  return `${masculino ? 'Todo' : 'Toda'} ${DIAS[t.diaSemana]}`
 }
 
 async function destroy(id: number) {
