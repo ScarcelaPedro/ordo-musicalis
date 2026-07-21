@@ -16,6 +16,7 @@ import instrumentRoutes from './_routes/instruments'
 import substituicaoRoutes from './_routes/substituicoes'
 import publicRoutes from './_routes/public'
 import reportRoutes from './_routes/reports'
+import pushRoutes from './_routes/push'
 
 const app = express()
 
@@ -41,6 +42,7 @@ app.use('/api/instruments', instrumentRoutes)
 app.use('/api/substituicoes', substituicaoRoutes)
 app.use('/api/public', publicRoutes)
 app.use('/api/reports', reportRoutes)
+app.use('/api/push', pushRoutes)
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 

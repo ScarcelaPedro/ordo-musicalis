@@ -4,6 +4,7 @@ import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
 import { requireTeamOwnership } from '../_middleware/teamScope'
 import { suggestMusicians } from '../_lib/suggestMusicians'
+import { sendPushToMusicians, sendPushToStaff, formatDataCurta } from '../_lib/sendPush'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -69,6 +70,15 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
     },
     include,
   })
+
+  if (musicians?.length) {
+    sendPushToMusicians(prisma, musicians.map((m: { musicianId: number }) => m.musicianId), {
+      title: 'Nova escalação',
+      body: `Você foi escalado(a) para ${scale.celebracao} em ${formatDataCurta(scale.dataCelebracao)} às ${scale.horario}`,
+      url: `/escalas/${scale.id}`,
+    }).catch((err) => console.error('push create scale', err))
+  }
+
   return res.status(201).json(scale)
 })
 
@@ -103,6 +113,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
 
   // Diff em vez de apagar-e-recriar: preserva o status (confirmado/recusado/
   // substituído) de quem continua na escala, só mexe em quem entrou ou saiu.
+  let addedMusicianIds: number[] = []
   if (musicians !== undefined) {
     const newList = musicians as { musicianId: number; instrumentId?: number | null }[]
     const newIds = new Set(newList.map((m) => m.musicianId))
@@ -112,6 +123,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
     const toRemove = existing.filter((e) => !newIds.has(e.musicianId))
     const toAdd = newList.filter((m) => !existingIds.has(m.musicianId))
     const toUpdate = newList.filter((m) => existingIds.has(m.musicianId))
+    addedMusicianIds = toAdd.map((m) => m.musicianId)
 
     if (toRemove.length) {
       await prisma.scaleMusician.deleteMany({ where: { id: { in: toRemove.map((r) => r.id) } } })
@@ -141,6 +153,15 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
     },
     include,
   })
+
+  if (addedMusicianIds.length) {
+    sendPushToMusicians(prisma, addedMusicianIds, {
+      title: 'Nova escalação',
+      body: `Você foi escalado(a) para ${scale.celebracao} em ${formatDataCurta(scale.dataCelebracao)} às ${scale.horario}`,
+      url: `/escalas/${scale.id}`,
+    }).catch((err) => console.error('push patch scale', err))
+  }
+
   return res.json(scale)
 })
 
@@ -180,6 +201,7 @@ router.patch('/:id/recusar', authenticate, async (req: AuthRequest, res: Respons
 
   const pivot = await prisma.scaleMusician.findUnique({
     where: { scaleId_musicianId: { scaleId, musicianId } },
+    include: { scale: true, musician: true },
   })
   if (!pivot) return res.status(403).json({ message: 'Músico não está nesta escala' })
 
@@ -192,6 +214,13 @@ router.patch('/:id/recusar', authenticate, async (req: AuthRequest, res: Respons
       data: { scaleMusicianId: pivot.id, motivo: motivo ?? null },
     }),
   ])
+
+  sendPushToStaff(prisma, pivot.scale.teamId, {
+    title: 'Recusa de escalação',
+    body: `${pivot.musician.nome} não poderá servir em ${pivot.scale.celebracao} (${formatDataCurta(pivot.scale.dataCelebracao)}). Precisa de substituto.`,
+    url: '/substituicoes',
+  }).catch((err) => console.error('push recusar', err))
+
   return res.json(updated)
 })
 

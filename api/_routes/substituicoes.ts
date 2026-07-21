@@ -4,6 +4,7 @@ import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
 import { requireTeamOwnership } from '../_middleware/teamScope'
 import { suggestMusicians } from '../_lib/suggestMusicians'
+import { sendPushToMusicians, formatDataCurta } from '../_lib/sendPush'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -74,14 +75,14 @@ router.patch(
 
     const substituicao = await prisma.substituicao.findUnique({
       where: { id },
-      include: { scaleMusician: true },
+      include: { scaleMusician: { include: { scale: true } } },
     })
     if (!substituicao) return res.status(404).json({ message: 'Substituição não encontrada' })
     if (substituicao.status !== 'pendente') {
       return res.status(422).json({ message: 'Esta substituição já foi decidida' })
     }
 
-    const { scaleId, instrumentId } = substituicao.scaleMusician
+    const { scaleId, instrumentId, scale } = substituicao.scaleMusician
 
     const [updated] = await prisma.$transaction([
       prisma.substituicao.update({
@@ -98,6 +99,13 @@ router.patch(
         create: { scaleId, musicianId: substitutoId, instrumentId: instrumentId ?? null, status: 'confirmado' },
       }),
     ])
+
+    sendPushToMusicians(prisma, [substitutoId], {
+      title: 'Você foi confirmado(a) como substituto',
+      body: `Você entrou em ${scale.celebracao} em ${formatDataCurta(scale.dataCelebracao)} às ${scale.horario}`,
+      url: `/escalas/${scaleId}`,
+    }).catch((err) => console.error('push aprovar substituicao', err))
+
     return res.json(updated)
   }
 )

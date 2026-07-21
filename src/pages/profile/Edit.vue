@@ -10,6 +10,8 @@ import TextInput from '@/components/TextInput.vue'
 import InputError from '@/components/InputError.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import DangerButton from '@/components/DangerButton.vue'
+import SecondaryButton from '@/components/SecondaryButton.vue'
+import { isPushSupported, getCurrentSubscription, subscribePush, unsubscribePush } from '@/utils/push'
 
 const auth = useAuthStore()
 const flash = useFlashStore()
@@ -24,11 +26,42 @@ const savingProfile = ref(false)
 const savingPassword = ref(false)
 const deleting = ref(false)
 
+const pushSupported = ref(false)
+const pushEnabled = ref(false)
+const pushLoading = ref(false)
+const pushError = ref('')
+
 onMounted(async () => {
   const { data } = await client.get('/profile')
   profileForm.value.name = data.name
   profileForm.value.email = data.email
+
+  pushSupported.value = isPushSupported()
+  if (pushSupported.value) {
+    const sub = await getCurrentSubscription()
+    pushEnabled.value = Boolean(sub)
+  }
 })
+
+async function togglePush() {
+  pushLoading.value = true
+  pushError.value = ''
+  try {
+    if (pushEnabled.value) {
+      await unsubscribePush()
+      pushEnabled.value = false
+      flash.set('success', 'Notificações desativadas.')
+    } else {
+      await subscribePush()
+      pushEnabled.value = true
+      flash.set('success', 'Notificações ativadas!')
+    }
+  } catch (e: any) {
+    pushError.value = e.message ?? 'Erro ao configurar notificações'
+  } finally {
+    pushLoading.value = false
+  }
+}
 
 async function saveProfile() {
   savingProfile.value = true
@@ -121,6 +154,23 @@ async function deleteAccount() {
           <InputError :message="passwordError" />
           <PrimaryButton :disabled="savingPassword">{{ savingPassword ? 'Salvando...' : 'Atualizar senha' }}</PrimaryButton>
         </form>
+      </div>
+
+      <!-- Notificações -->
+      <div class="bg-white shadow-sm rounded-lg p-6">
+        <h3 class="font-semibold text-gray-700 mb-2">Notificações</h3>
+        <p v-if="!pushSupported" class="text-sm text-gray-500">
+          Seu navegador não suporta notificações push.
+        </p>
+        <template v-else>
+          <p class="text-sm text-gray-600 mb-4">
+            Receba avisos quando for escalado(a) ou quando uma substituição envolver você.
+          </p>
+          <SecondaryButton :disabled="pushLoading" @click="togglePush">
+            {{ pushLoading ? 'Aguarde...' : pushEnabled ? 'Desativar notificações' : 'Ativar notificações' }}
+          </SecondaryButton>
+          <InputError :message="pushError" class="mt-2" />
+        </template>
       </div>
 
       <!-- Excluir conta -->
