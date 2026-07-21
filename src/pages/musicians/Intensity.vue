@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
+import { parseDateOnly } from '@/utils/date'
 
 interface Row { musicianId: number; nome: string; total: number; ultimaVez: string | null }
 
@@ -57,7 +58,7 @@ function statusFor(row: Row): { label: string; color: 'red' | 'blue' | 'gray' } 
     return { label: 'Possível sobrecarga', color: 'red' }
   }
   const diasSemServir = row.ultimaVez
-    ? Math.floor((Date.now() - new Date(row.ultimaVez).getTime()) / 86400000)
+    ? Math.floor((Date.now() - parseDateOnly(row.ultimaVez)!.getTime()) / 86400000)
     : null
   if (row.total === 0 && (diasSemServir === null || diasSemServir > 60)) {
     return { label: 'Possível ociosidade', color: 'blue' }
@@ -66,7 +67,7 @@ function statusFor(row: Row): { label: string; color: 'red' | 'blue' | 'gray' } 
 }
 
 function formatData(d: string | null) {
-  return d ? new Date(d).toLocaleDateString('pt-BR') : 'Nunca'
+  return d ? parseDateOnly(d)!.toLocaleDateString('pt-BR') : 'Nunca'
 }
 </script>
 

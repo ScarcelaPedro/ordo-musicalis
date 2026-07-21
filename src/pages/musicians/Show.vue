@@ -5,6 +5,7 @@ import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
+import { parseDateOnly } from '@/utils/date'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -16,7 +17,7 @@ onMounted(async () => {
 })
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('pt-BR')
+  return parseDateOnly(d)!.toLocaleDateString('pt-BR')
 }
 
 const NIVEL_LABELS: Record<string, string> = {

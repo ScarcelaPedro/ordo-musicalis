@@ -5,6 +5,7 @@ import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
+import { parseDateOnly } from '@/utils/date'
 
 const flash = useFlashStore()
 const availabilities = ref<any[]>([])
@@ -94,7 +95,7 @@ const byMusician = computed(() => {
         <div v-if="janelaAtiva" class="flex flex-wrap items-center justify-between gap-3 bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-4">
           <p class="text-sm text-indigo-800">
             Aberta para <strong>{{ formatMes(janelaAtiva.mes) }}</strong> — prazo
-            <strong>{{ new Date(janelaAtiva.prazo).toLocaleDateString('pt-BR') }}</strong>
+            <strong>{{ parseDateOnly(janelaAtiva.prazo)!.toLocaleDateString('pt-BR') }}</strong>
           </p>
           <button @click="fecharJanela(janelaAtiva.id)" class="text-sm text-red-600 hover:text-red-800">Fechar janela</button>
         </div>

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import { parseDateOnly } from '@/utils/date'
 
 const auth = useAuthStore()
 
@@ -124,7 +125,7 @@ const myNextScales = computed(() => {
 })
 
 function formatFullDate(iso: string) {
-  return new Date(iso + 'T12:00:00').toLocaleDateString('pt-BR', {
+  return parseDateOnly(iso)!.toLocaleDateString('pt-BR', {
     weekday: 'long', day: '2-digit', month: 'long',
   })
 }

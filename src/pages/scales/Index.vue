@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
+import { parseDateOnly } from '@/utils/date'
 
 const auth = useAuthStore()
 const flash = useFlashStore()
@@ -27,7 +28,7 @@ onMounted(async () => {
 })
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
+  return parseDateOnly(d)!.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 async function destroy(id: number) {

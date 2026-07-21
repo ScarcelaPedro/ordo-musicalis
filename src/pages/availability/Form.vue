@@ -5,6 +5,7 @@ import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import { parseDateOnly } from '@/utils/date'
 
 const flash = useFlashStore()
 const loading = ref(false)
@@ -90,7 +91,7 @@ async function submit() {
     <div class="space-y-6">
       <div v-if="janela" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-sm text-indigo-800">
         Coleta de disponibilidade de <strong>{{ formatMes(janela.mes) }}</strong> aberta —
-        responda até <strong>{{ new Date(janela.prazo).toLocaleDateString('pt-BR') }}</strong>.
+        responda até <strong>{{ parseDateOnly(janela.prazo)!.toLocaleDateString('pt-BR') }}</strong>.
       </div>
 
       <div class="bg-white shadow-sm rounded-lg p-6">

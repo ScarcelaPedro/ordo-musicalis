@@ -6,6 +6,7 @@ import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
+import { parseDateOnly } from '@/utils/date'
 
 const auth = useAuthStore()
 const flash = useFlashStore()
@@ -27,7 +28,7 @@ function myPivot(scale: any) {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+  return parseDateOnly(d)!.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 }
 
 const todayStr = new Date().toISOString().slice(0, 10)

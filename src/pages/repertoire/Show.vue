@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import { parseDateOnly } from '@/utils/date'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -26,7 +27,7 @@ onMounted(async () => {
       <div class="flex flex-wrap justify-between items-center gap-3">
         <div class="min-w-0">
           <h2 class="font-semibold text-xl text-gray-800">Repertório</h2>
-          <p v-if="scale" class="text-sm text-gray-500">{{ scale.celebracao }} — {{ new Date(scale.dataCelebracao).toLocaleDateString('pt-BR') }}</p>
+          <p v-if="scale" class="text-sm text-gray-500">{{ scale.celebracao }} — {{ parseDateOnly(scale.dataCelebracao)!.toLocaleDateString('pt-BR') }}</p>
         </div>
         <RouterLink v-if="auth.isStaff" :to="`/escalas/${route.params.id}/repertorio/editar`"
           class="px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
