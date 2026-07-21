@@ -78,6 +78,8 @@ model Musician {
   availabilities Availability[]
   scales        ScaleMusician[]
   teamsResponsavel Team[]           @relation("TeamResponsavel")
+  vinculosFixos VinculoFixo[]
+  windowResponses AvailabilityWindowResponse[]
 
   @@map("musicians")
 }
@@ -90,6 +92,7 @@ model Instrument {
 
   musicians InstrumentMusician[]
   scales    ScaleMusician[]
+  vinculosFixos VinculoFixo[]
 
   @@map("instruments")
 }
@@ -235,6 +238,51 @@ model ScaleTemplate {
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
   team Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  vinculosFixos VinculoFixo[]
 
   @@map("scale_templates")
+}
+
+model VinculoFixo {
+  id              Int      @id @default(autoincrement())
+  musicianId      Int      @map("musician_id")
+  instrumentId    Int?     @map("instrument_id")
+  scaleTemplateId Int      @map("scale_template_id")
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  musician      Musician      @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+  instrument    Instrument?   @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+  scaleTemplate ScaleTemplate @relation(fields: [scaleTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([musicianId, scaleTemplateId])
+  @@map("vinculos_fixos")
+}
+
+model AvailabilityWindow {
+  id        Int      @id @default(autoincrement())
+  mes       String
+  prazo     DateTime
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  responses AvailabilityWindowResponse[]
+
+  @@unique([mes])
+  @@map("availability_windows")
+}
+
+model AvailabilityWindowResponse {
+  id          Int      @id @default(autoincrement())
+  windowId    Int      @map("window_id")
+  musicianId  Int      @map("musician_id")
+  respondedAt DateTime @default(now()) @map("responded_at")
+
+  window   AvailabilityWindow @relation(fields: [windowId], references: [id], onDelete: Cascade)
+  musician Musician           @relation(fields: [musicianId], references: [id], onDelete: Cascade)
+
+  @@unique([windowId, musicianId])
+  @@map("availability_window_responses")
 }

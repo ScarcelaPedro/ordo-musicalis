@@ -49,6 +49,36 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
   return res.status(201).json(musician)
 })
 
+router.get('/intensidade', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+  const { inicio, fim } = req.query as Record<string, string>
+  const hoje = new Date()
+  const gte = inicio ? new Date(inicio) : new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+  const lte = fim ? new Date(fim) : new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+
+  const musicians = await prisma.musician.findMany({
+    where: { ativo: true },
+    select: {
+      id: true,
+      nome: true,
+      scales: { select: { scale: { select: { dataCelebracao: true } } } },
+    },
+    orderBy: { nome: 'asc' },
+  })
+
+  const result = musicians
+    .map((m) => {
+      const datas = m.scales.map((s) => s.scale.dataCelebracao)
+      const noPeriodo = datas.filter((d) => d >= gte && d <= lte).length
+      const ultimaVez = datas.length
+        ? new Date(Math.max(...datas.map((d) => d.getTime())))
+        : null
+      return { musicianId: m.id, nome: m.nome, total: noPeriodo, ultimaVez }
+    })
+    .sort((a, b) => b.total - a.total)
+
+  return res.json(result)
+})
+
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   const musician = await prisma.musician.findUnique({
     where: { id: Number(req.params.id) },

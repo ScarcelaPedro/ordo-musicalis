@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
+import { requireTeamOwnership } from '../_middleware/teamScope'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -16,7 +17,7 @@ router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
   return res.json(templates)
 })
 
-router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+router.post('/', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(async (req) => req.body.teamId ? Number(req.body.teamId) : null), async (req: AuthRequest, res: Response) => {
   const { celebracao, horario, diaSemana, tipoRecorrencia, ordinal, teamId, observacoes, ativo } = req.body
   if (!celebracao || !horario || diaSemana === undefined || diaSemana === null) {
     return res.status(422).json({ message: 'Celebração, horário e dia da semana são obrigatórios' })
@@ -47,7 +48,12 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   return res.json(template)
 })
 
-router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+async function resolveScaleTemplateTeamId(req: AuthRequest) {
+  const tpl = await prisma.scaleTemplate.findUnique({ where: { id: Number(req.params.id) }, select: { teamId: true } })
+  return tpl?.teamId ?? null
+}
+
+router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveScaleTemplateTeamId), async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
   const { celebracao, horario, diaSemana, tipoRecorrencia, ordinal, teamId, observacoes, ativo } = req.body
 
@@ -68,7 +74,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (r
   return res.json(template)
 })
 
-router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveScaleTemplateTeamId), async (req: AuthRequest, res: Response) => {
   await prisma.scaleTemplate.delete({ where: { id: Number(req.params.id) } })
   return res.status(204).send()
 })
@@ -112,6 +118,10 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
       })
       if (exists) { puladas++; continue }
 
+      const vinculos = await prisma.vinculoFixo.findMany({
+        where: { scaleTemplateId: tpl.id, ativo: true },
+      })
+
       await prisma.scale.create({
         data: {
           dataCelebracao,
@@ -119,6 +129,14 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
           celebracao: tpl.celebracao,
           teamId: tpl.teamId,
           observacoes: tpl.observacoes,
+          musicians: vinculos.length
+            ? {
+                create: vinculos.map((v) => ({
+                  musicianId: v.musicianId,
+                  instrumentId: v.instrumentId,
+                })),
+              }
+            : undefined,
         },
       })
       criadas++

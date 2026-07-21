@@ -67,6 +67,12 @@ const router = createRouter({
       component: () => import('@/pages/musicians/Edit.vue'),
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
+    {
+      path: '/musicos/intensidade',
+      name: 'musicians.intensity',
+      component: () => import('@/pages/musicians/Intensity.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
 
     // Equipes
     {

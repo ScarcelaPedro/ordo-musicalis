@@ -9,6 +9,8 @@ import scaleTemplateRoutes from './_routes/scaleTemplates'
 import repertoireRoutes from './_routes/repertoire'
 import repertoireItemRoutes from './_routes/repertoireItems'
 import availabilityRoutes from './_routes/availability'
+import availabilityWindowRoutes from './_routes/availabilityWindows'
+import vinculoFixoRoutes from './_routes/vinculosFixos'
 import profileRoutes from './_routes/profile'
 import instrumentRoutes from './_routes/instruments'
 
@@ -28,7 +30,9 @@ app.use('/api/scales', scaleRoutes)
 app.use('/api/scale-templates', scaleTemplateRoutes)
 app.use('/api/scales/:scaleId/repertoire/items', repertoireItemRoutes)
 app.use('/api/scales/:scaleId/repertoire', repertoireRoutes)
+app.use('/api/availability-windows', availabilityWindowRoutes)
 app.use('/api/availability', availabilityRoutes)
+app.use('/api/vinculos-fixos', vinculoFixoRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/instruments', instrumentRoutes)
 

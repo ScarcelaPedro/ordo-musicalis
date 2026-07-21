@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
+import { requireTeamOwnership } from '../_middleware/teamScope'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -44,7 +45,7 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
   return res.status(201).json(team)
 })
 
-router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(async (req) => Number(req.params.id)), async (req: AuthRequest, res: Response) => {
   const { nome, descricao, ativo, responsavelId, musicians } = req.body
   const teamId = Number(req.params.id)
 
@@ -66,7 +67,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (r
   return res.json(team)
 })
 
-router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(async (req) => Number(req.params.id)), async (req: AuthRequest, res: Response) => {
   await prisma.team.delete({ where: { id: Number(req.params.id) } })
   return res.status(204).send()
 })

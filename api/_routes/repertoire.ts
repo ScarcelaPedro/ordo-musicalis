@@ -2,9 +2,15 @@ import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
+import { requireTeamOwnership } from '../_middleware/teamScope'
 
 const router = Router({ mergeParams: true })
 const prisma = new PrismaClient()
+
+async function resolveParentScaleTeamId(req: AuthRequest) {
+  const scale = await prisma.scale.findUnique({ where: { id: Number(req.params.scaleId) }, select: { teamId: true } })
+  return scale?.teamId ?? null
+}
 
 router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   const scaleId = Number(req.params.scaleId)
@@ -15,7 +21,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
   return res.json(repertoire ?? null)
 })
 
-router.put('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+router.put('/', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveParentScaleTeamId), async (req: AuthRequest, res: Response) => {
   const scaleId = Number(req.params.scaleId)
   const { titulo, observacoes } = req.body
 

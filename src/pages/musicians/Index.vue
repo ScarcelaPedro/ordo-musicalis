@@ -37,9 +37,14 @@ const NIVEL_LABELS: Record<string, string> = {
     <template #header>
       <div class="flex flex-wrap justify-between items-center gap-3">
         <h2 class="font-semibold text-xl text-gray-800">Músicos</h2>
-        <RouterLink v-if="auth.isStaff" to="/musicos/criar" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
-          Novo Músico
-        </RouterLink>
+        <div v-if="auth.isStaff" class="flex gap-2">
+          <RouterLink to="/musicos/intensidade" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
+            Intensidade
+          </RouterLink>
+          <RouterLink to="/musicos/criar" class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
+            Novo Músico
+          </RouterLink>
+        </div>
       </div>
     </template>
 

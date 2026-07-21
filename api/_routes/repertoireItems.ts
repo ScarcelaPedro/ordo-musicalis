@@ -4,15 +4,30 @@ import multer from 'multer'
 import { put, del } from '@vercel/blob'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
+import { requireTeamOwnership } from '../_middleware/teamScope'
 
 const router = Router({ mergeParams: true })
 const prisma = new PrismaClient()
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
 
+async function resolveScaleIdParamTeamId(req: AuthRequest) {
+  const scale = await prisma.scale.findUnique({ where: { id: Number(req.params.scaleId) }, select: { teamId: true } })
+  return scale?.teamId ?? null
+}
+
+async function resolveItemTeamId(req: AuthRequest) {
+  const item = await prisma.repertoireItem.findUnique({
+    where: { id: Number(req.params.itemId) },
+    select: { repertoire: { select: { scale: { select: { teamId: true } } } } },
+  })
+  return item?.repertoire.scale.teamId ?? null
+}
+
 router.post(
   '/',
   authenticate,
   requireRole('admin', 'coordenador'),
+  requireTeamOwnership(resolveScaleIdParamTeamId),
   upload.single('pdf'),
   async (req: AuthRequest, res: Response) => {
     const scaleId = Number(req.params.scaleId)
@@ -52,6 +67,7 @@ router.patch(
   '/:itemId',
   authenticate,
   requireRole('admin', 'coordenador'),
+  requireTeamOwnership(resolveItemTeamId),
   upload.single('pdf'),
   async (req: AuthRequest, res: Response) => {
     const item = await prisma.repertoireItem.findUnique({ where: { id: Number(req.params.itemId) } })
@@ -81,7 +97,7 @@ router.patch(
   },
 )
 
-router.delete('/:itemId', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+router.delete('/:itemId', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveItemTeamId), async (req: AuthRequest, res: Response) => {
   const item = await prisma.repertoireItem.findUnique({ where: { id: Number(req.params.itemId) } })
   if (!item) return res.status(404).json({ message: 'Item não encontrado' })
 

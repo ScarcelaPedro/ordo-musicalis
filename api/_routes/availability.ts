@@ -21,24 +21,47 @@ router.post('/', authenticate, async (req: AuthRequest, res: Response) => {
   const musicianId = req.user!.musicianId
   if (!musicianId) return res.status(403).json({ message: 'Usuário não possui perfil de músico' })
 
-  const { availabilities } = req.body as {
+  const { availabilities, especificas } = req.body as {
     availabilities: { diaSemana: number; periodo: string; disponivel?: boolean }[]
+    especificas?: { data: string; periodo: string; disponivel?: boolean }[]
   }
 
-  // Remove recorrentes anteriores e recria
+  // Remove recorrentes e datas específicas anteriores e recria
   await prisma.availability.deleteMany({
     where: { musicianId, tipo: AvailabilityType.recorrente_semanal },
   })
+  await prisma.availability.deleteMany({
+    where: { musicianId, tipo: AvailabilityType.data_especifica },
+  })
 
   const created = await prisma.availability.createMany({
-    data: availabilities.map((a) => ({
-      musicianId,
-      tipo: AvailabilityType.recorrente_semanal,
-      diaSemana: a.diaSemana,
-      periodo: a.periodo as 'manha' | 'tarde' | 'noite',
-      disponivel: a.disponivel ?? true,
-    })),
+    data: [
+      ...availabilities.map((a) => ({
+        musicianId,
+        tipo: AvailabilityType.recorrente_semanal,
+        diaSemana: a.diaSemana,
+        periodo: a.periodo as 'manha' | 'tarde' | 'noite',
+        disponivel: a.disponivel ?? true,
+      })),
+      ...(especificas ?? []).map((e) => ({
+        musicianId,
+        tipo: AvailabilityType.data_especifica,
+        data: new Date(e.data),
+        periodo: e.periodo as 'manha' | 'tarde' | 'noite',
+        disponivel: e.disponivel ?? true,
+      })),
+    ],
   })
+
+  const activeWindow = await prisma.availabilityWindow.findFirst({ where: { ativo: true } })
+  if (activeWindow) {
+    await prisma.availabilityWindowResponse.upsert({
+      where: { windowId_musicianId: { windowId: activeWindow.id, musicianId } },
+      update: { respondedAt: new Date() },
+      create: { windowId: activeWindow.id, musicianId },
+    })
+  }
+
   return res.status(201).json({ count: created.count })
 })
 
