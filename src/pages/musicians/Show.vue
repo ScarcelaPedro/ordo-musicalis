@@ -68,7 +68,9 @@ const NIVEL_LABELS: Record<string, string> = {
           <div>
             <dt class="text-sm font-medium text-gray-500">Ministérios</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
-              <Badge v-for="t in musician.teams" :key="t.id" color="green">{{ t.team.nome }}</Badge>
+              <RouterLink v-for="t in musician.teams" :key="t.id" :to="`/equipes/${t.team.id}`">
+                <Badge color="green">{{ t.team.nome }}<span v-if="t.funcao"> · {{ t.funcao }}</span></Badge>
+              </RouterLink>
               <span v-if="!musician.teams.length" class="text-sm text-gray-400">Nenhum</span>
             </dd>
           </div>

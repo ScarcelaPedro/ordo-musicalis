@@ -134,6 +134,7 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
                 create: vinculos.map((v) => ({
                   musicianId: v.musicianId,
                   instrumentId: v.instrumentId,
+                  origem: 'fixo',
                 })),
               }
             : undefined,

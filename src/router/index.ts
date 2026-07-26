@@ -88,6 +88,12 @@ const router = createRouter({
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
     {
+      path: '/equipes/:id',
+      name: 'teams.show',
+      component: () => import('@/pages/teams/Show.vue'),
+      meta: { auth: true },
+    },
+    {
       path: '/equipes/:id/editar',
       name: 'teams.edit',
       component: () => import('@/pages/teams/Edit.vue'),

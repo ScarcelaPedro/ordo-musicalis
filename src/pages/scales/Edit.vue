@@ -21,6 +21,7 @@ const initialData = computed(() => scale.value ? {
   teamId: scale.value.teamId ?? null,
   observacoes: scale.value.observacoes ?? '',
   status: scale.value.status,
+  lembreteDiasAntes: scale.value.lembreteDiasAntes,
   musicians: scale.value.musicians.map((m: any) => ({
     musicianId: m.musicianId,
     instrumentId: m.instrumentId,

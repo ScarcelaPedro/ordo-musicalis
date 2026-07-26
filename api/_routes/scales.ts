@@ -5,6 +5,7 @@ import { requireRole } from '../_middleware/roles'
 import { requireTeamOwnership } from '../_middleware/teamScope'
 import { suggestMusicians } from '../_lib/suggestMusicians'
 import { sendPushToMusicians, sendPushToStaff, formatDataCurta } from '../_lib/sendPush'
+import { hojeBrasilia } from '../_lib/date'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -50,7 +51,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 })
 
 router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
-  const { dataCelebracao, horario, celebracao, teamId, observacoes, musicians } = req.body
+  const { dataCelebracao, horario, celebracao, teamId, observacoes, musicians, lembreteDiasAntes } = req.body
 
   const scale = await prisma.scale.create({
     data: {
@@ -59,6 +60,7 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
       celebracao,
       teamId: teamId ?? null,
       observacoes: observacoes ?? null,
+      ...(lembreteDiasAntes !== undefined ? { lembreteDiasAntes: Number(lembreteDiasAntes) } : {}),
       musicians: musicians?.length
         ? {
             create: (musicians as { musicianId: number; instrumentId?: number }[]).map((m) => ({
@@ -98,6 +100,43 @@ router.get('/sugestoes', authenticate, requireRole('admin', 'coordenador'), asyn
   return res.json(suggestions)
 })
 
+router.get('/pendentes', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+  const hoje = hojeBrasilia()
+
+  const pendencias = await prisma.scaleMusician.findMany({
+    where: {
+      status: 'convidado',
+      scale: {
+        dataCelebracao: { gte: hoje },
+        ...(req.user!.role === 'coordenador'
+          ? { team: { responsavelId: req.user!.musicianId ?? -1 } }
+          : {}),
+      },
+    },
+    include: {
+      musician: { select: { id: true, nome: true } },
+      scale: { select: { id: true, celebracao: true, dataCelebracao: true, horario: true } },
+    },
+    orderBy: { scale: { dataCelebracao: 'asc' } },
+  })
+
+  const result = pendencias.map((p) => {
+    const diasRestantes = Math.round((p.scale.dataCelebracao.getTime() - hoje.getTime()) / 86400000)
+    return {
+      scaleMusicianId: p.id,
+      musicianId: p.musician.id,
+      musicianNome: p.musician.nome,
+      scaleId: p.scale.id,
+      celebracao: p.scale.celebracao,
+      dataCelebracao: p.scale.dataCelebracao,
+      horario: p.scale.horario,
+      diasRestantes,
+    }
+  })
+
+  return res.json(result)
+})
+
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   const scale = await prisma.scale.findUnique({
     where: { id: Number(req.params.id) },
@@ -109,7 +148,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
 router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveScaleTeamId), async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
-  const { dataCelebracao, horario, celebracao, teamId, observacoes, status, musicians } = req.body
+  const { dataCelebracao, horario, celebracao, teamId, observacoes, status, musicians, lembreteDiasAntes } = req.body
 
   // Diff em vez de apagar-e-recriar: preserva o status (confirmado/recusado/
   // substituído) de quem continua na escala, só mexe em quem entrou ou saiu.
@@ -150,6 +189,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
       ...(teamId !== undefined ? { teamId: teamId ?? null } : {}),
       ...(observacoes !== undefined ? { observacoes } : {}),
       ...(status !== undefined ? { status } : {}),
+      ...(lembreteDiasAntes !== undefined ? { lembreteDiasAntes: Number(lembreteDiasAntes) } : {}),
     },
     include,
   })

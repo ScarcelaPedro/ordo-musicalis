@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ color?: 'green' | 'yellow' | 'red' | 'blue' | 'gray' }>()
+defineProps<{ color?: 'green' | 'yellow' | 'red' | 'blue' | 'purple' | 'gray' }>()
 </script>
 
 <template>
@@ -10,6 +10,7 @@ defineProps<{ color?: 'green' | 'yellow' | 'red' | 'blue' | 'gray' }>()
       'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200': color === 'yellow',
       'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': color === 'red',
       'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': color === 'blue',
+      'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200': color === 'purple',
       'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200': !color || color === 'gray',
     }"
   >

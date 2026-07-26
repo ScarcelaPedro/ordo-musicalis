@@ -55,6 +55,11 @@ enum SubstituicaoStatus {
   rejeitada
 }
 
+enum OrigemEscalacao {
+  fixo
+  provisorio
+}
+
 model User {
   id                Int       @id @default(autoincrement())
   name              String
@@ -160,6 +165,7 @@ model MusicianTeam {
   id         Int @id @default(autoincrement())
   musicianId Int @map("musician_id")
   teamId     Int @map("team_id")
+  funcao     String?
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
@@ -178,6 +184,7 @@ model Scale {
   teamId      Int?        @map("team_id")
   observacoes String?
   status      ScaleStatus @default(rascunho)
+  lembreteDiasAntes Int   @default(3) @map("lembrete_dias_antes")
   createdAt   DateTime    @default(now()) @map("created_at")
   updatedAt   DateTime    @updatedAt @map("updated_at")
 
@@ -194,6 +201,8 @@ model ScaleMusician {
   musicianId   Int             @map("musician_id")
   instrumentId Int?            @map("instrument_id")
   status       StatusEscalacao @default(convidado)
+  origem       OrigemEscalacao @default(provisorio)
+  lembreteEnviadoEm DateTime?  @map("lembrete_enviado_em")
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 

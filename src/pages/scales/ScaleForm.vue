@@ -23,6 +23,7 @@ interface FormData {
   teamId: number | null
   observacoes: string
   status: 'rascunho' | 'confirmada'
+  lembreteDiasAntes: number
   musicians: ScaleMusician[]
 }
 
@@ -42,6 +43,7 @@ const form = ref<FormData>({
   teamId: props.initialData?.teamId ?? null,
   observacoes: props.initialData?.observacoes ?? '',
   status: props.initialData?.status ?? 'rascunho',
+  lembreteDiasAntes: props.initialData?.lembreteDiasAntes ?? 3,
   musicians: props.initialData?.musicians ?? [],
 })
 
@@ -149,6 +151,15 @@ function adicionarSugerido(s: Suggestion) {
           <option value="rascunho">Rascunho</option>
           <option value="confirmada">Confirmada</option>
         </select>
+      </div>
+      <div>
+        <InputLabel value="Lembrar quem não confirmou (dias antes)" />
+        <TextInput
+          :model-value="form.lembreteDiasAntes"
+          @update:model-value="(v) => (form.lembreteDiasAntes = Number(v))"
+          type="number" min="0" class="mt-1"
+        />
+        <p class="mt-1 text-xs text-gray-500">0 desativa o lembrete automático para esta escala.</p>
       </div>
       <div class="sm:col-span-2">
         <InputLabel value="Observações" />

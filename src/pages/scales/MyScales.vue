@@ -93,6 +93,7 @@ async function recusar(id: number) {
                 </p>
               </div>
               <div class="flex items-center gap-3">
+                <Badge v-if="myPivot(s)?.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
                 <Badge :color="STATUS_COLORS[myPivot(s)?.status]">{{ STATUS_LABELS[myPivot(s)?.status] ?? myPivot(s)?.status }}</Badge>
                 <template v-if="myPivot(s)?.status === 'convidado'">
                   <PrimaryButton :disabled="confirmingId === s.id" @click="confirmar(s.id)" class="!py-1.5 !px-3 text-xs">
@@ -130,7 +131,10 @@ async function recusar(id: number) {
                 <span v-if="s.team"> · {{ s.team.nome }}</span>
               </p>
             </div>
-            <Badge :color="STATUS_COLORS[myPivot(s)?.status]">{{ STATUS_LABELS[myPivot(s)?.status] ?? myPivot(s)?.status }}</Badge>
+            <div class="flex items-center gap-1.5">
+              <Badge v-if="myPivot(s)?.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
+              <Badge :color="STATUS_COLORS[myPivot(s)?.status]">{{ STATUS_LABELS[myPivot(s)?.status] ?? myPivot(s)?.status }}</Badge>
+            </div>
           </div>
         </div>
         <p v-else class="text-sm text-gray-500">Nenhuma celebração no histórico.</p>

@@ -23,7 +23,7 @@ const initialData = computed(() => musician.value ? {
   nivel: musician.value.nivel,
   observacoes: musician.value.observacoes ?? '',
   instruments: musician.value.instruments.map((i: any) => i.instrumentId),
-  teams: musician.value.teams.map((t: any) => t.teamId),
+  teams: musician.value.teams.map((t: any) => ({ teamId: t.teamId, funcao: t.funcao ?? '' })),
 } : undefined)
 
 onMounted(async () => {

@@ -48,7 +48,9 @@ async function destroy(id: number) {
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="t in teams" :key="t.id">
-            <td class="px-6 py-4 font-medium text-gray-900">{{ t.nome }}</td>
+            <td class="px-6 py-4 font-medium text-gray-900">
+              <RouterLink :to="`/equipes/${t.id}`" class="text-indigo-600 hover:text-indigo-900">{{ t.nome }}</RouterLink>
+            </td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ t.responsavel?.nome ?? '—' }}</td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ t._count.musicians }}</td>
             <td class="px-6 py-4"><Badge :color="t.ativo ? 'green' : 'gray'">{{ t.ativo ? 'Ativo' : 'Inativo' }}</Badge></td>

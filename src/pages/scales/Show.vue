@@ -149,7 +149,10 @@ function imprimir() {
               <span class="text-sm font-medium text-gray-900">{{ m.musician.nome }}</span>
               <span v-if="m.instrument" class="text-xs text-gray-500 ml-2">· {{ m.instrument.nome }}</span>
             </div>
-            <Badge :color="STATUS_COLORS[m.status]">{{ STATUS_LABELS[m.status] ?? m.status }}</Badge>
+            <div class="flex items-center gap-1.5">
+              <Badge v-if="m.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
+              <Badge :color="STATUS_COLORS[m.status]">{{ STATUS_LABELS[m.status] ?? m.status }}</Badge>
+            </div>
           </div>
           <p v-if="!scale.musicians.length" class="text-sm text-gray-500">Nenhum músico na escala.</p>
         </div>

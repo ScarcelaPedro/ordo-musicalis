@@ -23,12 +23,24 @@ interface Scale {
   musicians: ScaleMusician[]
 }
 
+interface Pendencia {
+  scaleMusicianId: number
+  musicianId: number
+  musicianNome: string
+  scaleId: number
+  celebracao: string
+  dataCelebracao: string
+  horario: string
+  diasRestantes: number
+}
+
 const today = new Date()
 
 const currentMonth = ref(today.getMonth())
 const currentYear  = ref(today.getFullYear())
 const scales       = ref<Scale[]>([])
 const loading      = ref(false)
+const pendencias   = ref<Pendencia[]>([])
 
 const MONTH_NAMES = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -47,7 +59,13 @@ async function load() {
   }
 }
 
-onMounted(load)
+async function loadPendencias() {
+  if (!auth.isStaff) return
+  const { data } = await client.get('/scales/pendentes')
+  pendencias.value = data.slice(0, 8)
+}
+
+onMounted(() => { load(); loadPendencias() })
 watch([currentMonth, currentYear], load)
 
 function prevMonth() {
@@ -222,6 +240,23 @@ function formatFullDate(iso: string) {
             <svg class="w-4 h-4 text-indigo-300 group-hover:text-indigo-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
+          </RouterLink>
+        </div>
+      </div>
+
+      <!-- Pendências de confirmação (staff) -->
+      <div v-if="auth.isStaff && pendencias.length" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Pendências de confirmação</p>
+        <div class="space-y-2">
+          <RouterLink v-for="p in pendencias" :key="p.scaleMusicianId" :to="`/escalas/${p.scaleId}`"
+            class="flex items-center justify-between p-3 rounded-xl bg-amber-50 hover:bg-amber-100 transition group">
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-amber-800 truncate">{{ p.musicianNome }} — {{ p.celebracao }}</p>
+              <p class="text-xs text-amber-600">{{ formatFullDate(p.dataCelebracao) }} · {{ p.horario }}</p>
+            </div>
+            <span class="shrink-0 ml-3 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+              {{ p.diasRestantes === 0 ? 'hoje' : `${p.diasRestantes}d` }}
+            </span>
           </RouterLink>
         </div>
       </div>

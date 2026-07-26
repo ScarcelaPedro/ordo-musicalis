@@ -27,7 +27,7 @@ router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
 })
 
 router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
-  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams: teamIds } = req.body
+  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams } = req.body
 
   const musician = await prisma.musician.create({
     data: {
@@ -40,8 +40,13 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
       instruments: {
         create: (instrumentIds as number[]).map((id) => ({ instrumentId: id })),
       },
-      teams: teamIds?.length
-        ? { create: (teamIds as number[]).map((id) => ({ teamId: id })) }
+      teams: teams?.length
+        ? {
+            create: (teams as { teamId: number; funcao?: string }[]).map((t) => ({
+              teamId: t.teamId,
+              funcao: t.funcao ?? null,
+            })),
+          }
         : undefined,
     },
     include,
@@ -97,7 +102,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
 router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
-  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams: teamIds } = req.body
+  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams } = req.body
 
   await prisma.instrumentMusician.deleteMany({ where: { musicianId: id } })
   await prisma.musicianTeam.deleteMany({ where: { musicianId: id } })
@@ -114,8 +119,13 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (r
       instruments: {
         create: (instrumentIds as number[]).map((iid) => ({ instrumentId: iid })),
       },
-      teams: teamIds?.length
-        ? { create: (teamIds as number[]).map((tid) => ({ teamId: tid })) }
+      teams: teams?.length
+        ? {
+            create: (teams as { teamId: number; funcao?: string }[]).map((t) => ({
+              teamId: t.teamId,
+              funcao: t.funcao ?? null,
+            })),
+          }
         : undefined,
     },
     include,

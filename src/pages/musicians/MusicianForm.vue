@@ -11,6 +11,8 @@ interface Team { id: number; nome: string }
 
 type Nivel = 'em_formacao' | 'apto' | 'lider'
 
+interface MusicianTeam { teamId: number; funcao: string }
+
 interface FormData {
   nome: string
   telefone: string
@@ -19,7 +21,7 @@ interface FormData {
   nivel: Nivel
   observacoes: string
   instruments: number[]
-  teams: number[]
+  teams: MusicianTeam[]
 }
 
 const NIVEL_LABELS: Record<Nivel, string> = {
@@ -60,9 +62,13 @@ function toggleInstrument(id: number) {
 }
 
 function toggleTeam(id: number) {
-  const idx = form.value.teams.indexOf(id)
+  const idx = form.value.teams.findIndex((t) => t.teamId === id)
   if (idx >= 0) form.value.teams.splice(idx, 1)
-  else form.value.teams.push(id)
+  else form.value.teams.push({ teamId: id, funcao: '' })
+}
+
+function teamNome(id: number) {
+  return props.teams.find((t) => t.id === id)?.nome ?? ''
 }
 </script>
 
@@ -131,12 +137,18 @@ function toggleTeam(id: number) {
           type="button"
           @click="toggleTeam(team.id)"
           class="px-3 py-1.5 rounded-full text-sm border transition"
-          :class="form.teams.includes(team.id)
+          :class="form.teams.some((t) => t.teamId === team.id)
             ? 'bg-green-600 text-white border-green-600'
             : 'bg-white text-gray-700 border-gray-300 hover:border-green-400'"
         >
           {{ team.nome }}
         </button>
+      </div>
+      <div v-if="form.teams.length" class="mt-3 space-y-2">
+        <div v-for="t in form.teams" :key="t.teamId" class="flex items-center gap-2">
+          <span class="text-sm text-gray-500 w-40 shrink-0 truncate">{{ teamNome(t.teamId) }}</span>
+          <TextInput v-model="t.funcao" placeholder="Função (opcional)" class="text-sm" />
+        </div>
       </div>
     </div>
 

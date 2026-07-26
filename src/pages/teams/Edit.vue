@@ -12,7 +12,9 @@ import SecondaryButton from '@/components/SecondaryButton.vue'
 const route = useRoute()
 const router = useRouter()
 const flash = useFlashStore()
-const form = ref({ nome: '', descricao: '', ativo: true, responsavelId: null as number | null, musicians: [] as number[] })
+interface TeamMusician { musicianId: number; funcao: string }
+
+const form = ref({ nome: '', descricao: '', ativo: true, responsavelId: null as number | null, musicians: [] as TeamMusician[] })
 const allMusicians = ref<{ id: number; nome: string }[]>([])
 const loading = ref(false)
 
@@ -26,14 +28,18 @@ onMounted(async () => {
   form.value.descricao = team.descricao ?? ''
   form.value.ativo = team.ativo
   form.value.responsavelId = team.responsavelId ?? null
-  form.value.musicians = team.musicians.map((m: any) => m.musicianId)
+  form.value.musicians = team.musicians.map((m: any) => ({ musicianId: m.musicianId, funcao: m.funcao ?? '' }))
   allMusicians.value = musiciansRes.data
 })
 
 function toggleMusician(id: number) {
-  const idx = form.value.musicians.indexOf(id)
+  const idx = form.value.musicians.findIndex((m) => m.musicianId === id)
   if (idx >= 0) form.value.musicians.splice(idx, 1)
-  else form.value.musicians.push(id)
+  else form.value.musicians.push({ musicianId: id, funcao: '' })
+}
+
+function musicianNome(id: number) {
+  return allMusicians.value.find((m) => m.id === id)?.nome ?? ''
 }
 
 async function submit() {
@@ -84,7 +90,7 @@ async function submit() {
               type="button"
               @click="toggleMusician(m.id)"
               class="px-3 py-1.5 rounded-full text-sm border transition"
-              :class="form.musicians.includes(m.id)
+              :class="form.musicians.some((fm) => fm.musicianId === m.id)
                 ? 'bg-indigo-600 text-white border-indigo-600'
                 : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'"
             >
@@ -92,6 +98,12 @@ async function submit() {
             </button>
           </div>
           <p v-if="allMusicians.length === 0" class="mt-2 text-sm text-gray-500">Nenhum músico cadastrado.</p>
+          <div v-if="form.musicians.length" class="mt-3 space-y-2">
+            <div v-for="fm in form.musicians" :key="fm.musicianId" class="flex items-center gap-2">
+              <span class="text-sm text-gray-500 w-40 shrink-0 truncate">{{ musicianNome(fm.musicianId) }}</span>
+              <TextInput v-model="fm.funcao" placeholder="Função (opcional)" class="text-sm" />
+            </div>
+          </div>
         </div>
 
         <div class="flex items-center gap-4">

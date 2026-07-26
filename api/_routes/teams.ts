@@ -23,6 +23,10 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
         include: { musician: { select: { id: true, nome: true } } },
       },
       responsavel: { select: { id: true, nome: true } },
+      scaleTemplates: {
+        where: { ativo: true },
+        orderBy: [{ diaSemana: 'asc' }, { horario: 'asc' }],
+      },
     },
   })
   if (!team) return res.status(404).json({ message: 'Equipe não encontrada' })
@@ -37,7 +41,11 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
 
   if (Array.isArray(musicians) && musicians.length > 0) {
     await prisma.musicianTeam.createMany({
-      data: musicians.map((musicianId: number) => ({ musicianId, teamId: team.id })),
+      data: (musicians as { musicianId: number; funcao?: string }[]).map((m) => ({
+        musicianId: m.musicianId,
+        teamId: team.id,
+        funcao: m.funcao ?? null,
+      })),
       skipDuplicates: true,
     })
   }
@@ -58,7 +66,11 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
     await prisma.musicianTeam.deleteMany({ where: { teamId } })
     if (musicians.length > 0) {
       await prisma.musicianTeam.createMany({
-        data: musicians.map((musicianId: number) => ({ musicianId, teamId })),
+        data: (musicians as { musicianId: number; funcao?: string }[]).map((m) => ({
+          musicianId: m.musicianId,
+          teamId,
+          funcao: m.funcao ?? null,
+        })),
         skipDuplicates: true,
       })
     }

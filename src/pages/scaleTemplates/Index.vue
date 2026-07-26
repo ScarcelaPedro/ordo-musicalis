@@ -6,6 +6,7 @@ import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
+import { recorrenciaLabel } from '@/utils/recurrence'
 
 const auth = useAuthStore()
 const flash = useFlashStore()
@@ -13,12 +14,6 @@ const templates = ref<any[]>([])
 const loading = ref(true)
 const generating = ref(false)
 const mesGerar = ref(new Date().toISOString().slice(0, 7))
-
-const DIAS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-// Domingo e Sábado são masculinos; os demais dias (segunda-feira etc.) são femininos.
-const DIA_MASCULINO = [true, false, false, false, false, false, true]
-const ORDINAIS_M = ['1º', '2º', '3º', '4º', '5º']
-const ORDINAIS_F = ['1ª', '2ª', '3ª', '4ª', '5ª']
 
 async function load() {
   loading.value = true
@@ -28,15 +23,6 @@ async function load() {
 }
 
 onMounted(load)
-
-function recorrenciaLabel(t: any) {
-  const masculino = DIA_MASCULINO[t.diaSemana]
-  if (t.tipoRecorrencia === 'mensal_ordinal') {
-    const ordinal = (masculino ? ORDINAIS_M : ORDINAIS_F)[t.ordinal - 1]
-    return `${ordinal} ${DIAS[t.diaSemana]} do mês`
-  }
-  return `${masculino ? 'Todo' : 'Toda'} ${DIAS[t.diaSemana]}`
-}
 
 async function destroy(id: number) {
   if (!confirm('Confirma a exclusão desta recorrência?')) return
