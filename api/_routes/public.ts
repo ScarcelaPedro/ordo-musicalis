@@ -26,10 +26,10 @@ router.get('/scales', async (req: Request, res: Response) => {
       celebracao: true,
       observacoes: true,
       team: { select: { id: true, nome: true } },
-      musicians: {
+      servidores: {
         select: {
           status: true,
-          musician: { select: { nome: true } },
+          servidor: { select: { nome: true } },
           instrument: { select: { nome: true } },
         },
       },

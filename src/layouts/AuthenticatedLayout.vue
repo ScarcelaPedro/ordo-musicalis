@@ -47,13 +47,13 @@ async function logout() {
               </RouterLink>
               <template v-if="auth.isStaff">
                 <RouterLink
-                  to="/musicos"
+                  to="/servidores"
                   class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition"
-                  :class="$route.path.startsWith('/musicos')
+                  :class="$route.path.startsWith('/servidores')
                     ? 'border-indigo-400 text-gray-900 dark:text-gray-100'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'"
                 >
-                  Músicos
+                  Servidores
                 </RouterLink>
                 <RouterLink
                   to="/equipes"
@@ -124,7 +124,7 @@ async function logout() {
           <RouterLink to="/dashboard" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Dashboard</RouterLink>
           <RouterLink to="/escalas" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Escalas</RouterLink>
           <template v-if="auth.isStaff">
-            <RouterLink to="/musicos" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Músicos</RouterLink>
+            <RouterLink to="/servidores" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Servidores</RouterLink>
             <RouterLink to="/equipes" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Ministérios</RouterLink>
             <RouterLink to="/disponibilidade/painel" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Disponibilidade</RouterLink>
           </template>

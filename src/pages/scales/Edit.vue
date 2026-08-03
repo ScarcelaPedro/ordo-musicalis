@@ -10,7 +10,7 @@ const route = useRoute()
 const router = useRouter()
 const flash = useFlashStore()
 const scale = ref<any>(null)
-const musicians = ref([])
+const servidores = ref([])
 const teams = ref([])
 const loading = ref(false)
 
@@ -22,20 +22,20 @@ const initialData = computed(() => scale.value ? {
   observacoes: scale.value.observacoes ?? '',
   status: scale.value.status,
   lembreteDiasAntes: scale.value.lembreteDiasAntes,
-  musicians: scale.value.musicians.map((m: any) => ({
-    musicianId: m.musicianId,
-    instrumentId: m.instrumentId,
+  servidores: scale.value.servidores.map((s: any) => ({
+    servidorId: s.servidorId,
+    instrumentId: s.instrumentId,
   })),
 } : undefined)
 
 onMounted(async () => {
-  const [s, m, t] = await Promise.all([
+  const [s, sv, t] = await Promise.all([
     client.get(`/scales/${route.params.id}`),
-    client.get('/musicians'),
+    client.get('/servidores'),
     client.get('/teams'),
   ])
   scale.value = s.data
-  musicians.value = m.data
+  servidores.value = sv.data
   teams.value = t.data
 })
 
@@ -57,7 +57,7 @@ async function submit(data: object) {
   <AuthenticatedLayout>
     <template #header><h2 class="font-semibold text-xl text-gray-800">Editar Escala</h2></template>
     <div class="bg-white shadow-sm rounded-lg p-6">
-      <ScaleForm v-if="scale" :initial-data="initialData" :musicians="musicians" :teams="teams" :loading="loading" @submit="submit" />
+      <ScaleForm v-if="scale" :initial-data="initialData" :servidores="servidores" :teams="teams" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>
 </template>

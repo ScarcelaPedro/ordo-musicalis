@@ -55,7 +55,7 @@ onMounted(load)
           <input v-model="fim" @change="load" type="date" class="border-gray-300 rounded-md shadow-sm text-sm" />
         </div>
         <div class="flex gap-2 ml-auto">
-          <RouterLink to="/musicos/intensidade" class="text-sm text-indigo-600 hover:underline">Intensidade</RouterLink>
+          <RouterLink to="/servidores/intensidade" class="text-sm text-indigo-600 hover:underline">Intensidade</RouterLink>
           <RouterLink to="/disponibilidade/painel" class="text-sm text-indigo-600 hover:underline">Disponibilidade</RouterLink>
           <RouterLink to="/substituicoes" class="text-sm text-indigo-600 hover:underline">Substituições</RouterLink>
         </div>

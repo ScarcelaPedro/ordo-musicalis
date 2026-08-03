@@ -7,7 +7,7 @@ export interface AuthUser {
   name: string
   email: string
   role: 'admin' | 'coordenador' | 'musico'
-  musicianId: number | null
+  servidorId: number | null
 }
 
 export const useAuthStore = defineStore('auth', () => {

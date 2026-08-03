@@ -8,13 +8,13 @@ import ScaleForm from './ScaleForm.vue'
 
 const router = useRouter()
 const flash = useFlashStore()
-const musicians = ref([])
+const servidores = ref([])
 const teams = ref([])
 const loading = ref(false)
 
 onMounted(async () => {
-  const [m, t] = await Promise.all([client.get('/musicians'), client.get('/teams')])
-  musicians.value = m.data
+  const [s, t] = await Promise.all([client.get('/servidores'), client.get('/teams')])
+  servidores.value = s.data
   teams.value = t.data
 })
 
@@ -36,7 +36,7 @@ async function submit(data: object) {
   <AuthenticatedLayout>
     <template #header><h2 class="font-semibold text-xl text-gray-800">Nova Escala</h2></template>
     <div class="bg-white shadow-sm rounded-lg p-6">
-      <ScaleForm :musicians="musicians" :teams="teams" :loading="loading" @submit="submit" />
+      <ScaleForm :servidores="servidores" :teams="teams" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>
 </template>

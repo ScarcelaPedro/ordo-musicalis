@@ -41,7 +41,7 @@ async function destroy(id: number) {
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsável</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Músicos</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servidores</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             <th v-if="auth.isStaff" class="px-6 py-3"></th>
           </tr>
@@ -52,7 +52,7 @@ async function destroy(id: number) {
               <RouterLink :to="`/equipes/${t.id}`" class="text-indigo-600 hover:text-indigo-900">{{ t.nome }}</RouterLink>
             </td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ t.responsavel?.nome ?? '—' }}</td>
-            <td class="px-6 py-4 text-sm text-gray-500">{{ t._count.musicians }}</td>
+            <td class="px-6 py-4 text-sm text-gray-500">{{ t._count.servidores }}</td>
             <td class="px-6 py-4"><Badge :color="t.ativo ? 'green' : 'gray'">{{ t.ativo ? 'Ativo' : 'Inativo' }}</Badge></td>
             <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
               <RouterLink :to="`/equipes/${t.id}/editar`" class="text-indigo-600 hover:text-indigo-900 text-sm">Editar</RouterLink>

@@ -20,7 +20,10 @@ export interface PushPayload {
 }
 
 export function formatDataCurta(d: Date) {
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(d)
+  // timeZone fixo: sem isso, o Intl formata no fuso do processo do servidor —
+  // em UTC (Vercel) tudo bem, mas localmente (Brasil, UTC-3) a meia-noite UTC
+  // vira "ontem", exibindo um dia a menos na mensagem.
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'UTC' }).format(d)
 }
 
 export async function sendPushToUsers(prisma: PrismaClient, userIds: number[], payload: PushPayload) {
@@ -46,13 +49,13 @@ export async function sendPushToUsers(prisma: PrismaClient, userIds: number[], p
   )
 }
 
-export async function sendPushToMusicians(prisma: PrismaClient, musicianIds: number[], payload: PushPayload) {
-  if (!vapidConfigured || !musicianIds.length) return
-  const musicians = await prisma.musician.findMany({
-    where: { id: { in: musicianIds }, userId: { not: null } },
+export async function sendPushToServidores(prisma: PrismaClient, servidorIds: number[], payload: PushPayload) {
+  if (!vapidConfigured || !servidorIds.length) return
+  const servidores = await prisma.servidor.findMany({
+    where: { id: { in: servidorIds }, userId: { not: null } },
     select: { userId: true },
   })
-  await sendPushToUsers(prisma, musicians.map((m) => m.userId!), payload)
+  await sendPushToUsers(prisma, servidores.map((s) => s.userId!), payload)
 }
 
 export async function sendPushToStaff(prisma: PrismaClient, teamId: number | null, payload: PushPayload) {

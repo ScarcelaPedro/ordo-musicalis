@@ -96,6 +96,13 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
 
   const templates = await prisma.scaleTemplate.findMany({ where: { ativo: true } })
 
+  // TODO(Fase 2): ScaleTemplate ainda não tem comunidade própria -- toda escala gerada
+  // automaticamente cai na Matriz até o seletor de comunidade chegar nos templates.
+  const matriz = await prisma.comunidade.findFirst({ where: { nome: 'Matriz' } })
+  if (!matriz) {
+    return res.status(500).json({ message: 'Comunidade padrão "Matriz" não encontrada' })
+  }
+
   let criadas = 0
   let puladas = 0
 
@@ -128,12 +135,14 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
           horario: tpl.horario,
           celebracao: tpl.celebracao,
           teamId: tpl.teamId,
+          comunidadeId: matriz.id,
           observacoes: tpl.observacoes,
-          musicians: vinculos.length
+          servidores: vinculos.length
             ? {
                 create: vinculos.map((v) => ({
-                  musicianId: v.musicianId,
+                  servidorId: v.servidorId,
                   instrumentId: v.instrumentId,
+                  teamId: tpl.teamId,
                   origem: 'fixo',
                 })),
               }

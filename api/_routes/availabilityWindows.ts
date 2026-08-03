@@ -46,11 +46,11 @@ router.get('/:id/pendentes', authenticate, requireRole('admin', 'coordenador'), 
   const windowId = Number(req.params.id)
   const respondidos = await prisma.availabilityWindowResponse.findMany({
     where: { windowId },
-    select: { musicianId: true },
+    select: { servidorId: true },
   })
-  const respondidosIds = respondidos.map((r) => r.musicianId)
+  const respondidosIds = respondidos.map((r) => r.servidorId)
 
-  const pendentes = await prisma.musician.findMany({
+  const pendentes = await prisma.servidor.findMany({
     where: { ativo: true, id: { notIn: respondidosIds } },
     select: { id: true, nome: true, email: true },
     orderBy: { nome: 'asc' },

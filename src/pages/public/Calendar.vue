@@ -12,7 +12,7 @@ interface PublicScale {
   celebracao: string
   observacoes: string | null
   team: { id: number; nome: string } | null
-  musicians: { status: string; musician: { nome: string }; instrument: { nome: string } | null }[]
+  servidores: { status: string; servidor: { nome: string }; instrument: { nome: string } | null }[]
 }
 
 const today = new Date()
@@ -87,14 +87,14 @@ function imprimir() {
           </div>
           <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 capitalize">{{ formatDate(s.dataCelebracao) }} · {{ s.horario }}</p>
           <ul class="space-y-1">
-            <li v-for="(m, idx) in s.musicians" :key="idx" class="flex items-center justify-between text-sm py-1 border-t border-gray-100 dark:border-gray-700 first:border-0">
+            <li v-for="(sv, idx) in s.servidores" :key="idx" class="flex items-center justify-between text-sm py-1 border-t border-gray-100 dark:border-gray-700 first:border-0">
               <span class="text-gray-700 dark:text-gray-300">
-                {{ m.musician.nome }}
-                <span v-if="m.instrument" class="text-gray-400">· {{ m.instrument.nome }}</span>
+                {{ sv.servidor.nome }}
+                <span v-if="sv.instrument" class="text-gray-400">· {{ sv.instrument.nome }}</span>
               </span>
-              <Badge :color="STATUS_COLORS[m.status]">{{ STATUS_LABELS[m.status] ?? m.status }}</Badge>
+              <Badge :color="STATUS_COLORS[sv.status]">{{ STATUS_LABELS[sv.status] ?? sv.status }}</Badge>
             </li>
-            <li v-if="!s.musicians.length" class="text-sm text-gray-400 py-1">Ninguém escalado ainda.</li>
+            <li v-if="!s.servidores.length" class="text-sm text-gray-400 py-1">Ninguém escalado ainda.</li>
           </ul>
         </div>
         <p v-if="!scales.length" class="text-center text-gray-500 py-8">Nenhuma celebração neste mês.</p>

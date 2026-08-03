@@ -6,7 +6,7 @@ import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import client from '@/api/client'
 
-interface Musician {
+interface Servidor {
   id: number
   nome: string
   instruments: { instrumentId: number; instrument: { id: number; nome: string } }[]
@@ -14,7 +14,7 @@ interface Musician {
 }
 interface Team { id: number; nome: string }
 
-interface ScaleMusician { musicianId: number; instrumentId: number | null }
+interface ScaleServidor { servidorId: number; instrumentId: number | null }
 
 interface FormData {
   dataCelebracao: string
@@ -24,12 +24,12 @@ interface FormData {
   observacoes: string
   status: 'rascunho' | 'confirmada'
   lembreteDiasAntes: number
-  musicians: ScaleMusician[]
+  servidores: ScaleServidor[]
 }
 
 const props = defineProps<{
   initialData?: Partial<FormData>
-  musicians: Musician[]
+  servidores: Servidor[]
   teams: Team[]
   loading?: boolean
 }>()
@@ -44,45 +44,45 @@ const form = ref<FormData>({
   observacoes: props.initialData?.observacoes ?? '',
   status: props.initialData?.status ?? 'rascunho',
   lembreteDiasAntes: props.initialData?.lembreteDiasAntes ?? 3,
-  musicians: props.initialData?.musicians ?? [],
+  servidores: props.initialData?.servidores ?? [],
 })
 
 watch(() => props.initialData, (val) => { if (val) Object.assign(form.value, val) })
 
-const filteredMusicians = computed(() => {
-  if (!form.value.teamId) return props.musicians
-  return props.musicians.filter((m) => m.teams.some((t) => t.teamId === form.value.teamId))
+const filteredServidores = computed(() => {
+  if (!form.value.teamId) return props.servidores
+  return props.servidores.filter((s) => s.teams.some((t) => t.teamId === form.value.teamId))
 })
 
 watch(() => form.value.teamId, () => {
-  const validIds = new Set(filteredMusicians.value.map((m) => m.id))
-  form.value.musicians = form.value.musicians.filter((m) => validIds.has(m.musicianId))
+  const validIds = new Set(filteredServidores.value.map((s) => s.id))
+  form.value.servidores = form.value.servidores.filter((s) => validIds.has(s.servidorId))
 })
 
-function isSelected(musicianId: number) {
-  return form.value.musicians.some((m) => m.musicianId === musicianId)
+function isSelected(servidorId: number) {
+  return form.value.servidores.some((s) => s.servidorId === servidorId)
 }
 
-function getInstrument(musicianId: number) {
-  return form.value.musicians.find((m) => m.musicianId === musicianId)?.instrumentId ?? null
+function getInstrument(servidorId: number) {
+  return form.value.servidores.find((s) => s.servidorId === servidorId)?.instrumentId ?? null
 }
 
-function toggleMusician(musician: Musician) {
-  const idx = form.value.musicians.findIndex((m) => m.musicianId === musician.id)
+function toggleServidor(servidor: Servidor) {
+  const idx = form.value.servidores.findIndex((s) => s.servidorId === servidor.id)
   if (idx >= 0) {
-    form.value.musicians.splice(idx, 1)
+    form.value.servidores.splice(idx, 1)
   } else {
-    const firstInstrument = musician.instruments[0]?.instrumentId ?? null
-    form.value.musicians.push({ musicianId: musician.id, instrumentId: firstInstrument })
+    const firstInstrument = servidor.instruments[0]?.instrumentId ?? null
+    form.value.servidores.push({ servidorId: servidor.id, instrumentId: firstInstrument })
   }
 }
 
-function setInstrument(musicianId: number, instrumentId: number) {
-  const entry = form.value.musicians.find((m) => m.musicianId === musicianId)
+function setInstrument(servidorId: number, instrumentId: number) {
+  const entry = form.value.servidores.find((s) => s.servidorId === servidorId)
   if (entry) entry.instrumentId = instrumentId
 }
 
-interface Suggestion { musicianId: number; nome: string; nivel: string; score: number; motivo: string }
+interface Suggestion { servidorId: number; nome: string; nivel: string; score: number; motivo: string }
 
 const suggestions = ref<Suggestion[]>([])
 const loadingSuggestions = ref(false)
@@ -97,7 +97,7 @@ async function buscarSugestoes() {
   suggestionsError.value = ''
   loadingSuggestions.value = true
   try {
-    const excludeIds = form.value.musicians.map((m) => m.musicianId)
+    const excludeIds = form.value.servidores.map((s) => s.servidorId)
     const { data } = await client.get('/scales/sugestoes', {
       params: {
         data: form.value.dataCelebracao,
@@ -115,11 +115,11 @@ async function buscarSugestoes() {
 }
 
 function adicionarSugerido(s: Suggestion) {
-  if (isSelected(s.musicianId)) return
-  const musician = props.musicians.find((m) => m.id === s.musicianId)
-  const firstInstrument = musician?.instruments[0]?.instrumentId ?? null
-  form.value.musicians.push({ musicianId: s.musicianId, instrumentId: firstInstrument })
-  suggestions.value = suggestions.value.filter((sug) => sug.musicianId !== s.musicianId)
+  if (isSelected(s.servidorId)) return
+  const servidor = props.servidores.find((sv) => sv.id === s.servidorId)
+  const firstInstrument = servidor?.instruments[0]?.instrumentId ?? null
+  form.value.servidores.push({ servidorId: s.servidorId, instrumentId: firstInstrument })
+  suggestions.value = suggestions.value.filter((sug) => sug.servidorId !== s.servidorId)
 }
 </script>
 
@@ -176,7 +176,7 @@ function adicionarSugerido(s: Suggestion) {
       </div>
       <p v-if="suggestionsError" class="mt-2 text-sm text-red-600">{{ suggestionsError }}</p>
       <div v-if="suggestions.length" class="mt-2 space-y-2">
-        <div v-for="s in suggestions" :key="s.musicianId" class="flex items-center justify-between gap-3 p-3 border rounded-md border-gray-200 dark:border-gray-600">
+        <div v-for="s in suggestions" :key="s.servidorId" class="flex items-center justify-between gap-3 p-3 border rounded-md border-gray-200 dark:border-gray-600">
           <div class="min-w-0">
             <span class="text-sm font-medium">{{ s.nome }}</span>
             <p class="text-xs text-gray-500 truncate">{{ s.motivo }}</p>
@@ -187,24 +187,24 @@ function adicionarSugerido(s: Suggestion) {
     </div>
 
     <div>
-      <InputLabel value="Músicos da escala" />
+      <InputLabel value="Servidores da escala" />
       <div class="mt-2 space-y-2">
-        <p v-if="form.teamId && filteredMusicians.length === 0" class="text-sm text-gray-500">Nenhum músico cadastrado neste ministério.</p>
-        <div v-for="m in filteredMusicians" :key="m.id" class="flex items-center gap-3 p-3 border rounded-md" :class="isSelected(m.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
+        <p v-if="form.teamId && filteredServidores.length === 0" class="text-sm text-gray-500">Nenhum servidor cadastrado neste ministério.</p>
+        <div v-for="s in filteredServidores" :key="s.id" class="flex items-center gap-3 p-3 border rounded-md" :class="isSelected(s.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
           <input
             type="checkbox"
-            :checked="isSelected(m.id)"
-            @change="toggleMusician(m)"
+            :checked="isSelected(s.id)"
+            @change="toggleServidor(s)"
             class="rounded border-gray-300 text-indigo-600"
           />
-          <span class="flex-1 text-sm font-medium">{{ m.nome }}</span>
+          <span class="flex-1 text-sm font-medium">{{ s.nome }}</span>
           <select
-            v-if="isSelected(m.id) && m.instruments.length"
-            :value="getInstrument(m.id)"
-            @change="setInstrument(m.id, Number(($event.target as HTMLSelectElement).value))"
+            v-if="isSelected(s.id) && s.instruments.length"
+            :value="getInstrument(s.id)"
+            @change="setInstrument(s.id, Number(($event.target as HTMLSelectElement).value))"
             class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
           >
-            <option v-for="i in m.instruments" :key="i.instrumentId" :value="i.instrumentId">
+            <option v-for="i in s.instruments" :key="i.instrumentId" :value="i.instrumentId">
               {{ i.instrument.nome }}
             </option>
           </select>

@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
  * Restricts write access to resources belonging to a ministério (Team).
  * `admin` bypasses entirely. `coordenador` is only allowed through when the
  * team resolved by `resolveTeamId` has `responsavelId` equal to their own
- * musicianId. Any other role is rejected (mirrors requireRole's 403).
+ * servidorId. Any other role is rejected (mirrors requireRole's 403).
  *
  * `resolveTeamId` returns:
  *  - a number: the teamId to check ownership against
@@ -28,7 +28,7 @@ export function requireTeamOwnership(resolveTeamId: (req: AuthRequest) => Promis
     }
 
     const team = await prisma.team.findUnique({ where: { id: teamId }, select: { responsavelId: true } })
-    if (!team || !req.user.musicianId || team.responsavelId !== req.user.musicianId) {
+    if (!team || !req.user.servidorId || team.responsavelId !== req.user.servidorId) {
       return res.status(403).json({ message: 'Você só pode gerenciar recursos do seu próprio ministério' })
     }
     next()

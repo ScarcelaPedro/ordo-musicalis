@@ -59,14 +59,14 @@ onMounted(async () => {
       </div>
 
       <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Membros ({{ team.musicians.length }})</h3>
-        <div v-if="team.musicians.length" class="space-y-2">
-          <div v-for="m in team.musicians" :key="m.id" class="flex justify-between items-center text-sm py-2 border-b last:border-0">
-            <RouterLink :to="`/musicos/${m.musician.id}`" class="text-indigo-600 hover:underline">{{ m.musician.nome }}</RouterLink>
-            <span v-if="m.funcao" class="text-gray-500">{{ m.funcao }}</span>
+        <h3 class="font-semibold text-gray-800 mb-4">Membros ({{ team.servidores.length }})</h3>
+        <div v-if="team.servidores.length" class="space-y-2">
+          <div v-for="s in team.servidores" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b last:border-0">
+            <RouterLink :to="`/servidores/${s.servidor.id}`" class="text-indigo-600 hover:underline">{{ s.servidor.nome }}</RouterLink>
+            <span v-if="s.funcao" class="text-gray-500">{{ s.funcao }}</span>
           </div>
         </div>
-        <p v-else class="text-sm text-gray-500">Nenhum músico neste ministério.</p>
+        <p v-else class="text-sm text-gray-500">Nenhum servidor neste ministério.</p>
       </div>
     </div>
   </AuthenticatedLayout>

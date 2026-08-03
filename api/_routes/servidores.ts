@@ -13,7 +13,7 @@ const include = {
 
 router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
   const { search, instrument } = _req.query as Record<string, string>
-  const musicians = await prisma.musician.findMany({
+  const servidores = await prisma.servidor.findMany({
     where: {
       ...(search ? { nome: { contains: search, mode: 'insensitive' } } : {}),
       ...(instrument
@@ -23,13 +23,13 @@ router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
     include,
     orderBy: { nome: 'asc' },
   })
-  return res.json(musicians)
+  return res.json(servidores)
 })
 
 router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
   const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams } = req.body
 
-  const musician = await prisma.musician.create({
+  const servidor = await prisma.servidor.create({
     data: {
       nome,
       telefone: telefone ?? null,
@@ -51,7 +51,7 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
     },
     include,
   })
-  return res.status(201).json(musician)
+  return res.status(201).json(servidor)
 })
 
 router.get('/intensidade', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
@@ -60,7 +60,7 @@ router.get('/intensidade', authenticate, requireRole('admin', 'coordenador'), as
   const gte = inicio ? new Date(inicio) : new Date(hoje.getFullYear(), hoje.getMonth(), 1)
   const lte = fim ? new Date(fim) : new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
 
-  const musicians = await prisma.musician.findMany({
+  const servidores = await prisma.servidor.findMany({
     where: { ativo: true },
     select: {
       id: true,
@@ -70,14 +70,14 @@ router.get('/intensidade', authenticate, requireRole('admin', 'coordenador'), as
     orderBy: { nome: 'asc' },
   })
 
-  const result = musicians
-    .map((m) => {
-      const datas = m.scales.map((s) => s.scale.dataCelebracao)
+  const result = servidores
+    .map((s) => {
+      const datas = s.scales.map((sc) => sc.scale.dataCelebracao)
       const noPeriodo = datas.filter((d) => d >= gte && d <= lte).length
       const ultimaVez = datas.length
         ? new Date(Math.max(...datas.map((d) => d.getTime())))
         : null
-      return { musicianId: m.id, nome: m.nome, total: noPeriodo, ultimaVez }
+      return { servidorId: s.id, nome: s.nome, total: noPeriodo, ultimaVez }
     })
     .sort((a, b) => b.total - a.total)
 
@@ -85,7 +85,7 @@ router.get('/intensidade', authenticate, requireRole('admin', 'coordenador'), as
 })
 
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
-  const musician = await prisma.musician.findUnique({
+  const servidor = await prisma.servidor.findUnique({
     where: { id: Number(req.params.id) },
     include: {
       ...include,
@@ -96,18 +96,18 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
       },
     },
   })
-  if (!musician) return res.status(404).json({ message: 'Músico não encontrado' })
-  return res.json(musician)
+  if (!servidor) return res.status(404).json({ message: 'Servidor não encontrado' })
+  return res.json(servidor)
 })
 
 router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
   const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams } = req.body
 
-  await prisma.instrumentMusician.deleteMany({ where: { musicianId: id } })
-  await prisma.musicianTeam.deleteMany({ where: { musicianId: id } })
+  await prisma.instrumentServidor.deleteMany({ where: { servidorId: id } })
+  await prisma.servidorMinisterio.deleteMany({ where: { servidorId: id } })
 
-  const musician = await prisma.musician.update({
+  const servidor = await prisma.servidor.update({
     where: { id },
     data: {
       nome,
@@ -130,11 +130,11 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (r
     },
     include,
   })
-  return res.json(musician)
+  return res.json(servidor)
 })
 
 router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
-  await prisma.musician.delete({ where: { id: Number(req.params.id) } })
+  await prisma.servidor.delete({ where: { id: Number(req.params.id) } })
   return res.status(204).send()
 })
 

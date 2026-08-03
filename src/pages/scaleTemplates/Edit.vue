@@ -35,7 +35,7 @@ onMounted(async () => {
   template.value = t.data
   teams.value = tm.data
   await loadVinculos()
-  await loadMusiciansInstruments()
+  await loadServidoresInstruments()
 })
 
 async function submit(data: object) {
@@ -54,9 +54,9 @@ async function submit(data: object) {
 
 // Vínculos fixos
 const vinculos = ref<any[]>([])
-const allMusicians = ref<{ id: number; nome: string }[]>([])
+const allServidores = ref<{ id: number; nome: string }[]>([])
 const allInstruments = ref<{ id: number; nome: string }[]>([])
-const novoVinculo = ref<{ musicianId: number | null; instrumentId: number | null }>({ musicianId: null, instrumentId: null })
+const novoVinculo = ref<{ servidorId: number | null; instrumentId: number | null }>({ servidorId: null, instrumentId: null })
 const addingVinculo = ref(false)
 
 async function loadVinculos() {
@@ -64,25 +64,25 @@ async function loadVinculos() {
   vinculos.value = data
 }
 
-async function loadMusiciansInstruments() {
-  const [m, i] = await Promise.all([client.get('/musicians'), client.get('/instruments')])
-  allMusicians.value = m.data
+async function loadServidoresInstruments() {
+  const [s, i] = await Promise.all([client.get('/servidores'), client.get('/instruments')])
+  allServidores.value = s.data
   allInstruments.value = i.data
 }
 
 async function addVinculo() {
-  if (!novoVinculo.value.musicianId) {
-    flash.set('error', 'Selecione um músico')
+  if (!novoVinculo.value.servidorId) {
+    flash.set('error', 'Selecione um servidor')
     return
   }
   addingVinculo.value = true
   try {
     await client.post('/vinculos-fixos', {
       scaleTemplateId: Number(route.params.id),
-      musicianId: novoVinculo.value.musicianId,
+      servidorId: novoVinculo.value.servidorId,
       instrumentId: novoVinculo.value.instrumentId,
     })
-    novoVinculo.value = { musicianId: null, instrumentId: null }
+    novoVinculo.value = { servidorId: null, instrumentId: null }
     await loadVinculos()
     flash.set('success', 'Vínculo fixo adicionado!')
   } catch (e: any) {
@@ -112,13 +112,13 @@ async function removeVinculo(id: number) {
       <div class="bg-white shadow-sm rounded-lg p-6">
         <h3 class="font-medium text-gray-800 mb-1">Vínculos fixos</h3>
         <p class="text-sm text-gray-500 mb-4">
-          Músicos escalados automaticamente sempre que essa recorrência gerar uma nova celebração.
+          Servidores escalados automaticamente sempre que essa recorrência gerar uma nova celebração.
         </p>
 
         <div v-if="vinculos.length" class="space-y-2 mb-4">
           <div v-for="v in vinculos" :key="v.id" class="flex items-center justify-between py-2 border-b last:border-0">
             <div class="text-sm">
-              <span class="font-medium text-gray-900">{{ v.musician.nome }}</span>
+              <span class="font-medium text-gray-900">{{ v.servidor.nome }}</span>
               <span v-if="v.instrument" class="text-gray-500"> · {{ v.instrument.nome }}</span>
             </div>
             <button @click="removeVinculo(v.id)" class="text-red-600 hover:text-red-800 text-sm">Remover</button>
@@ -128,10 +128,10 @@ async function removeVinculo(id: number) {
 
         <div class="flex flex-wrap items-end gap-3 pt-3 border-t">
           <div>
-            <InputLabel value="Músico" />
-            <select v-model="novoVinculo.musicianId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+            <InputLabel value="Servidor" />
+            <select v-model="novoVinculo.servidorId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
               <option :value="null">Selecione</option>
-              <option v-for="m in allMusicians" :key="m.id" :value="m.id">{{ m.nome }}</option>
+              <option v-for="s in allServidores" :key="s.id" :value="s.id">{{ s.nome }}</option>
             </select>
           </div>
           <div>

@@ -2,7 +2,7 @@ import express, { NextFunction, Request, Response } from 'express'
 import 'express-async-errors'
 import cors from 'cors'
 import authRoutes from './_routes/auth'
-import musicianRoutes from './_routes/musicians'
+import servidorRoutes from './_routes/servidores'
 import teamRoutes from './_routes/teams'
 import scaleRoutes from './_routes/scales'
 import scaleTemplateRoutes from './_routes/scaleTemplates'
@@ -29,7 +29,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 app.use('/api/auth', authRoutes)
-app.use('/api/musicians', musicianRoutes)
+app.use('/api/servidores', servidorRoutes)
 app.use('/api/teams', teamRoutes)
 app.use('/api/scales', scaleRoutes)
 app.use('/api/scale-templates', scaleTemplateRoutes)

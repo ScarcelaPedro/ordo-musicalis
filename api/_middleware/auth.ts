@@ -9,7 +9,7 @@ export interface AuthRequest extends Request {
     id: number
     email: string
     role: string
-    musicianId?: number | null
+    servidorId?: number | null
   }
 }
 
@@ -24,7 +24,7 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as unknown as { sub: number }
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { musician: { select: { id: true } } },
+      include: { servidor: { select: { id: true } } },
     })
     if (!user) return res.status(401).json({ message: 'Usuário não encontrado' })
 
@@ -32,7 +32,7 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
       id: user.id,
       email: user.email,
       role: user.role,
-      musicianId: user.musician?.id ?? null,
+      servidorId: user.servidor?.id ?? null,
     }
     next()
   } catch {

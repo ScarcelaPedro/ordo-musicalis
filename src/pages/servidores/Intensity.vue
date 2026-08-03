@@ -5,7 +5,7 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import { parseDateOnly } from '@/utils/date'
 
-interface Row { musicianId: number; nome: string; total: number; ultimaVez: string | null }
+interface Row { servidorId: number; nome: string; total: number; ultimaVez: string | null }
 
 const rows = ref<Row[]>([])
 const loading = ref(true)
@@ -38,7 +38,7 @@ function toISODate(d: Date) {
 async function load() {
   loading.value = true
   const { inicio, fim } = rangeFor(periodo.value)
-  const { data } = await client.get('/musicians/intensidade', {
+  const { data } = await client.get('/servidores/intensidade', {
     params: { inicio: toISODate(inicio), fim: toISODate(fim) },
   })
   rows.value = data
@@ -95,14 +95,14 @@ function formatData(d: string | null) {
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50">
           <tr>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Músico</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servidor</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vezes escalado</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Última vez que serviu</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
           </tr>
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
-          <tr v-for="r in rows" :key="r.musicianId">
+          <tr v-for="r in rows" :key="r.servidorId">
             <td class="px-6 py-4 font-medium text-gray-900">{{ r.nome }}</td>
             <td class="px-6 py-4 text-sm text-gray-700">{{ r.total }}</td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ formatData(r.ultimaVez) }}</td>
@@ -112,7 +112,7 @@ function formatData(d: string | null) {
             </td>
           </tr>
           <tr v-if="rows.length === 0">
-            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhum músico ativo encontrado.</td>
+            <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhum servidor ativo encontrado.</td>
           </tr>
         </tbody>
       </table>

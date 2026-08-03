@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import client from '@/api/client'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
-import MusicianForm from './MusicianForm.vue'
+import ServidorForm from './ServidorForm.vue'
 
 const router = useRouter()
 const flash = useFlashStore()
@@ -22,12 +22,12 @@ onMounted(async () => {
 async function submit(data: object) {
   loading.value = true
   try {
-    await client.post('/musicians', data)
-    flash.set('success', 'Músico criado com sucesso!')
-    router.push('/musicos')
+    await client.post('/servidores', data)
+    flash.set('success', 'Servidor criado com sucesso!')
+    router.push('/servidores')
   } catch (e: any) {
     errors.value = e.response?.data?.errors ?? {}
-    flash.set('error', e.response?.data?.message ?? 'Erro ao criar músico')
+    flash.set('error', e.response?.data?.message ?? 'Erro ao criar servidor')
   } finally {
     loading.value = false
   }
@@ -37,10 +37,10 @@ async function submit(data: object) {
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">Novo Músico</h2>
+      <h2 class="font-semibold text-xl text-gray-800">Novo Servidor</h2>
     </template>
     <div class="bg-white shadow-sm rounded-lg p-6">
-      <MusicianForm :instruments="instruments" :teams="teams" :errors="errors" :loading="loading" @submit="submit" />
+      <ServidorForm :instruments="instruments" :teams="teams" :errors="errors" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>
 </template>

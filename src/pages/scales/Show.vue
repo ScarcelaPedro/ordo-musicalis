@@ -29,8 +29,8 @@ function formatDate(d: string) {
   return parseDateOnly(d)!.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-const myPivot = () => auth.user?.musicianId
-  ? scale.value?.musicians.find((m: any) => m.musicianId === auth.user!.musicianId)
+const myPivot = () => auth.user?.servidorId
+  ? scale.value?.servidores.find((s: any) => s.servidorId === auth.user!.servidorId)
   : null
 
 async function confirmar() {
@@ -118,7 +118,7 @@ function imprimir() {
         </dl>
       </div>
 
-      <!-- Confirmação para músico -->
+      <!-- Confirmação para servidor -->
       <div v-if="auth.isMusico && myPivot()" class="bg-white shadow-sm rounded-lg p-6">
         <h3 class="font-semibold text-gray-800 mb-3">Minha confirmação</h3>
         <div class="flex items-center gap-4 flex-wrap">
@@ -140,21 +140,21 @@ function imprimir() {
         </div>
       </div>
 
-      <!-- Músicos -->
+      <!-- Servidores -->
       <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Músicos ({{ scale.musicians.length }})</h3>
+        <h3 class="font-semibold text-gray-800 mb-4">Servidores ({{ scale.servidores.length }})</h3>
         <div class="space-y-2">
-          <div v-for="m in scale.musicians" :key="m.id" class="flex justify-between items-center py-2 border-b last:border-0">
+          <div v-for="s in scale.servidores" :key="s.id" class="flex justify-between items-center py-2 border-b last:border-0">
             <div>
-              <span class="text-sm font-medium text-gray-900">{{ m.musician.nome }}</span>
-              <span v-if="m.instrument" class="text-xs text-gray-500 ml-2">· {{ m.instrument.nome }}</span>
+              <span class="text-sm font-medium text-gray-900">{{ s.servidor.nome }}</span>
+              <span v-if="s.instrument" class="text-xs text-gray-500 ml-2">· {{ s.instrument.nome }}</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <Badge v-if="m.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
-              <Badge :color="STATUS_COLORS[m.status]">{{ STATUS_LABELS[m.status] ?? m.status }}</Badge>
+              <Badge v-if="s.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
+              <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
             </div>
           </div>
-          <p v-if="!scale.musicians.length" class="text-sm text-gray-500">Nenhum músico na escala.</p>
+          <p v-if="!scale.servidores.length" class="text-sm text-gray-500">Nenhum servidor na escala.</p>
         </div>
       </div>
 

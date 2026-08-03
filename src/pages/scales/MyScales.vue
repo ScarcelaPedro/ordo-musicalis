@@ -29,7 +29,7 @@ async function load() {
 onMounted(load)
 
 function myPivot(scale: any) {
-  return scale.musicians.find((m: any) => m.musicianId === auth.user?.musicianId)
+  return scale.servidores.find((s: any) => s.servidorId === auth.user?.servidorId)
 }
 
 function formatDate(d: string) {

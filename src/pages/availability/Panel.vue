@@ -68,10 +68,10 @@ async function fecharJanela(id: number) {
   await load()
 }
 
-const byMusician = computed(() => {
+const byServidor = computed(() => {
   const map: Record<string, any> = {}
   availabilities.value.forEach((a) => {
-    const key = a.musician.nome
+    const key = a.servidor.nome
     if (!map[key]) map[key] = { nome: key, slots: [] }
     if (a.diaSemana !== null) {
       map[key].slots.push({ dia: a.diaSemana, periodo: a.periodo })
@@ -129,17 +129,17 @@ const byMusician = computed(() => {
         <table class="min-w-full text-sm divide-y divide-gray-200">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Músico</th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servidor</th>
               <th v-for="(dia, idx) in dias" :key="idx" class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">{{ dia }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200">
-            <tr v-for="m in byMusician" :key="m.nome">
-              <td class="px-6 py-4 font-medium text-gray-900">{{ m.nome }}</td>
+            <tr v-for="sv in byServidor" :key="sv.nome">
+              <td class="px-6 py-4 font-medium text-gray-900">{{ sv.nome }}</td>
               <td v-for="(_, idx) in dias" :key="idx" class="px-3 py-4 text-center">
                 <div class="flex flex-col gap-0.5 items-center">
                   <span
-                    v-for="slot in m.slots.filter((s: any) => s.dia === idx)"
+                    v-for="slot in sv.slots.filter((s: any) => s.dia === idx)"
                     :key="slot.periodo"
                     class="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded"
                   >
@@ -148,7 +148,7 @@ const byMusician = computed(() => {
                 </div>
               </td>
             </tr>
-            <tr v-if="byMusician.length === 0">
+            <tr v-if="byServidor.length === 0">
               <td :colspan="dias.length + 1" class="px-6 py-8 text-center text-gray-500">Nenhuma disponibilidade registrada.</td>
             </tr>
           </tbody>

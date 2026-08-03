@@ -11,7 +11,7 @@ interface Team { id: number; nome: string }
 
 type Nivel = 'em_formacao' | 'apto' | 'lider'
 
-interface MusicianTeam { teamId: number; funcao: string }
+interface ServidorMinisterio { teamId: number; funcao: string }
 
 interface FormData {
   nome: string
@@ -21,7 +21,7 @@ interface FormData {
   nivel: Nivel
   observacoes: string
   instruments: number[]
-  teams: MusicianTeam[]
+  teams: ServidorMinisterio[]
 }
 
 const NIVEL_LABELS: Record<Nivel, string> = {
@@ -156,7 +156,7 @@ function teamNome(id: number) {
       <PrimaryButton :disabled="loading">
         {{ loading ? 'Salvando...' : 'Salvar' }}
       </PrimaryButton>
-      <RouterLink to="/musicos">
+      <RouterLink to="/servidores">
         <SecondaryButton type="button">Cancelar</SecondaryButton>
       </RouterLink>
     </div>

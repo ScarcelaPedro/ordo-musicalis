@@ -15,6 +15,26 @@ async function main() {
   })
   console.log('Instrumentos criados')
 
+  await prisma.comunidade.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { nome: 'Matriz' },
+  })
+  console.log('Comunidade "Matriz" criada')
+
+  const categorias = [
+    { nome: 'Música', ordem: 1 },
+    { nome: 'Ministros da Comunhão', ordem: 2 },
+    { nome: 'Acólitos e Coroinhas', ordem: 3 },
+    { nome: 'Leitores', ordem: 4 },
+    { nome: 'Comentaristas', ordem: 5 },
+  ]
+  for (const categoria of categorias) {
+    const existing = await prisma.categoriaFuncao.findFirst({ where: { nome: categoria.nome } })
+    if (!existing) await prisma.categoriaFuncao.create({ data: categoria })
+  }
+  console.log('Categorias de função criadas')
+
   const hash = await bcrypt.hash('password', 12)
   await prisma.user.upsert({
     where: { email: 'admin@escaladmusicos.test' },

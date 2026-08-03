@@ -17,12 +17,12 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
     select: {
       id: true,
       team: { select: { id: true, nome: true } },
-      musicians: { select: { status: true } },
+      servidores: { select: { status: true } },
     },
   })
 
   const substituicoesPendentes = await prisma.substituicao.count({
-    where: { status: 'pendente', scaleMusician: { scale: { dataCelebracao: { gte, lte } } } },
+    where: { status: 'pendente', scaleServidor: { scale: { dataCelebracao: { gte, lte } } } },
   })
 
   let totalEscalacoes = 0
@@ -38,7 +38,7 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
     const bucket = porMinisterio.get(key)!
     bucket.celebracoes += 1
 
-    for (const sm of scale.musicians) {
+    for (const sm of scale.servidores) {
       totalEscalacoes += 1
       bucket.escalacoes += 1
       if (sm.status === 'confirmado') {

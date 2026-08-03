@@ -10,11 +10,11 @@ import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
 
 const route = useRoute()
 const auth = useAuthStore()
-const musician = ref<any>(null)
+const servidor = ref<any>(null)
 
 onMounted(async () => {
-  const { data } = await client.get(`/musicians/${route.params.id}`)
-  musician.value = data
+  const { data } = await client.get(`/servidores/${route.params.id}`)
+  servidor.value = data
 })
 
 function formatDate(d: string) {
@@ -32,59 +32,59 @@ const NIVEL_LABELS: Record<string, string> = {
   <AuthenticatedLayout>
     <template #header>
       <div class="flex flex-wrap justify-between items-center gap-3">
-        <h2 class="font-semibold text-xl text-gray-800 min-w-0 truncate">{{ musician?.nome ?? '...' }}</h2>
-        <RouterLink v-if="auth.isStaff && musician" :to="`/musicos/${musician.id}/editar`"
+        <h2 class="font-semibold text-xl text-gray-800 min-w-0 truncate">{{ servidor?.nome ?? '...' }}</h2>
+        <RouterLink v-if="auth.isStaff && servidor" :to="`/servidores/${servidor.id}/editar`"
           class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
           Editar
         </RouterLink>
       </div>
     </template>
 
-    <div v-if="musician" class="space-y-6">
+    <div v-if="servidor" class="space-y-6">
       <div class="bg-white shadow-sm rounded-lg p-6">
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <dt class="text-sm font-medium text-gray-500">Email</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ musician.email ?? '—' }}</dd>
+            <dd class="mt-1 text-sm text-gray-900">{{ servidor.email ?? '—' }}</dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Telefone</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ musician.telefone ?? '—' }}</dd>
+            <dd class="mt-1 text-sm text-gray-900">{{ servidor.telefone ?? '—' }}</dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Status</dt>
-            <dd class="mt-1"><Badge :color="musician.ativo ? 'green' : 'gray'">{{ musician.ativo ? 'Ativo' : 'Inativo' }}</Badge></dd>
+            <dd class="mt-1"><Badge :color="servidor.ativo ? 'green' : 'gray'">{{ servidor.ativo ? 'Ativo' : 'Inativo' }}</Badge></dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Nível</dt>
-            <dd class="mt-1"><Badge color="blue">{{ NIVEL_LABELS[musician.nivel] ?? musician.nivel }}</Badge></dd>
+            <dd class="mt-1"><Badge color="blue">{{ NIVEL_LABELS[servidor.nivel] ?? servidor.nivel }}</Badge></dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Instrumentos</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
-              <Badge v-for="i in musician.instruments" :key="i.id" color="blue">{{ i.instrument.nome }}</Badge>
+              <Badge v-for="i in servidor.instruments" :key="i.id" color="blue">{{ i.instrument.nome }}</Badge>
             </dd>
           </div>
           <div>
             <dt class="text-sm font-medium text-gray-500">Ministérios</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
-              <RouterLink v-for="t in musician.teams" :key="t.id" :to="`/equipes/${t.team.id}`">
+              <RouterLink v-for="t in servidor.teams" :key="t.id" :to="`/equipes/${t.team.id}`">
                 <Badge color="green">{{ t.team.nome }}<span v-if="t.funcao"> · {{ t.funcao }}</span></Badge>
               </RouterLink>
-              <span v-if="!musician.teams.length" class="text-sm text-gray-400">Nenhum</span>
+              <span v-if="!servidor.teams.length" class="text-sm text-gray-400">Nenhum</span>
             </dd>
           </div>
-          <div v-if="musician.observacoes">
+          <div v-if="servidor.observacoes">
             <dt class="text-sm font-medium text-gray-500">Observações</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ musician.observacoes }}</dd>
+            <dd class="mt-1 text-sm text-gray-900">{{ servidor.observacoes }}</dd>
           </div>
         </dl>
       </div>
 
       <div class="bg-white shadow-sm rounded-lg p-6">
         <h3 class="font-semibold text-gray-800 mb-4">Histórico de Escalas</h3>
-        <div v-if="musician.scales.length" class="space-y-2">
-          <div v-for="s in musician.scales" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b">
+        <div v-if="servidor.scales.length" class="space-y-2">
+          <div v-for="s in servidor.scales" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b">
             <RouterLink :to="`/escalas/${s.scale.id}`" class="text-indigo-600 hover:underline">
               {{ s.scale.celebracao }}
             </RouterLink>

@@ -30,14 +30,14 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 
   const hash = await bcrypt.hash(password, 12)
-  const { user, musician } = await prisma.$transaction(async (tx) => {
+  const { user, servidor } = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: { name, email, password: hash },
     })
-    const musician = await tx.musician.create({
+    const servidor = await tx.servidor.create({
       data: { nome: name, email, userId: user.id },
     })
-    return { user, musician }
+    return { user, servidor }
   })
 
   const token = signToken(user.id)
@@ -48,7 +48,7 @@ router.post('/register', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      musicianId: musician.id,
+      servidorId: servidor.id,
     },
   })
 })
@@ -61,7 +61,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
   const user = await prisma.user.findUnique({
     where: { email },
-    include: { musician: { select: { id: true } } },
+    include: { servidor: { select: { id: true } } },
   })
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ message: 'Credenciais inválidas' })
@@ -75,7 +75,7 @@ router.post('/login', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      musicianId: user.musician?.id ?? null,
+      servidorId: user.servidor?.id ?? null,
     },
   })
 })
@@ -83,7 +83,7 @@ router.post('/login', async (req: Request, res: Response) => {
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    include: { musician: { select: { id: true } } },
+    include: { servidor: { select: { id: true } } },
   })
   if (!user) return res.status(404).json({ message: 'Usuário não encontrado' })
 
@@ -92,7 +92,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
     name: user.name,
     email: user.email,
     role: user.role,
-    musicianId: user.musician?.id ?? null,
+    servidorId: user.servidor?.id ?? null,
   })
 })
 

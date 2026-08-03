@@ -42,35 +42,35 @@ const router = createRouter({
       meta: { auth: true },
     },
 
-    // Músicos
+    // Servidores
     {
-      path: '/musicos',
-      name: 'musicians.index',
-      component: () => import('@/pages/musicians/Index.vue'),
+      path: '/servidores',
+      name: 'servidores.index',
+      component: () => import('@/pages/servidores/Index.vue'),
       meta: { auth: true },
     },
     {
-      path: '/musicos/criar',
-      name: 'musicians.create',
-      component: () => import('@/pages/musicians/Create.vue'),
+      path: '/servidores/criar',
+      name: 'servidores.create',
+      component: () => import('@/pages/servidores/Create.vue'),
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
     {
-      path: '/musicos/:id',
-      name: 'musicians.show',
-      component: () => import('@/pages/musicians/Show.vue'),
+      path: '/servidores/:id',
+      name: 'servidores.show',
+      component: () => import('@/pages/servidores/Show.vue'),
       meta: { auth: true },
     },
     {
-      path: '/musicos/:id/editar',
-      name: 'musicians.edit',
-      component: () => import('@/pages/musicians/Edit.vue'),
+      path: '/servidores/:id/editar',
+      name: 'servidores.edit',
+      component: () => import('@/pages/servidores/Edit.vue'),
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
     {
-      path: '/musicos/intensidade',
-      name: 'musicians.intensity',
-      component: () => import('@/pages/musicians/Intensity.vue'),
+      path: '/servidores/intensidade',
+      name: 'servidores.intensity',
+      component: () => import('@/pages/servidores/Intensity.vue'),
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
 

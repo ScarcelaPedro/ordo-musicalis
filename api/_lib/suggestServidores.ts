@@ -9,7 +9,7 @@ interface SuggestParams {
 }
 
 export interface Suggestion {
-  musicianId: number
+  servidorId: number
   nome: string
   nivel: string
   score: number
@@ -23,7 +23,7 @@ function periodoFromHorario(horario: string): 'manha' | 'tarde' | 'noite' {
   return 'noite'
 }
 
-export async function suggestMusicians(prisma: PrismaClient, params: SuggestParams): Promise<Suggestion[]> {
+export async function suggestServidores(prisma: PrismaClient, params: SuggestParams): Promise<Suggestion[]> {
   const { data, horario, teamId, instrumentId, excludeIds = [] } = params
   const date = new Date(`${data}T12:00:00`)
   const diaSemana = date.getDay()
@@ -32,7 +32,7 @@ export async function suggestMusicians(prisma: PrismaClient, params: SuggestPara
   const trintaDiasAtras = new Date()
   trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30)
 
-  const musicians = await prisma.musician.findMany({
+  const servidores = await prisma.servidor.findMany({
     where: {
       ativo: true,
       id: { notIn: excludeIds },
@@ -48,12 +48,12 @@ export async function suggestMusicians(prisma: PrismaClient, params: SuggestPara
 
   const scored: Suggestion[] = []
 
-  for (const m of musicians) {
+  for (const s of servidores) {
     const disponibilidade =
-      m.availabilities.find(
+      s.availabilities.find(
         (a) => a.tipo === 'data_especifica' && a.data && a.data.toISOString().slice(0, 10) === data && a.periodo === periodo
       ) ??
-      m.availabilities.find((a) => a.tipo === 'recorrente_semanal' && a.diaSemana === diaSemana && a.periodo === periodo)
+      s.availabilities.find((a) => a.tipo === 'recorrente_semanal' && a.diaSemana === diaSemana && a.periodo === periodo)
 
     // Quem marcou explicitamente indisponível nesse dia/período não entra na sugestão.
     if (disponibilidade && !disponibilidade.disponivel) continue
@@ -66,7 +66,7 @@ export async function suggestMusicians(prisma: PrismaClient, params: SuggestPara
       motivos.push('Disponível nesse dia/período')
     }
 
-    const vinculo = m.vinculosFixos.find(
+    const vinculo = s.vinculosFixos.find(
       (v) => v.scaleTemplate.horario === horario && v.scaleTemplate.diaSemana === diaSemana
     )
     if (vinculo) {
@@ -74,14 +74,14 @@ export async function suggestMusicians(prisma: PrismaClient, params: SuggestPara
       motivos.push('Vínculo fixo compatível')
     }
 
-    const recentCount = m.scales.filter((sm) => sm.scale.dataCelebracao >= trintaDiasAtras).length
+    const recentCount = s.scales.filter((sc) => sc.scale.dataCelebracao >= trintaDiasAtras).length
     score -= recentCount
     if (recentCount > 0) motivos.push(`Escalado ${recentCount}x nos últimos 30 dias`)
 
     scored.push({
-      musicianId: m.id,
-      nome: m.nome,
-      nivel: m.nivel,
+      servidorId: s.id,
+      nome: s.nome,
+      nivel: s.nivel,
       score,
       motivo: motivos.join('; ') || 'Sem disponibilidade declarada para esse dia/período',
     })

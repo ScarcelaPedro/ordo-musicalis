@@ -8,7 +8,7 @@ const router = Router()
 const prisma = new PrismaClient()
 
 const include = {
-  musician: { select: { id: true, nome: true } },
+  servidor: { select: { id: true, nome: true } },
   instrument: { select: { id: true, nome: true } },
 }
 
@@ -31,14 +31,14 @@ async function resolveViaScaleTemplateBody(req: AuthRequest) {
 }
 
 router.post('/', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveViaScaleTemplateBody), async (req: AuthRequest, res: Response) => {
-  const { musicianId, instrumentId, scaleTemplateId, ativo } = req.body
-  if (!musicianId || !scaleTemplateId) {
-    return res.status(422).json({ message: 'Músico e recorrência são obrigatórios' })
+  const { servidorId, instrumentId, scaleTemplateId, ativo } = req.body
+  if (!servidorId || !scaleTemplateId) {
+    return res.status(422).json({ message: 'Servidor e recorrência são obrigatórios' })
   }
 
   const vinculo = await prisma.vinculoFixo.create({
     data: {
-      musicianId: Number(musicianId),
+      servidorId: Number(servidorId),
       instrumentId: instrumentId ?? null,
       scaleTemplateId: Number(scaleTemplateId),
       ativo: ativo ?? true,

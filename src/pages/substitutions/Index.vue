@@ -85,17 +85,17 @@ async function rejeitar(id: number) {
         <div v-for="s in substituicoes" :key="s.id" class="border rounded-lg p-4 border-gray-200 dark:border-gray-600">
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <RouterLink :to="`/escalas/${s.scaleMusician.scale.id}`" class="text-indigo-600 hover:underline font-medium">
-                {{ s.scaleMusician.scale.celebracao }}
+              <RouterLink :to="`/escalas/${s.scaleServidor.scale.id}`" class="text-indigo-600 hover:underline font-medium">
+                {{ s.scaleServidor.scale.celebracao }}
               </RouterLink>
               <p class="text-sm text-gray-500">
-                {{ formatDate(s.scaleMusician.scale.dataCelebracao) }} · {{ s.scaleMusician.scale.horario }}
-                <span v-if="s.scaleMusician.scale.team"> · {{ s.scaleMusician.scale.team.nome }}</span>
+                {{ formatDate(s.scaleServidor.scale.dataCelebracao) }} · {{ s.scaleServidor.scale.horario }}
+                <span v-if="s.scaleServidor.scale.team"> · {{ s.scaleServidor.scale.team.nome }}</span>
               </p>
               <p class="text-sm mt-1">
                 <span class="text-gray-500">Titular:</span>
-                <span class="font-medium">{{ s.scaleMusician.musician.nome }}</span>
-                <span v-if="s.scaleMusician.instrument" class="text-gray-500"> · {{ s.scaleMusician.instrument.nome }}</span>
+                <span class="font-medium">{{ s.scaleServidor.servidor.nome }}</span>
+                <span v-if="s.scaleServidor.instrument" class="text-gray-500"> · {{ s.scaleServidor.instrument.nome }}</span>
               </p>
               <p v-if="s.motivo" class="text-sm text-gray-500 mt-1">Motivo: {{ s.motivo }}</p>
             </div>
@@ -114,12 +114,12 @@ async function rejeitar(id: number) {
             <div v-if="loadingSugestoes" class="text-sm text-gray-500">Buscando sugestões...</div>
             <div v-else-if="!sugestoes.length" class="text-sm text-gray-500">Nenhum substituto sugerido para esse dia/horário.</div>
             <div v-else class="space-y-2">
-              <div v-for="sug in sugestoes" :key="sug.musicianId" class="flex items-center justify-between gap-3 p-3 border rounded-md border-gray-200 dark:border-gray-600">
+              <div v-for="sug in sugestoes" :key="sug.servidorId" class="flex items-center justify-between gap-3 p-3 border rounded-md border-gray-200 dark:border-gray-600">
                 <div class="min-w-0">
                   <span class="text-sm font-medium">{{ sug.nome }}</span>
                   <p class="text-xs text-gray-500 truncate">{{ sug.motivo }}</p>
                 </div>
-                <SecondaryButton :disabled="processingId === s.id" @click="aprovar(s.id, sug.musicianId)" class="!py-1.5 !px-3 text-xs shrink-0">
+                <SecondaryButton :disabled="processingId === s.id" @click="aprovar(s.id, sug.servidorId)" class="!py-1.5 !px-3 text-xs shrink-0">
                   Aprovar com este
                 </SecondaryButton>
               </div>

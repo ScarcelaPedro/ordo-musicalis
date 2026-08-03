@@ -30,6 +30,8 @@ async function main() {
     }
   }
 
+  const matriz = await prisma.comunidade.findFirstOrThrow({ where: { nome: 'Matriz' } })
+
   console.log(`Gerando ${slots.length} missas para Julho 2026...`)
   let criadas = 0
   let puladas = 0
@@ -49,6 +51,7 @@ async function main() {
         horario: slot.horario,
         celebracao: 'Santa Missa',
         status: 'rascunho',
+        comunidadeId: matriz.id,
       },
     })
     criadas++

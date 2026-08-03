@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
-import { sendPushToMusicians, formatDataCurta } from '../_lib/sendPush'
+import { sendPushToServidores, formatDataCurta } from '../_lib/sendPush'
+import { sendWhatsappToServidores } from '../_lib/sendWhatsapp'
 import { hojeBrasilia } from '../_lib/date'
 
 const router = Router()
@@ -31,7 +32,7 @@ router.get('/lembretes', async (req: Request, res: Response) => {
   const scales = await prisma.scale.findMany({
     where: { dataCelebracao: { gte: hojeMeiaNoite, lte: limite }, lembreteDiasAntes: { gt: 0 } },
     include: {
-      musicians: { where: { status: 'convidado', lembreteEnviadoEm: null } },
+      servidores: { where: { status: 'convidado', lembreteEnviadoEm: null } },
     },
   })
 
@@ -42,19 +43,22 @@ router.get('/lembretes', async (req: Request, res: Response) => {
     const restantes = diasRestantes(scale.dataCelebracao, hojeMeiaNoite)
     if (restantes < 0 || restantes > scale.lembreteDiasAntes) continue
 
-    for (const sm of scale.musicians) {
-      await sendPushToMusicians(prisma, [sm.musicianId], {
+    for (const sm of scale.servidores) {
+      await sendPushToServidores(prisma, [sm.servidorId], {
         title: 'Lembrete de confirmação',
         body: `Você ainda não confirmou presença em ${scale.celebracao} (${formatDataCurta(scale.dataCelebracao)}). Faltam ${restantes} dia(s).`,
         url: `/escalas/${scale.id}`,
       })
+      await sendWhatsappToServidores(prisma, [sm.servidorId],
+        `*Lembrete de confirmação* ⏰\nVocê ainda não confirmou presença em *${scale.celebracao}* (${formatDataCurta(scale.dataCelebracao)}). Faltam ${restantes} dia(s).`
+      )
       idsLembrados.push(sm.id)
       enviados++
     }
   }
 
   if (idsLembrados.length) {
-    await prisma.scaleMusician.updateMany({
+    await prisma.scaleServidor.updateMany({
       where: { id: { in: idsLembrados } },
       data: { lembreteEnviadoEm: new Date() },
     })

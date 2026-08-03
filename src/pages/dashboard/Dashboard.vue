@@ -7,9 +7,9 @@ import { parseDateOnly } from '@/utils/date'
 
 const auth = useAuthStore()
 
-interface ScaleMusician {
-  musicianId: number
-  musician: { id: number; nome: string }
+interface ScaleServidor {
+  servidorId: number
+  servidor: { id: number; nome: string }
   instrument: { nome: string } | null
 }
 
@@ -20,13 +20,13 @@ interface Scale {
   celebracao: string
   status: 'rascunho' | 'confirmada'
   team: { id: number; nome: string } | null
-  musicians: ScaleMusician[]
+  servidores: ScaleServidor[]
 }
 
 interface Pendencia {
-  scaleMusicianId: number
-  musicianId: number
-  musicianNome: string
+  scaleServidorId: number
+  servidorId: number
+  servidorNome: string
   scaleId: number
   celebracao: string
   dataCelebracao: string
@@ -134,11 +134,11 @@ const nextScale = computed(() => {
 })
 
 const myNextScales = computed(() => {
-  const mid = auth.user?.musicianId
+  const mid = auth.user?.servidorId
   if (!mid) return []
   const todayStr = today.toISOString().slice(0, 10)
   return scales.value
-    .filter(s => s.dataCelebracao.slice(0, 10) >= todayStr && s.musicians.some(m => m.musicianId === mid))
+    .filter(s => s.dataCelebracao.slice(0, 10) >= todayStr && s.servidores.some(sv => sv.servidorId === mid))
     .slice(0, 3)
 })
 
@@ -194,7 +194,7 @@ function formatFullDate(iso: string) {
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <p class="text-xs font-semibold text-amber-500 uppercase tracking-widest">Rascunhos</p>
           <p class="mt-2 text-4xl font-extrabold text-amber-500">{{ drafts }}</p>
-          <p class="mt-1 text-xs text-gray-400">aguardando músicos</p>
+          <p class="mt-1 text-xs text-gray-400">aguardando servidores</p>
         </div>
       </div>
 
@@ -210,14 +210,14 @@ function formatFullDate(iso: string) {
             <span class="mx-1 text-indigo-400">·</span>{{ nextScale.team.nome }}
           </template>
         </p>
-        <div v-if="nextScale.musicians.length" class="mt-3 flex flex-wrap gap-1.5">
-          <span v-for="m in nextScale.musicians" :key="m.musicianId"
+        <div v-if="nextScale.servidores.length" class="mt-3 flex flex-wrap gap-1.5">
+          <span v-for="s in nextScale.servidores" :key="s.servidorId"
             class="bg-white/15 text-white text-xs px-2.5 py-0.5 rounded-full border border-white/20">
-            {{ m.musician.nome }}
-            <span v-if="m.instrument" class="text-indigo-300 ml-1">· {{ m.instrument.nome }}</span>
+            {{ s.servidor.nome }}
+            <span v-if="s.instrument" class="text-indigo-300 ml-1">· {{ s.instrument.nome }}</span>
           </span>
         </div>
-        <p v-else class="mt-3 text-sm text-indigo-300/80 italic">Nenhum músico escalado ainda.</p>
+        <p v-else class="mt-3 text-sm text-indigo-300/80 italic">Nenhum servidor escalado ainda.</p>
         <RouterLink :to="`/escalas/${nextScale.id}`"
           class="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-indigo-200 hover:text-white transition">
           Ver escala completa
@@ -248,10 +248,10 @@ function formatFullDate(iso: string) {
       <div v-if="auth.isStaff && pendencias.length" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Pendências de confirmação</p>
         <div class="space-y-2">
-          <RouterLink v-for="p in pendencias" :key="p.scaleMusicianId" :to="`/escalas/${p.scaleId}`"
+          <RouterLink v-for="p in pendencias" :key="p.scaleServidorId" :to="`/escalas/${p.scaleId}`"
             class="flex items-center justify-between p-3 rounded-xl bg-amber-50 hover:bg-amber-100 transition group">
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-amber-800 truncate">{{ p.musicianNome }} — {{ p.celebracao }}</p>
+              <p class="text-sm font-semibold text-amber-800 truncate">{{ p.servidorNome }} — {{ p.celebracao }}</p>
               <p class="text-xs text-amber-600">{{ formatFullDate(p.dataCelebracao) }} · {{ p.horario }}</p>
             </div>
             <span class="shrink-0 ml-3 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
@@ -331,11 +331,11 @@ function formatFullDate(iso: string) {
                 :to="`/escalas/${scale.id}`"
                 class="flex items-center gap-1 mb-0.5 px-1.5 py-0.5 rounded-md border text-xs font-medium transition truncate"
                 :class="chipClass(scale.horario, scale.status)"
-                :title="`${scale.celebracao} · ${scale.musicians.map(m => m.musician.nome).join(', ') || 'Sem músicos'}`"
+                :title="`${scale.celebracao} · ${scale.servidores.map(s => s.servidor.nome).join(', ') || 'Sem servidores'}`"
               >
                 <span class="shrink-0 font-mono text-[10px]">{{ scale.horario }}</span>
-                <span v-if="scale.musicians.length" class="truncate hidden lg:inline text-[10px] ml-0.5 opacity-75">
-                  {{ scale.musicians.map(m => m.musician.nome.split(' ')[0]).join(', ') }}
+                <span v-if="scale.servidores.length" class="truncate hidden lg:inline text-[10px] ml-0.5 opacity-75">
+                  {{ scale.servidores.map(s => s.servidor.nome.split(' ')[0]).join(', ') }}
                 </span>
               </RouterLink>
             </template>
@@ -365,7 +365,7 @@ function formatFullDate(iso: string) {
           <span class="flex items-center gap-1.5">
             <span class="w-3 h-3 rounded bg-emerald-50 border border-emerald-200 inline-block"></span> Confirmada
           </span>
-          <span class="ml-auto text-gray-300 italic hidden sm:inline">Passe o cursor sobre a celebração para ver os músicos</span>
+          <span class="ml-auto text-gray-300 italic hidden sm:inline">Passe o cursor sobre a celebração para ver os servidores</span>
         </div>
       </div>
 
