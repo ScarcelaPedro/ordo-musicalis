@@ -31,6 +31,7 @@ const initialData = computed(() => scale.value ? {
     servidorId: s.servidorId,
     instrumentId: s.instrumentId,
     teamId: s.teamId ?? null,
+    categoriaId: s.categoriaId ?? null,
   })),
 } : undefined)
 

@@ -175,6 +175,18 @@ Depois de usar o sistema de verdade, dois pontos da Fase 0/2 precisaram de ajust
       "sem ministério definido" cobre o caso residual.
 - [x] Testado local: CRUD de celebrantes, escala criada com `celebranteId` apontando pra
       `celebrantes` (confirmado que a resposta não traz mais instrumentos/nível), typecheck limpo.
+- [x] **Servidor ganha Função(ões) com múltipla escolha**, separada de Instrumentos/Ministério:
+      nem todo servidor é músico, então esses dois campos só aparecem no cadastro quando "Música"
+      está entre as funções selecionadas (e são limpos automaticamente se ela for desmarcada).
+      Nova tabela `servidor_categoria` com backfill (quem já tinha instrumento ou ministério
+      ganhou a função correspondente automaticamente, pra não esconder dado existente).
+- [x] **`ScaleServidor` ganha `categoriaId` direto, desacoplado do `teamId`** (corrige um bug
+      descoberto em uso real): antes, uma função só aparecia agrupada na escala se existisse um
+      Ministério cadastrado pra ela — e como Ministério só era atribuído a Músicos, nenhuma outra
+      função conseguia ser escalada corretamente. Agora a categoria é gravada direto na
+      escalação; o Ministério continua existindo como vínculo opcional adicional (útil sobretudo
+      pra Música). Testado: um Acólito sem nenhum Ministério cadastrado aparece corretamente na
+      seção "Acólitos e Coroinhas" da escala e do relatório por categoria.
 
 ---
 

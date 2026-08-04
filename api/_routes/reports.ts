@@ -20,7 +20,7 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
       servidores: {
         select: {
           status: true,
-          team: { select: { categoria: { select: { id: true, nome: true, ordem: true } } } },
+          categoria: { select: { id: true, nome: true, ordem: true } },
         },
       },
     },
@@ -55,7 +55,7 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
         bucket.confirmadas += 1
       }
 
-      const categoria = sm.team?.categoria
+      const categoria = sm.categoria
       const catKey = categoria ? String(categoria.id) : 'sem-categoria'
       if (!porCategoria.has(catKey)) {
         porCategoria.set(catKey, {

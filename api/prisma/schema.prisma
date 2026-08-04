@@ -182,6 +182,7 @@ model CategoriaFuncao {
 
   teams      Team[]
   servidores ServidorCategoria[]
+  escalacoes ScaleServidor[]
 
   @@map("categorias_funcao")
 }
@@ -263,16 +264,18 @@ model ScaleServidor {
   servidorId   Int             @map("servidor_id")
   instrumentId Int?            @map("instrument_id")
   teamId       Int?            @map("team_id")
+  categoriaId  Int?            @map("categoria_id")
   status       StatusEscalacao @default(convidado)
   origem       OrigemEscalacao @default(provisorio)
   lembreteEnviadoEm DateTime?  @map("lembrete_enviado_em")
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 
-  scale         Scale          @relation(fields: [scaleId], references: [id], onDelete: Cascade)
-  servidor      Servidor       @relation(fields: [servidorId], references: [id], onDelete: Cascade)
-  instrument    Instrument?    @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
-  team          Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  scale         Scale           @relation(fields: [scaleId], references: [id], onDelete: Cascade)
+  servidor      Servidor        @relation(fields: [servidorId], references: [id], onDelete: Cascade)
+  instrument    Instrument?     @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
+  team          Team?           @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  categoria     CategoriaFuncao? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
   substituicoes Substituicao[]
 
   @@unique([scaleId, servidorId])

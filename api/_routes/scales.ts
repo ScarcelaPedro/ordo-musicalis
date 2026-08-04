@@ -29,7 +29,7 @@ const include = {
   comunidade: true,
   celebrante: true,
   servidores: {
-    include: { servidor: true, instrument: true, team: { include: { categoria: true } } },
+    include: { servidor: true, instrument: true, team: { include: { categoria: true } }, categoria: true },
   },
   repertoire: {
     include: { items: { orderBy: { ordem: 'asc' as const } } },
@@ -77,10 +77,11 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
       ...(lembreteDiasAntes !== undefined ? { lembreteDiasAntes: Number(lembreteDiasAntes) } : {}),
       servidores: servidores?.length
         ? {
-            create: (servidores as { servidorId: number; instrumentId?: number; teamId?: number | null }[]).map((s) => ({
+            create: (servidores as { servidorId: number; instrumentId?: number; teamId?: number | null; categoriaId?: number | null }[]).map((s) => ({
               servidorId: s.servidorId,
               instrumentId: s.instrumentId ?? null,
               teamId: s.teamId ?? null,
+              categoriaId: s.categoriaId ?? null,
             })),
           }
         : undefined,
@@ -173,7 +174,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
   // substituído) de quem continua na escala, só mexe em quem entrou ou saiu.
   let addedServidorIds: number[] = []
   if (servidores !== undefined) {
-    const newList = servidores as { servidorId: number; instrumentId?: number | null; teamId?: number | null }[]
+    const newList = servidores as { servidorId: number; instrumentId?: number | null; teamId?: number | null; categoriaId?: number | null }[]
     const newIds = new Set(newList.map((s) => s.servidorId))
     const existing = await prisma.scaleServidor.findMany({ where: { scaleId: id } })
     const existingIds = new Set(existing.map((e) => e.servidorId))
@@ -189,12 +190,12 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
     for (const s of toUpdate) {
       await prisma.scaleServidor.updateMany({
         where: { scaleId: id, servidorId: s.servidorId },
-        data: { instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null },
+        data: { instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null },
       })
     }
     if (toAdd.length) {
       await prisma.scaleServidor.createMany({
-        data: toAdd.map((s) => ({ scaleId: id, servidorId: s.servidorId, instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null })),
+        data: toAdd.map((s) => ({ scaleId: id, servidorId: s.servidorId, instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null })),
       })
     }
   }

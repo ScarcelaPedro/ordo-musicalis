@@ -65,13 +65,13 @@ async function recusar() {
 
 const isFuture = () => scale.value && scale.value.dataCelebracao.slice(0, 10) >= new Date().toISOString().slice(0, 10)
 
-const SEM_CATEGORIA = { id: -1, nome: 'Sem ministério definido', ordem: 999 }
+const SEM_CATEGORIA = { id: -1, nome: 'Sem função definida', ordem: 999 }
 
 const gruposPorCategoria = computed(() => {
   if (!scale.value) return []
   const grupos = new Map<number, { categoria: { id: number; nome: string; ordem: number }; servidores: any[] }>()
   for (const s of scale.value.servidores) {
-    const categoria = s.team?.categoria ?? SEM_CATEGORIA
+    const categoria = s.categoria ?? s.team?.categoria ?? SEM_CATEGORIA
     if (!grupos.has(categoria.id)) grupos.set(categoria.id, { categoria, servidores: [] })
     grupos.get(categoria.id)!.servidores.push(s)
   }
