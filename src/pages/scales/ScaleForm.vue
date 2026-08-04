@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, reactive } from 'vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
@@ -12,8 +12,10 @@ interface Servidor {
   instruments: { instrumentId: number; instrument: { id: number; nome: string } }[]
   teams: { teamId: number }[]
 }
-interface Team { id: number; nome: string }
+interface Categoria { id: number; nome: string; ordem: number }
+interface Team { id: number; nome: string; categoria: Categoria }
 interface Comunidade { id: number; nome: string }
+interface Celebrante { id: number; nome: string }
 
 interface ScaleServidor { servidorId: number; instrumentId: number | null; teamId: number | null }
 
@@ -35,6 +37,8 @@ const props = defineProps<{
   servidores: Servidor[]
   teams: Team[]
   comunidades: Comunidade[]
+  celebrantes: Celebrante[]
+  categorias: Categoria[]
   loading?: boolean
 }>()
 
@@ -55,12 +59,28 @@ const form = ref<FormData>({
 
 watch(() => props.initialData, (val) => { if (val) Object.assign(form.value, val) })
 
-const busca = ref('')
-const servidoresFiltrados = computed(() => {
-  const termo = busca.value.trim().toLowerCase()
-  if (!termo) return props.servidores
-  return props.servidores.filter((s) => s.nome.toLowerCase().includes(termo))
-})
+const categoriasOrdenadas = computed(() => [...props.categorias].sort((a, b) => a.ordem - b.ordem))
+
+function teamsDaCategoria(categoriaId: number) {
+  return props.teams.filter((t) => t.categoria.id === categoriaId)
+}
+
+function entriesDaCategoria(categoriaId: number) {
+  const ids = new Set(teamsDaCategoria(categoriaId).map((t) => t.id))
+  return form.value.servidores.filter((s) => s.teamId != null && ids.has(s.teamId))
+}
+
+const entriesSemCategoria = computed(() => form.value.servidores.filter((s) => s.teamId == null))
+
+const servidoresDisponiveis = computed(() => props.servidores.filter((s) => !isSelected(s.id)))
+
+function servidorNome(servidorId: number) {
+  return props.servidores.find((s) => s.id === servidorId)?.nome ?? '?'
+}
+
+function instrumentosDe(servidorId: number) {
+  return props.servidores.find((s) => s.id === servidorId)?.instruments ?? []
+}
 
 function isSelected(servidorId: number) {
   return form.value.servidores.some((s) => s.servidorId === servidorId)
@@ -70,14 +90,15 @@ function getEntry(servidorId: number) {
   return form.value.servidores.find((s) => s.servidorId === servidorId)
 }
 
-function toggleServidor(servidor: Servidor) {
-  const idx = form.value.servidores.findIndex((s) => s.servidorId === servidor.id)
-  if (idx >= 0) {
-    form.value.servidores.splice(idx, 1)
-  } else {
-    const firstInstrument = servidor.instruments[0]?.instrumentId ?? null
-    form.value.servidores.push({ servidorId: servidor.id, instrumentId: firstInstrument, teamId: form.value.teamId })
-  }
+function adicionarServidor(servidorId: number, teamId: number | null) {
+  if (isSelected(servidorId)) return
+  const firstInstrument = props.servidores.find((s) => s.id === servidorId)?.instruments[0]?.instrumentId ?? null
+  form.value.servidores.push({ servidorId, instrumentId: firstInstrument, teamId })
+}
+
+function removerServidor(servidorId: number) {
+  const idx = form.value.servidores.findIndex((s) => s.servidorId === servidorId)
+  if (idx >= 0) form.value.servidores.splice(idx, 1)
 }
 
 function setInstrument(servidorId: number, instrumentId: number) {
@@ -90,25 +111,49 @@ function setServidorTeam(servidorId: number, teamId: number | null) {
   if (entry) entry.teamId = teamId
 }
 
+// Estado do controle de "adicionar servidor" de cada categoria -- criado sob demanda,
+// já que a lista de categorias vem por prop.
+const novoPorCategoria = reactive<Record<number, { servidorId: number | null; teamId: number | null }>>({})
+function getNovoState(categoriaId: number) {
+  if (!novoPorCategoria[categoriaId]) {
+    novoPorCategoria[categoriaId] = { servidorId: null, teamId: null }
+  }
+  return novoPorCategoria[categoriaId]
+}
+
+function adicionarNaCategoria(categoriaId: number) {
+  const state = getNovoState(categoriaId)
+  if (!state.servidorId) return
+  const teamId = state.teamId ?? teamsDaCategoria(categoriaId)[0]?.id ?? null
+  adicionarServidor(state.servidorId, teamId)
+  novoPorCategoria[categoriaId] = { servidorId: null, teamId: null }
+}
+
+const novoSemCategoria = ref<number | null>(null)
+function adicionarSemCategoria() {
+  if (!novoSemCategoria.value) return
+  adicionarServidor(novoSemCategoria.value, null)
+  novoSemCategoria.value = null
+}
+
 // "Adicionar equipe inteira": busca os membros do ministério escolhido e adiciona
 // todos de uma vez, já com o teamId de cada um preenchido -- pensado sobretudo pra
 // grupos fixos (ex: um "Coral" específico), mas funciona pra qualquer categoria.
-const equipeParaAdicionar = ref<number | null>(null)
-const addingEquipe = ref(false)
+const equipeParaAdicionar = reactive<Record<number, number | null>>({})
+const addingEquipe = ref<number | null>(null)
 
-async function adicionarEquipeInteira() {
-  if (!equipeParaAdicionar.value) return
-  addingEquipe.value = true
+async function adicionarEquipeInteira(categoriaId: number, teamIdForcado?: number) {
+  const teamId = teamIdForcado ?? equipeParaAdicionar[categoriaId]
+  if (!teamId) return
+  addingEquipe.value = categoriaId
   try {
-    const { data: team } = await client.get(`/teams/${equipeParaAdicionar.value}`)
+    const { data: team } = await client.get(`/teams/${teamId}`)
     for (const membro of team.servidores as { servidorId: number }[]) {
-      if (isSelected(membro.servidorId)) continue
-      const servidor = props.servidores.find((s) => s.id === membro.servidorId)
-      const firstInstrument = servidor?.instruments[0]?.instrumentId ?? null
-      form.value.servidores.push({ servidorId: membro.servidorId, instrumentId: firstInstrument, teamId: team.id })
+      adicionarServidor(membro.servidorId, team.id)
     }
+    equipeParaAdicionar[categoriaId] = null
   } finally {
-    addingEquipe.value = false
+    addingEquipe.value = null
   }
 }
 
@@ -145,10 +190,7 @@ async function buscarSugestoes() {
 }
 
 function adicionarSugerido(s: Suggestion) {
-  if (isSelected(s.servidorId)) return
-  const servidor = props.servidores.find((sv) => sv.id === s.servidorId)
-  const firstInstrument = servidor?.instruments[0]?.instrumentId ?? null
-  form.value.servidores.push({ servidorId: s.servidorId, instrumentId: firstInstrument, teamId: form.value.teamId })
+  adicionarServidor(s.servidorId, form.value.teamId)
   suggestions.value = suggestions.value.filter((sug) => sug.servidorId !== s.servidorId)
 }
 </script>
@@ -178,7 +220,7 @@ function adicionarSugerido(s: Suggestion) {
         <InputLabel value="Celebrante" />
         <select v-model="form.celebranteId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
           <option :value="null">Nenhum</option>
-          <option v-for="s in servidores" :key="s.id" :value="s.id">{{ s.nome }}</option>
+          <option v-for="c in celebrantes" :key="c.id" :value="c.id">{{ c.nome }}</option>
         </select>
       </div>
       <div>
@@ -231,52 +273,117 @@ function adicionarSugerido(s: Suggestion) {
     </div>
 
     <div>
-      <InputLabel value="Adicionar equipe inteira" />
-      <div class="mt-2 flex flex-wrap items-center gap-2">
-        <select v-model="equipeParaAdicionar" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
-          <option :value="null">Selecione um ministério</option>
-          <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
-        </select>
-        <SecondaryButton type="button" :disabled="!equipeParaAdicionar || addingEquipe" @click="adicionarEquipeInteira" class="!py-1.5 !px-3 text-xs">
-          {{ addingEquipe ? 'Adicionando...' : 'Adicionar todos os membros' }}
-        </SecondaryButton>
-      </div>
-      <p class="mt-1 text-xs text-gray-500">Adiciona todos os membros do ministério de uma vez, já com o ministério de cada um preenchido. Útil pra grupos fixos (ex: um coral específico).</p>
-    </div>
+      <InputLabel value="Equipe da celebração" />
+      <p class="mt-1 mb-3 text-xs text-gray-500">
+        Organizada por categoria de função, já que numa celebração normalmente todas as funções
+        servem ao mesmo tempo. Nem toda celebração precisa de todas as categorias -- adicione só o
+        que se aplica.
+      </p>
 
-    <div>
-      <InputLabel value="Servidores da escala" />
-      <TextInput v-model="busca" placeholder="Buscar servidor por nome..." class="mt-2 w-full sm:w-80" />
-      <div class="mt-2 space-y-2 max-h-96 overflow-y-auto">
-        <p v-if="servidoresFiltrados.length === 0" class="text-sm text-gray-500">Nenhum servidor encontrado.</p>
-        <div v-for="s in servidoresFiltrados" :key="s.id" class="flex flex-wrap items-center gap-3 p-3 border rounded-md" :class="isSelected(s.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
-          <input
-            type="checkbox"
-            :checked="isSelected(s.id)"
-            @change="toggleServidor(s)"
-            class="rounded border-gray-300 text-indigo-600"
-          />
-          <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ s.nome }}</span>
-          <template v-if="isSelected(s.id)">
+      <div
+        v-for="cat in categoriasOrdenadas"
+        :key="cat.id"
+        class="border rounded-md p-4 mb-3"
+        :class="entriesDaCategoria(cat.id).length === 0 ? 'border-amber-200 bg-amber-50/40' : 'border-gray-200'"
+      >
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-medium text-sm text-gray-800">{{ cat.nome }}</h4>
+          <span class="text-xs font-semibold" :class="entriesDaCategoria(cat.id).length === 0 ? 'text-amber-600' : 'text-gray-400'">
+            {{ entriesDaCategoria(cat.id).length === 0 ? 'Ninguém escalado' : `${entriesDaCategoria(cat.id).length} escalado(s)` }}
+          </span>
+        </div>
+
+        <div v-if="entriesDaCategoria(cat.id).length" class="space-y-2 mb-3">
+          <div v-for="entry in entriesDaCategoria(cat.id)" :key="entry.servidorId" class="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-100 rounded">
+            <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ servidorNome(entry.servidorId) }}</span>
             <select
-              v-if="s.instruments.length"
-              :value="getEntry(s.id)?.instrumentId"
-              @change="setInstrument(s.id, Number(($event.target as HTMLSelectElement).value))"
+              v-if="instrumentosDe(entry.servidorId).length"
+              :value="entry.instrumentId"
+              @change="setInstrument(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
               class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
             >
-              <option v-for="i in s.instruments" :key="i.instrumentId" :value="i.instrumentId">
-                {{ i.instrument.nome }}
-              </option>
+              <option v-for="i in instrumentosDe(entry.servidorId)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
             </select>
             <select
-              :value="getEntry(s.id)?.teamId"
-              @change="setServidorTeam(s.id, ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
+              v-if="teamsDaCategoria(cat.id).length > 1"
+              :value="entry.teamId"
+              @change="setServidorTeam(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
               class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
             >
-              <option :value="null">Sem ministério</option>
-              <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
+              <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </select>
-          </template>
+            <button type="button" @click="removerServidor(entry.servidorId)" class="text-red-600 hover:text-red-800 text-xs">Remover</button>
+          </div>
+        </div>
+
+        <template v-if="teamsDaCategoria(cat.id).length">
+          <div class="flex flex-wrap items-center gap-2">
+            <select v-model="getNovoState(cat.id).servidorId" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md flex-1 min-w-[10rem]">
+              <option :value="null">Adicionar servidor...</option>
+              <option v-for="s in servidoresDisponiveis" :key="s.id" :value="s.id">{{ s.nome }}</option>
+            </select>
+            <select v-if="teamsDaCategoria(cat.id).length > 1" v-model="getNovoState(cat.id).teamId" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md">
+              <option :value="null">{{ teamsDaCategoria(cat.id)[0].nome }} (padrão)</option>
+              <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
+            </select>
+            <SecondaryButton type="button" :disabled="!getNovoState(cat.id).servidorId" @click="adicionarNaCategoria(cat.id)" class="!py-1.5 !px-3 text-xs">
+              Adicionar
+            </SecondaryButton>
+          </div>
+
+          <div v-if="teamsDaCategoria(cat.id).length > 1" class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
+            <span class="text-xs text-gray-500">Adicionar equipe inteira:</span>
+            <select v-model="equipeParaAdicionar[cat.id]" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md">
+              <option :value="null">Selecione o ministério</option>
+              <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
+            </select>
+            <SecondaryButton
+              type="button"
+              :disabled="!equipeParaAdicionar[cat.id] || addingEquipe === cat.id"
+              @click="adicionarEquipeInteira(cat.id)"
+              class="!py-1.5 !px-3 text-xs"
+            >
+              {{ addingEquipe === cat.id ? 'Adicionando...' : 'Adicionar todos' }}
+            </SecondaryButton>
+          </div>
+          <div v-else class="mt-3 pt-3 border-t border-gray-100">
+            <SecondaryButton
+              type="button"
+              :disabled="addingEquipe === cat.id"
+              @click="adicionarEquipeInteira(cat.id, teamsDaCategoria(cat.id)[0].id)"
+              class="!py-1.5 !px-3 text-xs"
+            >
+              {{ addingEquipe === cat.id ? 'Adicionando...' : `Adicionar toda a equipe de ${teamsDaCategoria(cat.id)[0].nome}` }}
+            </SecondaryButton>
+          </div>
+        </template>
+        <p v-else class="text-xs text-gray-400">Nenhum ministério cadastrado nesta categoria ainda.</p>
+      </div>
+
+      <div class="border border-gray-200 rounded-md p-4">
+        <h4 class="font-medium text-sm text-gray-800 mb-3">Outras pessoas (sem ministério definido)</h4>
+        <div v-if="entriesSemCategoria.length" class="space-y-2 mb-3">
+          <div v-for="entry in entriesSemCategoria" :key="entry.servidorId" class="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-100 rounded">
+            <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ servidorNome(entry.servidorId) }}</span>
+            <select
+              v-if="instrumentosDe(entry.servidorId).length"
+              :value="entry.instrumentId"
+              @change="setInstrument(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
+              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+            >
+              <option v-for="i in instrumentosDe(entry.servidorId)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
+            </select>
+            <button type="button" @click="removerServidor(entry.servidorId)" class="text-red-600 hover:text-red-800 text-xs">Remover</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <select v-model="novoSemCategoria" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md flex-1 min-w-[10rem]">
+            <option :value="null">Adicionar servidor...</option>
+            <option v-for="s in servidoresDisponiveis" :key="s.id" :value="s.id">{{ s.nome }}</option>
+          </select>
+          <SecondaryButton type="button" :disabled="!novoSemCategoria" @click="adicionarSemCategoria" class="!py-1.5 !px-3 text-xs">
+            Adicionar
+          </SecondaryButton>
         </div>
       </div>
     </div>

@@ -157,6 +157,25 @@ quem monta a escala (coordenador responsável ou admin) monta a equipe toda.
       navegador** (sem ferramenta de browser neste ambiente) — a verificação foi via typecheck
       (`tsc`/`vue-tsc` limpos) e chamadas reais à API, não renderização real das telas.
 
+## Fase 5 — Ajustes de uso real
+
+Depois de usar o sistema de verdade, dois pontos da Fase 0/2 precisaram de ajuste:
+
+- [x] **Celebrante vira entidade própria** (revisa a decisão da Fase 0): não fazia sentido um
+      padre ser um "Servidor" com instrumentos/nível/ministérios. Novo model `Celebrante`
+      (`nome, telefone, email, ativo`), CRUD próprio staff-only (`api/_routes/celebrantes.ts` +
+      `src/pages/celebrantes/`), link de navegação, e `Scale.celebranteId` repontado pra essa
+      tabela nova. Migration migra com segurança qualquer celebrante que já existisse como
+      Servidor, sem perder o vínculo nem apagar o registro antigo.
+- [x] **`ScaleForm.vue` reorganizado por categoria de função** (estende a Fase 2): numa
+      celebração de verdade todas as funções servem ao mesmo tempo, então a escala agora mostra
+      uma seção por categoria ativa (Música, Leitores, Acólitos...), cada uma com sua própria
+      lista de adicionar servidor/equipe inteira e um aviso visual de "ninguém escalado" — sem
+      bloquear o salvamento (nem toda celebração precisa de todas as categorias). Uma seção
+      "sem ministério definido" cobre o caso residual.
+- [x] Testado local: CRUD de celebrantes, escala criada com `celebranteId` apontando pra
+      `celebrantes` (confirmado que a resposta não traz mais instrumentos/nível), typecheck limpo.
+
 ---
 
 ## Como usar este arquivo

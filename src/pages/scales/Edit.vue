@@ -13,6 +13,8 @@ const scale = ref<any>(null)
 const servidores = ref([])
 const teams = ref([])
 const comunidades = ref([])
+const celebrantes = ref([])
+const categorias = ref([])
 const loading = ref(false)
 
 const initialData = computed(() => scale.value ? {
@@ -33,16 +35,20 @@ const initialData = computed(() => scale.value ? {
 } : undefined)
 
 onMounted(async () => {
-  const [s, sv, t, c] = await Promise.all([
+  const [s, sv, t, c, cel, cat] = await Promise.all([
     client.get(`/scales/${route.params.id}`),
     client.get('/servidores'),
     client.get('/teams'),
     client.get('/comunidades'),
+    client.get('/celebrantes'),
+    client.get('/categorias'),
   ])
   scale.value = s.data
   servidores.value = sv.data
   teams.value = t.data
   comunidades.value = c.data
+  celebrantes.value = cel.data
+  categorias.value = cat.data
 })
 
 async function submit(data: object) {
@@ -63,7 +69,7 @@ async function submit(data: object) {
   <AuthenticatedLayout>
     <template #header><h2 class="font-semibold text-xl text-gray-800">Editar Escala</h2></template>
     <div class="bg-white shadow-sm rounded-lg p-6">
-      <ScaleForm v-if="scale" :initial-data="initialData" :servidores="servidores" :teams="teams" :comunidades="comunidades" :loading="loading" @submit="submit" />
+      <ScaleForm v-if="scale" :initial-data="initialData" :servidores="servidores" :teams="teams" :comunidades="comunidades" :celebrantes="celebrantes" :categorias="categorias" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>
 </template>

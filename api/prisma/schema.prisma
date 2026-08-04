@@ -113,9 +113,22 @@ model Servidor {
   vinculosFixos VinculoFixo[]
   windowResponses AvailabilityWindowResponse[]
   substituicoesComoSubstituto Substituicao[] @relation("SubstitutoMusico")
-  celebracoes   Scale[]              @relation("ScaleCelebrante")
 
   @@map("servidores")
+}
+
+model Celebrante {
+  id          Int      @id @default(autoincrement())
+  nome        String
+  telefone    String?
+  email       String?
+  ativo       Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  celebracoes Scale[]
+
+  @@map("celebrantes")
 }
 
 model Instrument {
@@ -222,7 +235,7 @@ model Scale {
 
   team       Team?          @relation(fields: [teamId], references: [id], onDelete: SetNull)
   comunidade Comunidade     @relation(fields: [comunidadeId], references: [id])
-  celebrante Servidor?      @relation("ScaleCelebrante", fields: [celebranteId], references: [id], onDelete: SetNull)
+  celebrante Celebrante?    @relation(fields: [celebranteId], references: [id], onDelete: SetNull)
   servidores ScaleServidor[]
   repertoire Repertoire?
 

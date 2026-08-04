@@ -91,6 +91,15 @@ async function logout() {
                 >
                   Categorias
                 </RouterLink>
+                <RouterLink
+                  to="/celebrantes"
+                  class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium leading-5 transition"
+                  :class="$route.path.startsWith('/celebrantes')
+                    ? 'border-indigo-400 text-gray-900 dark:text-gray-100'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200'"
+                >
+                  Celebrantes
+                </RouterLink>
               </template>
               <template v-else>
                 <RouterLink
@@ -147,6 +156,7 @@ async function logout() {
             <RouterLink to="/disponibilidade/painel" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Disponibilidade</RouterLink>
             <RouterLink to="/comunidades" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Comunidades</RouterLink>
             <RouterLink to="/categorias" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Categorias</RouterLink>
+            <RouterLink to="/celebrantes" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Celebrantes</RouterLink>
           </template>
           <template v-else>
             <RouterLink to="/minha-escala" class="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 dark:text-gray-300">Minha Escala</RouterLink>

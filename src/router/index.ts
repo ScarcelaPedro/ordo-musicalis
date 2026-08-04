@@ -140,6 +140,26 @@ const router = createRouter({
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
 
+    // Celebrantes
+    {
+      path: '/celebrantes',
+      name: 'celebrantes.index',
+      component: () => import('@/pages/celebrantes/Index.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/celebrantes/criar',
+      name: 'celebrantes.create',
+      component: () => import('@/pages/celebrantes/Create.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/celebrantes/:id/editar',
+      name: 'celebrantes.edit',
+      component: () => import('@/pages/celebrantes/Edit.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+
     // Escalas
     {
       path: '/escalas',

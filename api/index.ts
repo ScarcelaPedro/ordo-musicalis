@@ -6,6 +6,7 @@ import servidorRoutes from './_routes/servidores'
 import teamRoutes from './_routes/teams'
 import comunidadeRoutes from './_routes/comunidades'
 import categoriaRoutes from './_routes/categorias'
+import celebranteRoutes from './_routes/celebrantes'
 import scaleRoutes from './_routes/scales'
 import scaleTemplateRoutes from './_routes/scaleTemplates'
 import repertoireRoutes from './_routes/repertoire'
@@ -35,6 +36,7 @@ app.use('/api/servidores', servidorRoutes)
 app.use('/api/teams', teamRoutes)
 app.use('/api/comunidades', comunidadeRoutes)
 app.use('/api/categorias', categoriaRoutes)
+app.use('/api/celebrantes', celebranteRoutes)
 app.use('/api/scales', scaleRoutes)
 app.use('/api/scale-templates', scaleTemplateRoutes)
 app.use('/api/scales/:scaleId/repertoire/items', repertoireItemRoutes)
