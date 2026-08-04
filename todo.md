@@ -187,6 +187,11 @@ Depois de usar o sistema de verdade, dois pontos da Fase 0/2 precisaram de ajust
       escalação; o Ministério continua existindo como vínculo opcional adicional (útil sobretudo
       pra Música). Testado: um Acólito sem nenhum Ministério cadastrado aparece corretamente na
       seção "Acólitos e Coroinhas" da escala e do relatório por categoria.
+- [x] **`ScaleForm.vue` só oferece, em cada seção de categoria, servidores que têm aquela função
+      marcada no cadastro** (bug de uso real: antes qualquer servidor aparecia disponível pra
+      qualquer categoria — um Acólito conseguia ser escalado como Leitor, por exemplo, o que não
+      faz sentido). A seção "sem função definida" continua sem filtro, como válvula de escape pra
+      quem ainda não tem função cadastrada.
 
 ---
 

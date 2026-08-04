@@ -11,6 +11,7 @@ interface Servidor {
   nome: string
   instruments: { instrumentId: number; instrument: { id: number; nome: string } }[]
   teams: { teamId: number }[]
+  categorias: { categoriaId: number }[]
 }
 interface Categoria { id: number; nome: string; ordem: number }
 interface Team { id: number; nome: string; categoria: Categoria }
@@ -74,6 +75,14 @@ function entriesDaCategoria(categoriaId: number) {
 
 const entriesSemCategoria = computed(() => form.value.servidores.filter((s) => s.categoriaId == null))
 
+// Só quem tem a função marcada no cadastro (ServidorCategoria) pode ser escalado naquela
+// categoria -- um Acólito não aparece na lista de Música, por exemplo.
+function servidoresDaCategoria(categoriaId: number) {
+  return props.servidores.filter((s) => !isSelected(s.id) && s.categorias.some((c) => c.categoriaId === categoriaId))
+}
+
+// A seção "sem função definida" fica sem filtro -- é a válvula de escape pra alguém sem
+// função cadastrada ainda.
 const servidoresDisponiveis = computed(() => props.servidores.filter((s) => !isSelected(s.id)))
 
 function servidorNome(servidorId: number) {
@@ -320,10 +329,13 @@ function adicionarSugerido(s: Suggestion) {
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <p v-if="servidoresDaCategoria(cat.id).length === 0" class="text-xs text-gray-400">
+          Nenhum servidor com a função "{{ cat.nome }}" cadastrado ainda.
+        </p>
+        <div v-else class="flex flex-wrap items-center gap-2">
           <select v-model="getNovoState(cat.id).servidorId" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md flex-1 min-w-[10rem]">
             <option :value="null">Adicionar servidor...</option>
-            <option v-for="s in servidoresDisponiveis" :key="s.id" :value="s.id">{{ s.nome }}</option>
+            <option v-for="s in servidoresDaCategoria(cat.id)" :key="s.id" :value="s.id">{{ s.nome }}</option>
           </select>
           <select v-if="teamsDaCategoria(cat.id).length > 1" v-model="getNovoState(cat.id).teamId" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md">
             <option :value="null">{{ teamsDaCategoria(cat.id)[0].nome }} (padrão)</option>
