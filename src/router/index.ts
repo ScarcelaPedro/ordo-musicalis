@@ -226,6 +226,14 @@ const router = createRouter({
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
 
+    // Liturgia
+    {
+      path: '/escalas/:id/liturgia',
+      name: 'liturgia.show',
+      component: () => import('@/pages/liturgia/Show.vue'),
+      meta: { auth: true },
+    },
+
     // Disponibilidade
     {
       path: '/disponibilidade',

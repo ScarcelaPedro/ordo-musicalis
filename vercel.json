@@ -6,6 +6,7 @@
     { "source": "/((?!api).*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/cron/lembretes", "schedule": "0 12 * * *" }
+    { "path": "/api/cron/lembretes", "schedule": "0 12 * * *" },
+    { "path": "/api/cron/liturgia-sync", "schedule": "0 6 * * *" }
   ]
 }

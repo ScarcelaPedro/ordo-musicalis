@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { sendPushToServidores, formatDataCurta } from '../_lib/sendPush'
 import { sendWhatsappToServidores } from '../_lib/sendWhatsapp'
 import { hojeBrasilia } from '../_lib/date'
+import { fetchLiturgiaExterna, toLiturgiaCreateInput } from '../_lib/fetchLiturgia'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -65,6 +66,44 @@ router.get('/lembretes', async (req: Request, res: Response) => {
   }
 
   return res.json({ lembretesEnviados: enviados })
+})
+
+const DIAS_JANELA_LITURGIA = 60
+// Limite de buscas externas sequenciais por execução, pra não estourar o timeout da function
+// -- rodando diariamente, a janela inteira acaba preenchida em poucos dias mesmo assim.
+const LIMITE_BUSCAS_POR_EXECUCAO = 20
+
+router.get('/liturgia-sync', async (req: Request, res: Response) => {
+  if (!verifyCronSecret(req, res)) return
+
+  const hoje = hojeBrasilia()
+  const datas: Date[] = []
+  for (let i = 0; i < DIAS_JANELA_LITURGIA; i++) {
+    const d = new Date(hoje)
+    d.setUTCDate(d.getUTCDate() + i)
+    datas.push(d)
+  }
+
+  const existentes = await prisma.liturgia.findMany({
+    where: { data: { in: datas } },
+    select: { data: true },
+  })
+  const jaSincronizadas = new Set(existentes.map((l) => l.data.toISOString().slice(0, 10)))
+  const faltando = datas.filter((d) => !jaSincronizadas.has(d.toISOString().slice(0, 10)))
+
+  let sincronizadas = 0
+  let falhas = 0
+  for (const data of faltando.slice(0, LIMITE_BUSCAS_POR_EXECUCAO)) {
+    const buscada = await fetchLiturgiaExterna(data)
+    if (!buscada) {
+      falhas++
+      continue
+    }
+    await prisma.liturgia.create({ data: toLiturgiaCreateInput(buscada) })
+    sincronizadas++
+  }
+
+  return res.json({ sincronizadas, falhas, restantes: Math.max(0, faltando.length - LIMITE_BUSCAS_POR_EXECUCAO - falhas), janelaDias: DIAS_JANELA_LITURGIA })
 })
 
 export default router

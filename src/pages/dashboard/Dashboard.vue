@@ -25,6 +25,11 @@ interface Scale {
   servidores: ScaleServidor[]
 }
 
+interface Liturgia {
+  data: string
+  cor: string
+}
+
 interface Pendencia {
   scaleServidorId: number
   servidorId: number
@@ -45,6 +50,15 @@ const loading      = ref(false)
 const pendencias   = ref<Pendencia[]>([])
 const comunidades  = ref<{ id: number; nome: string }[]>([])
 const filterComunidadeId = ref('')
+const liturgias    = ref<Liturgia[]>([])
+
+const CORES_LITURGICAS_CLASSES: Record<string, string> = {
+  Verde: 'bg-green-50',
+  Roxo: 'bg-purple-50',
+  Branco: 'bg-white',
+  Vermelho: 'bg-red-50',
+  Rosa: 'bg-pink-50',
+}
 
 const MONTH_NAMES = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -76,8 +90,19 @@ async function loadComunidades() {
   comunidades.value = data
 }
 
-onMounted(() => { load(); loadPendencias(); loadComunidades() })
+async function loadLiturgias() {
+  const mes = `${currentYear.value}-${String(currentMonth.value + 1).padStart(2,'0')}`
+  try {
+    const { data } = await client.get('/liturgia', { params: { mes } })
+    liturgias.value = data
+  } catch {
+    liturgias.value = []
+  }
+}
+
+onMounted(() => { load(); loadPendencias(); loadComunidades(); loadLiturgias() })
 watch([currentMonth, currentYear, filterComunidadeId], load)
+watch([currentMonth, currentYear], loadLiturgias)
 
 function prevMonth() {
   if (currentMonth.value === 0) { currentMonth.value = 11; currentYear.value-- }
@@ -108,10 +133,23 @@ const scalesByDate = computed(() => {
   return map
 })
 
+const liturgiaByDate = computed(() => {
+  const map: Record<string, Liturgia> = {}
+  for (const l of liturgias.value) map[l.data.slice(0, 10)] = l
+  return map
+})
+
 function dayKey(day: number) {
   const m = String(currentMonth.value + 1).padStart(2,'0')
   const d = String(day).padStart(2,'0')
   return `${currentYear.value}-${m}-${d}`
+}
+
+// Fundo da célula pela cor litúrgica do dia; sem liturgia sincronizada ainda, fica neutro.
+function celulaClass(day: number | null) {
+  if (day === null) return 'bg-gray-50/80'
+  const cor = liturgiaByDate.value[dayKey(day)]?.cor
+  return CORES_LITURGICAS_CLASSES[cor] ?? 'bg-white'
 }
 
 function isToday(day: number) {
@@ -312,11 +350,8 @@ function formatFullDate(iso: string) {
             :key="idx"
             class="min-h-[90px] sm:min-h-[108px] p-1.5"
             :class="[
-              day === null       ? 'bg-gray-50/80'     : '',
-              day && isToday(day)    ? 'bg-indigo-50/50'   : '',
-              day && isSunday(day)   ? 'bg-rose-50/40'    : '',
-              day && isSaturday(day) ? 'bg-indigo-50/25'  : '',
-              !day || (!isToday(day) && !isSunday(day) && !isSaturday(day)) ? 'bg-white' : '',
+              celulaClass(day),
+              day && isToday(day) ? 'ring-2 ring-inset ring-indigo-400' : '',
             ]"
           >
             <!-- Número -->
@@ -376,6 +411,13 @@ function formatFullDate(iso: string) {
             <span class="w-3 h-3 rounded bg-emerald-50 border border-emerald-200 inline-block"></span> Confirmada
           </span>
           <span class="ml-auto text-gray-300 italic hidden sm:inline">Passe o cursor sobre a celebração para ver os servidores</span>
+        </div>
+
+        <!-- Legenda das cores litúrgicas -->
+        <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-4 text-xs text-gray-500">
+          <span v-for="(classes, cor) in CORES_LITURGICAS_CLASSES" :key="cor" class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded border border-gray-300 inline-block" :class="classes"></span> {{ cor }}
+          </span>
         </div>
       </div>
 

@@ -117,13 +117,17 @@ function imprimir() {
             class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
             Imprimir
           </button>
+          <RouterLink v-if="auth.isStaff && scale" :to="`/escalas/${scale.id}/repertorio`"
+            class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
+            Repertório
+          </RouterLink>
           <RouterLink v-if="auth.isStaff && scale" :to="`/escalas/${scale.id}/editar`"
             class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
             Editar
           </RouterLink>
-          <RouterLink v-if="auth.isStaff && scale" :to="`/escalas/${scale.id}/repertorio`"
+          <RouterLink v-if="scale" :to="`/escalas/${scale.id}/liturgia`"
             class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold uppercase rounded-md hover:bg-indigo-700">
-            Repertório
+            Liturgia
           </RouterLink>
         </div>
       </div>

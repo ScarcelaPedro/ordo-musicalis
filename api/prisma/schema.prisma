@@ -420,3 +420,26 @@ model AvailabilityWindowResponse {
   @@unique([windowId, servidorId])
   @@map("availability_window_responses")
 }
+
+model Liturgia {
+  id                 Int      @id @default(autoincrement())
+  data               DateTime @unique @db.Date
+  liturgia           String
+  cor                String
+  temGloria          Boolean  @default(false) @map("tem_gloria")
+  temCredo           Boolean  @default(false) @map("tem_credo")
+  antifonaEntrada    String?  @map("antifona_entrada") @db.Text
+  coleta             String?  @db.Text
+  primeiraLeitura    Json?    @map("primeira_leitura")
+  salmo              Json?
+  segundaLeitura     Json?    @map("segunda_leitura")
+  evangelho          Json?
+  oferendas          String?  @db.Text
+  antifonaComunhao   String?  @map("antifona_comunhao") @db.Text
+  oracaoComunhao     String?  @map("oracao_comunhao") @db.Text
+  editadoManualmente Boolean  @default(false) @map("editado_manualmente")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@map("liturgias")
+}
