@@ -220,21 +220,10 @@ function formatFullDate(iso: string) {
           <template v-if="nextScale.comunidade">
             <span class="mx-1 text-indigo-400">·</span>{{ nextScale.comunidade.nome }}
           </template>
-          <template v-if="nextScale.team">
-            <span class="mx-1 text-indigo-400">·</span>{{ nextScale.team.nome }}
-          </template>
           <template v-if="nextScale.celebrante">
             <span class="mx-1 text-indigo-400">·</span>{{ nextScale.celebrante.nome }}
           </template>
         </p>
-        <div v-if="nextScale.servidores.length" class="mt-3 flex flex-wrap gap-1.5">
-          <span v-for="s in nextScale.servidores" :key="s.servidorId"
-            class="bg-white/15 text-white text-xs px-2.5 py-0.5 rounded-full border border-white/20">
-            {{ s.servidor.nome }}
-            <span v-if="s.instrument" class="text-indigo-300 ml-1">· {{ s.instrument.nome }}</span>
-          </span>
-        </div>
-        <p v-else class="mt-3 text-sm text-indigo-300/80 italic">Nenhum servidor escalado ainda.</p>
         <RouterLink :to="`/escalas/${nextScale.id}`"
           class="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-indigo-200 hover:text-white transition">
           Ver escala completa
