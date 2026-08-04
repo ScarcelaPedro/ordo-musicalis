@@ -76,7 +76,7 @@ const musicaId = computed(() => props.categorias.find((c) => c.nome === 'Música
 
 // Função litúrgica (Cerimoniário, Cruciferário, Turiferário...) só faz sentido pra quem está
 // sendo escalado como Acólito/Ancila -- qualquer um deles está apto pra qualquer função.
-const acolitosId = computed(() => props.categorias.find((c) => c.nome === 'Acólitos e Coroinhas')?.id ?? null)
+const acolitosId = computed(() => props.categorias.find((c) => c.nome === 'Acólitos e Ancilas')?.id ?? null)
 
 function teamsDaCategoria(categoriaId: number) {
   return props.teams.filter((t) => t.categoria.id === categoriaId)

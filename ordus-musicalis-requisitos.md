@@ -51,7 +51,7 @@ cadastráveis pelo admin, com as seguintes de partida:
 - **Música**: coral/coro, grupo de louvor, cantor(a) solista, organista/tecladista, regente,
   instrumentistas (violão, baixo, bateria, flauta, violino etc.)
 - **Ministros da Comunhão**
-- **Acólitos e Coroinhas**
+- **Acólitos e Ancilas**
 - **Leitores**
 - **Comentaristas**
 - Outras categorias podem ser cadastradas conforme a necessidade da paróquia
@@ -96,7 +96,7 @@ qualquer comunidade onde for escalado.
 - Status (ativa/inativa)
 
 ### 3.4 Cadastro de Categorias de Função
-- Nome (Música, Ministros da Comunhão, Acólitos e Coroinhas, Leitores, Comentaristas, ...)
+- Nome (Música, Ministros da Comunhão, Acólitos e Ancilas, Leitores, Comentaristas, ...)
 - Ordem de exibição
 - Status (ativa/inativa)
 

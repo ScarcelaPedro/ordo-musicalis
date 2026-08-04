@@ -25,7 +25,7 @@ async function main() {
   const categorias = [
     { nome: 'Música', ordem: 1 },
     { nome: 'Ministros da Comunhão', ordem: 2 },
-    { nome: 'Acólitos e Coroinhas', ordem: 3 },
+    { nome: 'Acólitos e Ancilas', ordem: 3 },
     { nome: 'Leitores', ordem: 4 },
     { nome: 'Comentaristas', ordem: 5 },
   ]

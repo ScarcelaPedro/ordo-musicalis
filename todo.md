@@ -47,7 +47,7 @@ quem monta a escala (coordenador responsável ou admin) monta a equipe toda.
 | Model | O que muda |
 |---|---|
 | `Comunidade` (novo) | `id, nome, endereco?, ativo`. Toda `Scale` ganha `comunidadeId` obrigatório. |
-| `CategoriaFuncao` (novo, cadastrável) | `id, nome, ordem, ativo`. Seed: Música, Ministros da Comunhão, Acólitos e Coroinhas, Leitores, Comentaristas. |
+| `CategoriaFuncao` (novo, cadastrável) | `id, nome, ordem, ativo`. Seed: Música, Ministros da Comunhão, Acólitos e Ancilas, Leitores, Comentaristas. |
 | `Team` (Ministério) | ganha `categoriaId` obrigatório. |
 | `Scale` (Celebração) | ganha `comunidadeId` obrigatório e `celebranteId` opcional (FK → `Servidor`). |
 | `ScaleMusician` → `ScaleServidor` | ganha `teamId` opcional (o ministério da pessoa **nessa** celebração). |
@@ -186,7 +186,7 @@ Depois de usar o sistema de verdade, dois pontos da Fase 0/2 precisaram de ajust
       função conseguia ser escalada corretamente. Agora a categoria é gravada direto na
       escalação; o Ministério continua existindo como vínculo opcional adicional (útil sobretudo
       pra Música). Testado: um Acólito sem nenhum Ministério cadastrado aparece corretamente na
-      seção "Acólitos e Coroinhas" da escala e do relatório por categoria.
+      seção "Acólitos e Ancilas" da escala e do relatório por categoria.
 - [x] **`ScaleForm.vue` só oferece, em cada seção de categoria, servidores que têm aquela função
       marcada no cadastro** (bug de uso real: antes qualquer servidor aparecia disponível pra
       qualquer categoria — um Acólito conseguia ser escalado como Leitor, por exemplo, o que não
