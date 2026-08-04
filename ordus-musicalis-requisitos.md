@@ -53,7 +53,7 @@ cadastráveis pelo admin, com as seguintes de partida:
 - **Ministros da Comunhão**
 - **Acólitos e Ancilas**
 - **Leitores**
-- **Comentaristas**
+- **Comentarista**
 - Outras categorias podem ser cadastradas conforme a necessidade da paróquia
 
 Dentro de cada categoria existem **ministérios/grupos** (ex: "Coral", "Grupo Jovem", "Acólitos da
@@ -96,7 +96,7 @@ qualquer comunidade onde for escalado.
 - Status (ativa/inativa)
 
 ### 3.4 Cadastro de Categorias de Função
-- Nome (Música, Ministros da Comunhão, Acólitos e Ancilas, Leitores, Comentaristas, ...)
+- Nome (Música, Ministros da Comunhão, Acólitos e Ancilas, Leitores, Comentarista, ...)
 - Ordem de exibição
 - Status (ativa/inativa)
 

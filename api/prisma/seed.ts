@@ -27,7 +27,7 @@ async function main() {
     { nome: 'Ministros da Comunhão', ordem: 2 },
     { nome: 'Acólitos e Ancilas', ordem: 3 },
     { nome: 'Leitores', ordem: 4 },
-    { nome: 'Comentaristas', ordem: 5 },
+    { nome: 'Comentarista', ordem: 5 },
   ]
   for (const categoria of categorias) {
     const existing = await prisma.categoriaFuncao.findFirst({ where: { nome: categoria.nome } })

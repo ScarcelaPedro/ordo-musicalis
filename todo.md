@@ -47,7 +47,7 @@ quem monta a escala (coordenador responsável ou admin) monta a equipe toda.
 | Model | O que muda |
 |---|---|
 | `Comunidade` (novo) | `id, nome, endereco?, ativo`. Toda `Scale` ganha `comunidadeId` obrigatório. |
-| `CategoriaFuncao` (novo, cadastrável) | `id, nome, ordem, ativo`. Seed: Música, Ministros da Comunhão, Acólitos e Ancilas, Leitores, Comentaristas. |
+| `CategoriaFuncao` (novo, cadastrável) | `id, nome, ordem, ativo`. Seed: Música, Ministros da Comunhão, Acólitos e Ancilas, Leitores, Comentarista. |
 | `Team` (Ministério) | ganha `categoriaId` obrigatório. |
 | `Scale` (Celebração) | ganha `comunidadeId` obrigatório e `celebranteId` opcional (FK → `Servidor`). |
 | `ScaleMusician` → `ScaleServidor` | ganha `teamId` opcional (o ministério da pessoa **nessa** celebração). |
