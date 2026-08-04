@@ -62,6 +62,10 @@ watch(() => props.initialData, (val) => { if (val) Object.assign(form.value, val
 
 const categoriasOrdenadas = computed(() => [...props.categorias].sort((a, b) => a.ordem - b.ordem))
 
+// Instrumento só faz sentido pra quem está sendo escalado como Música -- um Acólito que
+// também é músico não deve ganhar instrumento quando escalado como Acólito.
+const musicaId = computed(() => props.categorias.find((c) => c.nome === 'Música')?.id ?? null)
+
 function teamsDaCategoria(categoriaId: number) {
   return props.teams.filter((t) => t.categoria.id === categoriaId)
 }
@@ -103,7 +107,10 @@ function getEntry(servidorId: number) {
 
 function adicionarServidor(servidorId: number, categoriaId: number | null, teamId: number | null) {
   if (isSelected(servidorId)) return
-  const firstInstrument = props.servidores.find((s) => s.id === servidorId)?.instruments[0]?.instrumentId ?? null
+  const ehMusica = musicaId.value != null && categoriaId === musicaId.value
+  const firstInstrument = ehMusica
+    ? props.servidores.find((s) => s.id === servidorId)?.instruments[0]?.instrumentId ?? null
+    : null
   form.value.servidores.push({ servidorId, instrumentId: firstInstrument, teamId, categoriaId })
 }
 
@@ -309,7 +316,7 @@ function adicionarSugerido(s: Suggestion) {
           <div v-for="entry in entriesDaCategoria(cat.id)" :key="entry.servidorId" class="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-100 rounded">
             <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ servidorNome(entry.servidorId) }}</span>
             <select
-              v-if="instrumentosDe(entry.servidorId).length"
+              v-if="cat.id === musicaId && instrumentosDe(entry.servidorId).length"
               :value="entry.instrumentId"
               @change="setInstrument(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
               class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
@@ -381,14 +388,6 @@ function adicionarSugerido(s: Suggestion) {
         <div v-if="entriesSemCategoria.length" class="space-y-2 mb-3">
           <div v-for="entry in entriesSemCategoria" :key="entry.servidorId" class="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-100 rounded">
             <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ servidorNome(entry.servidorId) }}</span>
-            <select
-              v-if="instrumentosDe(entry.servidorId).length"
-              :value="entry.instrumentId"
-              @change="setInstrument(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
-              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
-            >
-              <option v-for="i in instrumentosDe(entry.servidorId)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
-            </select>
             <button type="button" @click="removerServidor(entry.servidorId)" class="text-red-600 hover:text-red-800 text-xs">Remover</button>
           </div>
         </div>

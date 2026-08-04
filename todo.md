@@ -192,6 +192,11 @@ Depois de usar o sistema de verdade, dois pontos da Fase 0/2 precisaram de ajust
       qualquer categoria — um Acólito conseguia ser escalado como Leitor, por exemplo, o que não
       faz sentido). A seção "sem função definida" continua sem filtro, como válvula de escape pra
       quem ainda não tem função cadastrada.
+- [x] **Instrumento só aparece/é atribuído quando a pessoa está sendo escalada como Música**
+      (bug de uso real: um servidor que é Músico e também Acólito ganhava instrumento mesmo
+      escalado como Acólito, já que o campo dependia só de ele ter instrumento cadastrado, não da
+      função em que estava sendo escalado ali). Agora o instrumento é decidido pela seção da
+      escala em que a pessoa entra, não pelo cadastro dela.
 
 ---
 
