@@ -37,6 +37,19 @@ enum NivelServidor {
   lider
 }
 
+// Funções litúrgicas específicas dos Acólitos e Ancilas numa celebração -- opcional,
+// qualquer um deles está apto pra qualquer função (não é como instrumento, que depende
+// do que a pessoa sabe tocar).
+enum FuncaoLiturgica {
+  cerimoniario_1
+  cerimoniario_2
+  librifero
+  cruciferario
+  ceroferario
+  turiferario
+  naveteiro
+}
+
 enum RecurrenceType {
   semanal
   mensal_ordinal
@@ -265,6 +278,7 @@ model ScaleServidor {
   instrumentId Int?            @map("instrument_id")
   teamId       Int?            @map("team_id")
   categoriaId  Int?            @map("categoria_id")
+  funcaoLiturgica FuncaoLiturgica? @map("funcao_liturgica")
   status       StatusEscalacao @default(convidado)
   origem       OrigemEscalacao @default(provisorio)
   lembreteEnviadoEm DateTime?  @map("lembrete_enviado_em")

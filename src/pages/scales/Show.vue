@@ -67,6 +67,16 @@ const isFuture = () => scale.value && scale.value.dataCelebracao.slice(0, 10) >=
 
 const SEM_CATEGORIA = { id: -1, nome: 'Sem função definida', ordem: 999 }
 
+const FUNCAO_LITURGICA_LABELS: Record<string, string> = {
+  cerimoniario_1: 'Cerimoniário 1',
+  cerimoniario_2: 'Cerimoniário 2',
+  librifero: 'Librífero',
+  cruciferario: 'Cruciferário',
+  ceroferario: 'Ceroferário',
+  turiferario: 'Turiferário',
+  naveteiro: 'Naveteiro',
+}
+
 const gruposPorCategoria = computed(() => {
   if (!scale.value) return []
   const grupos = new Map<number, { categoria: { id: number; nome: string; ordem: number }; servidores: any[] }>()
@@ -172,6 +182,7 @@ function imprimir() {
                 <div>
                   <span class="text-sm font-medium text-gray-900">{{ s.servidor.nome }}</span>
                   <span v-if="s.instrument" class="text-xs text-gray-500 ml-2">· {{ s.instrument.nome }}</span>
+                  <span v-if="s.funcaoLiturgica" class="text-xs text-gray-500 ml-2">· {{ FUNCAO_LITURGICA_LABELS[s.funcaoLiturgica] ?? s.funcaoLiturgica }}</span>
                 </div>
                 <div class="flex items-center gap-1.5">
                   <Badge v-if="s.origem === 'fixo'" color="purple">Vínculo fixo</Badge>

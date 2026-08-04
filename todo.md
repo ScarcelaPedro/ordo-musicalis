@@ -208,6 +208,12 @@ Depois de usar o sistema de verdade, dois pontos da Fase 0/2 precisaram de ajust
       recusa, que agora usam o ministério da própria escalação. Testado local com dois
       coordenadores: dono de um ministério escalado consegue editar, coordenador sem nenhum
       ministério ali toma 403.
+- [x] **Funções litúrgicas dos Acólitos e Ancilas**: novo campo `funcaoLiturgica` (opcional) em
+      cada escalação, com as 7 funções da celebração (Cerimoniário 1, Cerimoniário 2, Librífero,
+      Cruciferário, Ceroferário, Turiferário, Naveteiro). Aparece só na seção de "Acólitos e
+      Coroinhas" da escala — igual ao instrumento, que só aparece em Música. Não é obrigatório, e
+      qualquer acólito/ancila está apto pra qualquer função (sem aptidão cadastrada por pessoa,
+      diferente de instrumento). Exibido no detalhe da escala junto do nome de cada um.
 
 ---
 

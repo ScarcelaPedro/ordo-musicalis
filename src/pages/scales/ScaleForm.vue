@@ -18,7 +18,17 @@ interface Team { id: number; nome: string; categoria: Categoria }
 interface Comunidade { id: number; nome: string }
 interface Celebrante { id: number; nome: string }
 
-interface ScaleServidor { servidorId: number; instrumentId: number | null; teamId: number | null; categoriaId: number | null }
+interface ScaleServidor { servidorId: number; instrumentId: number | null; teamId: number | null; categoriaId: number | null; funcaoLiturgica: string | null }
+
+const FUNCAO_LITURGICA_LABELS: Record<string, string> = {
+  cerimoniario_1: 'Cerimoniário 1',
+  cerimoniario_2: 'Cerimoniário 2',
+  librifero: 'Librífero',
+  cruciferario: 'Cruciferário',
+  ceroferario: 'Ceroferário',
+  turiferario: 'Turiferário',
+  naveteiro: 'Naveteiro',
+}
 
 interface FormData {
   dataCelebracao: string
@@ -63,6 +73,10 @@ const categoriasOrdenadas = computed(() => [...props.categorias].sort((a, b) => 
 // Instrumento só faz sentido pra quem está sendo escalado como Música -- um Acólito que
 // também é músico não deve ganhar instrumento quando escalado como Acólito.
 const musicaId = computed(() => props.categorias.find((c) => c.nome === 'Música')?.id ?? null)
+
+// Função litúrgica (Cerimoniário, Cruciferário, Turiferário...) só faz sentido pra quem está
+// sendo escalado como Acólito/Ancila -- qualquer um deles está apto pra qualquer função.
+const acolitosId = computed(() => props.categorias.find((c) => c.nome === 'Acólitos e Coroinhas')?.id ?? null)
 
 function teamsDaCategoria(categoriaId: number) {
   return props.teams.filter((t) => t.categoria.id === categoriaId)
@@ -109,7 +123,7 @@ function adicionarServidor(servidorId: number, categoriaId: number | null, teamI
   const firstInstrument = ehMusica
     ? props.servidores.find((s) => s.id === servidorId)?.instruments[0]?.instrumentId ?? null
     : null
-  form.value.servidores.push({ servidorId, instrumentId: firstInstrument, teamId, categoriaId })
+  form.value.servidores.push({ servidorId, instrumentId: firstInstrument, teamId, categoriaId, funcaoLiturgica: null })
 }
 
 function removerServidor(servidorId: number) {
@@ -125,6 +139,11 @@ function setInstrument(servidorId: number, instrumentId: number) {
 function setServidorTeam(servidorId: number, teamId: number | null) {
   const entry = getEntry(servidorId)
   if (entry) entry.teamId = teamId
+}
+
+function setFuncaoLiturgica(servidorId: number, funcaoLiturgica: string | null) {
+  const entry = getEntry(servidorId)
+  if (entry) entry.funcaoLiturgica = funcaoLiturgica
 }
 
 // Estado do controle de "adicionar servidor" de cada categoria -- criado sob demanda,
@@ -322,6 +341,15 @@ function adicionarSugerido(s: Suggestion) {
             >
               <option :value="null">Sem ministério</option>
               <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
+            </select>
+            <select
+              v-if="cat.id === acolitosId"
+              :value="entry.funcaoLiturgica"
+              @change="setFuncaoLiturgica(entry.servidorId, ($event.target as HTMLSelectElement).value || null)"
+              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+            >
+              <option value="">Sem função litúrgica</option>
+              <option v-for="(label, value) in FUNCAO_LITURGICA_LABELS" :key="value" :value="value">{{ label }}</option>
             </select>
             <button type="button" @click="removerServidor(entry.servidorId)" class="text-red-600 hover:text-red-800 text-xs">Remover</button>
           </div>

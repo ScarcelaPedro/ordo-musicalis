@@ -1,5 +1,5 @@
 import { Router, Response } from 'express'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, FuncaoLiturgica } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
 import { requireAnyTeamOwnership } from '../_middleware/teamScope'
@@ -88,11 +88,12 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
       ...(lembreteDiasAntes !== undefined ? { lembreteDiasAntes: Number(lembreteDiasAntes) } : {}),
       servidores: servidores?.length
         ? {
-            create: (servidores as { servidorId: number; instrumentId?: number; teamId?: number | null; categoriaId?: number | null }[]).map((s) => ({
+            create: (servidores as { servidorId: number; instrumentId?: number; teamId?: number | null; categoriaId?: number | null; funcaoLiturgica?: FuncaoLiturgica | null }[]).map((s) => ({
               servidorId: s.servidorId,
               instrumentId: s.instrumentId ?? null,
               teamId: s.teamId ?? null,
               categoriaId: s.categoriaId ?? null,
+              funcaoLiturgica: s.funcaoLiturgica ?? null,
             })),
           }
         : undefined,
@@ -185,7 +186,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireA
   // substituído) de quem continua na escala, só mexe em quem entrou ou saiu.
   let addedServidorIds: number[] = []
   if (servidores !== undefined) {
-    const newList = servidores as { servidorId: number; instrumentId?: number | null; teamId?: number | null; categoriaId?: number | null }[]
+    const newList = servidores as { servidorId: number; instrumentId?: number | null; teamId?: number | null; categoriaId?: number | null; funcaoLiturgica?: FuncaoLiturgica | null }[]
     const newIds = new Set(newList.map((s) => s.servidorId))
     const existing = await prisma.scaleServidor.findMany({ where: { scaleId: id } })
     const existingIds = new Set(existing.map((e) => e.servidorId))
@@ -201,12 +202,12 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireA
     for (const s of toUpdate) {
       await prisma.scaleServidor.updateMany({
         where: { scaleId: id, servidorId: s.servidorId },
-        data: { instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null },
+        data: { instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null, funcaoLiturgica: s.funcaoLiturgica ?? null },
       })
     }
     if (toAdd.length) {
       await prisma.scaleServidor.createMany({
-        data: toAdd.map((s) => ({ scaleId: id, servidorId: s.servidorId, instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null })),
+        data: toAdd.map((s) => ({ scaleId: id, servidorId: s.servidorId, instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null, funcaoLiturgica: s.funcaoLiturgica ?? null })),
       })
     }
   }
