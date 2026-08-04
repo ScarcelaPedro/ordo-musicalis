@@ -37,6 +37,10 @@ onMounted(async () => {
             <dd class="mt-1 text-sm text-gray-900">{{ team.descricao }}</dd>
           </div>
           <div>
+            <dt class="text-sm font-medium text-gray-500">Categoria de função</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ team.categoria?.nome ?? '—' }}</dd>
+          </div>
+          <div>
             <dt class="text-sm font-medium text-gray-500">Responsável</dt>
             <dd class="mt-1 text-sm text-gray-900">{{ team.responsavel?.nome ?? '—' }}</dd>
           </div>

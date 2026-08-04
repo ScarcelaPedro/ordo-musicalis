@@ -40,6 +40,7 @@ async function destroy(id: number) {
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoria</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Responsável</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Servidores</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -51,6 +52,7 @@ async function destroy(id: number) {
             <td class="px-6 py-4 font-medium text-gray-900">
               <RouterLink :to="`/equipes/${t.id}`" class="text-indigo-600 hover:text-indigo-900">{{ t.nome }}</RouterLink>
             </td>
+            <td class="px-6 py-4 text-sm text-gray-500">{{ t.categoria?.nome ?? '—' }}</td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ t.responsavel?.nome ?? '—' }}</td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ t._count.servidores }}</td>
             <td class="px-6 py-4"><Badge :color="t.ativo ? 'green' : 'gray'">{{ t.ativo ? 'Ativo' : 'Inativo' }}</Badge></td>
@@ -60,7 +62,7 @@ async function destroy(id: number) {
             </td>
           </tr>
           <tr v-if="teams.length === 0">
-            <td colspan="5" class="px-6 py-8 text-center text-gray-500">Nenhum ministério cadastrado.</td>
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">Nenhum ministério cadastrado.</td>
           </tr>
         </tbody>
       </table>

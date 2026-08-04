@@ -88,16 +88,21 @@ quem monta a escala (coordenador responsável ou admin) monta a equipe toda.
 - [x] Testar local via API real (servidor, ministério+categoria, escala com comunidade/celebrante,
       confirmar/recusar/substituição, `/scale-templates/generate`, relatórios, calendário público,
       intensidade) — todos os fluxos passaram, dados de teste removidos.
-- [ ] Aplicar migration em produção + smoke test.
+- [x] Aplicar migration em produção + smoke test (health, calendário público, login, servidores,
+      teams com categoria — dados reais preservados, ministérios existentes com categoria
+      "Música" corretamente).
 
 ## Fase 1 — Administração
 
-- [ ] CRUD de Comunidades: `api/_routes/comunidades.ts` + `src/pages/comunidades/`
+- [x] CRUD de Comunidades: `api/_routes/comunidades.ts` + `src/pages/comunidades/`
       (`Index/Create/Edit.vue`), staff-only, mesmo padrão visual das páginas de Ministério.
-- [ ] CRUD de Categorias de Função: `api/_routes/categorias.ts` + `src/pages/categorias/`
+- [x] CRUD de Categorias de Função: `api/_routes/categorias.ts` + `src/pages/categorias/`
       (`Index/Create/Edit.vue`), staff-only.
-- [ ] Seletor de Categoria no cadastro/edição de Ministério (`teams/Create.vue`, `Edit.vue`).
-- [ ] Link de navegação pras duas novas seções (menu/dashboard).
+- [x] Seletor de Categoria no cadastro/edição de Ministério (`teams/Create.vue`, `Edit.vue`);
+      badge de categoria também exibido em `teams/Index.vue` e `teams/Show.vue`.
+- [x] Link de navegação pras duas novas seções (menu desktop + mobile do `AuthenticatedLayout`).
+- [x] Testado local: CRUD completo de Comunidades/Categorias, criação de Equipe com
+      `categoriaId` explícito, e proteção de FK (não deixa excluir categoria/comunidade em uso).
 
 ## Fase 2 — Escalas multi-equipe
 

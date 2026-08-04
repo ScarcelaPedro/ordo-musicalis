@@ -14,22 +14,26 @@ const router = useRouter()
 const flash = useFlashStore()
 interface TeamServidor { servidorId: number; funcao: string }
 
-const form = ref({ nome: '', descricao: '', ativo: true, responsavelId: null as number | null, servidores: [] as TeamServidor[] })
+const form = ref({ nome: '', descricao: '', ativo: true, responsavelId: null as number | null, categoriaId: null as number | null, servidores: [] as TeamServidor[] })
 const allServidores = ref<{ id: number; nome: string }[]>([])
+const categorias = ref<{ id: number; nome: string }[]>([])
 const loading = ref(false)
 
 onMounted(async () => {
-  const [teamRes, servidoresRes] = await Promise.all([
+  const [teamRes, servidoresRes, categoriasRes] = await Promise.all([
     client.get(`/teams/${route.params.id}`),
     client.get('/servidores'),
+    client.get('/categorias'),
   ])
   const team = teamRes.data
   form.value.nome = team.nome
   form.value.descricao = team.descricao ?? ''
   form.value.ativo = team.ativo
   form.value.responsavelId = team.responsavelId ?? null
+  form.value.categoriaId = team.categoriaId ?? null
   form.value.servidores = team.servidores.map((s: any) => ({ servidorId: s.servidorId, funcao: s.funcao ?? '' }))
   allServidores.value = servidoresRes.data
+  categorias.value = categoriasRes.data
 })
 
 function toggleServidor(id: number) {
@@ -68,6 +72,13 @@ async function submit() {
         <div>
           <InputLabel value="Descrição" />
           <textarea v-model="form.descricao" rows="3" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
+        </div>
+        <div>
+          <InputLabel value="Categoria de função" :required="true" />
+          <select v-model="form.categoriaId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+            <option :value="null">Selecione</option>
+            <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nome }}</option>
+          </select>
         </div>
         <div>
           <InputLabel value="Responsável/coordenador" />

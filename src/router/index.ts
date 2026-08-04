@@ -100,6 +100,46 @@ const router = createRouter({
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
 
+    // Comunidades
+    {
+      path: '/comunidades',
+      name: 'comunidades.index',
+      component: () => import('@/pages/comunidades/Index.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/comunidades/criar',
+      name: 'comunidades.create',
+      component: () => import('@/pages/comunidades/Create.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/comunidades/:id/editar',
+      name: 'comunidades.edit',
+      component: () => import('@/pages/comunidades/Edit.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+
+    // Categorias de função
+    {
+      path: '/categorias',
+      name: 'categorias.index',
+      component: () => import('@/pages/categorias/Index.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/categorias/criar',
+      name: 'categorias.create',
+      component: () => import('@/pages/categorias/Create.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+    {
+      path: '/categorias/:id/editar',
+      name: 'categorias.edit',
+      component: () => import('@/pages/categorias/Edit.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
+
     // Escalas
     {
       path: '/escalas',
