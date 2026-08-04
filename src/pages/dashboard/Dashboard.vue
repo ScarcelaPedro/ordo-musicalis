@@ -244,7 +244,7 @@ function formatFullDate(iso: string) {
         </RouterLink>
       </div>
 
-      <!-- Minhas próximas escalas (músico) -->
+      <!-- Minhas próximas escalas (servidor) -->
       <div v-if="myNextScales.length" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Minhas próximas escalas</p>
         <div class="space-y-2">

@@ -144,14 +144,18 @@ quem monta a escala (coordenador responsável ou admin) monta a equipe toda.
 
 ## Fase 4 — Polimento
 
-- [ ] Revisar todos os rótulos "Músico"/"Ministério" nas telas remanescentes pra garantir
-      consistência com o novo escopo (ex: textos genéricos tipo "equipe celebrativa" onde fizer
-      sentido).
-- [ ] Atualizar `ordus-musicalis-requisitos.md` (ou documento equivalente) refletindo o novo
-      escopo, se ainda for usado como referência.
-- [ ] Checagem final: `grep` de "musician" (Fase 0) + revisão visual das telas principais num
-      fluxo completo (criar comunidade → criar ministério com categoria → criar servidor →
-      montar escala com celebrante + equipe de várias categorias → ver o detalhe agrupado).
+- [x] Revisar rótulos remanescentes: grep por "Músico"/"musician" em `src/` e `api/` só encontrou
+      um comentário residual (`Dashboard.vue`, não visível ao usuário), corrigido pra "servidor".
+      Rótulos visíveis já estavam todos atualizados desde a Fase 0.
+- [x] `ordus-musicalis-requisitos.md` reescrito pro novo escopo (equipe celebrativa completa,
+      Comunidade, CategoriaFuncao, Celebrante), com nota histórica linkando pra este arquivo e
+      roadmap original marcado como concluído.
+- [x] Checagem final: `grep` de "musician"/"músico" limpo (só migrations antigas) + fluxo completo
+      via API real (criar comunidade → criar servidores → criar ministérios em categorias
+      diferentes → montar escala com celebrante + equipe de Música e Acólitos → conferir que o
+      detalhe retorna tudo pronto pro agrupamento por categoria). **Não fiz revisão visual em
+      navegador** (sem ferramenta de browser neste ambiente) — a verificação foi via typecheck
+      (`tsc`/`vue-tsc` limpos) e chamadas reais à API, não renderização real das telas.
 
 ---
 
