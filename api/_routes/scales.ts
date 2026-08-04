@@ -2,7 +2,7 @@ import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
-import { requireTeamOwnership } from '../_middleware/teamScope'
+import { requireAnyTeamOwnership } from '../_middleware/teamScope'
 import { suggestServidores } from '../_lib/suggestServidores'
 import { sendPushToServidores, sendPushToStaff, formatDataCurta } from '../_lib/sendPush'
 import { sendWhatsappToServidores, sendWhatsappToStaff } from '../_lib/sendWhatsapp'
@@ -11,9 +11,20 @@ import { hojeBrasilia } from '../_lib/date'
 const router = Router()
 const prisma = new PrismaClient()
 
-async function resolveScaleTeamId(req: AuthRequest) {
-  const scale = await prisma.scale.findUnique({ where: { id: Number(req.params.id) }, select: { teamId: true } })
-  return scale?.teamId ?? null
+// Sem "Ministério responsável" único por escala (desde a Fase 5), a posse de uma celebração pra
+// fins de permissão é "coordena algum dos ministérios de quem está escalado ali" -- inclui o
+// teamId legado da própria Scale (escalas geradas por template ainda o usam) e o teamId de cada
+// ScaleServidor.
+async function resolveScaleTeamIds(req: AuthRequest): Promise<number[]> {
+  const scale = await prisma.scale.findUnique({
+    where: { id: Number(req.params.id) },
+    select: { teamId: true, servidores: { select: { teamId: true } } },
+  })
+  if (!scale) return []
+  const ids = new Set<number>()
+  if (scale.teamId) ids.add(scale.teamId)
+  for (const s of scale.servidores) if (s.teamId) ids.add(s.teamId)
+  return Array.from(ids)
 }
 
 // TODO(Fase 2): remover quando o ScaleForm ganhar o seletor de Comunidade -- até lá, toda
@@ -126,12 +137,12 @@ router.get('/pendentes', authenticate, requireRole('admin', 'coordenador'), asyn
   const pendencias = await prisma.scaleServidor.findMany({
     where: {
       status: 'convidado',
-      scale: {
-        dataCelebracao: { gte: hoje },
-        ...(req.user!.role === 'coordenador'
-          ? { team: { responsavelId: req.user!.servidorId ?? -1 } }
-          : {}),
-      },
+      scale: { dataCelebracao: { gte: hoje } },
+      // Escopo por ministério da própria escalação (não da escala inteira) -- cada
+      // ScaleServidor carrega o seu, já que uma celebração pode reunir várias categorias.
+      ...(req.user!.role === 'coordenador'
+        ? { team: { responsavelId: req.user!.servidorId ?? -1 } }
+        : {}),
     },
     include: {
       servidor: { select: { id: true, nome: true } },
@@ -166,7 +177,7 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   return res.json(scale)
 })
 
-router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveScaleTeamId), async (req: AuthRequest, res: Response) => {
+router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireAnyTeamOwnership(resolveScaleTeamIds), async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
   const { dataCelebracao, horario, celebracao, teamId, comunidadeId, celebranteId, observacoes, status, servidores, lembreteDiasAntes } = req.body
 
@@ -230,7 +241,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
   return res.json(scale)
 })
 
-router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveScaleTeamId), async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), requireAnyTeamOwnership(resolveScaleTeamIds), async (req: AuthRequest, res: Response) => {
   await prisma.scale.delete({ where: { id: Number(req.params.id) } })
   return res.status(204).send()
 })
@@ -280,12 +291,15 @@ router.patch('/:id/recusar', authenticate, async (req: AuthRequest, res: Respons
     }),
   ])
 
-  sendPushToStaff(prisma, pivot.scale.teamId, {
+  // Notifica o responsável pelo ministério da própria escalação (não "o" ministério da
+  // escala, que não existe mais como conceito único) -- mais preciso e funciona mesmo pra
+  // escalações sem ministério algum (só admin é avisado nesse caso).
+  sendPushToStaff(prisma, pivot.teamId, {
     title: 'Recusa de escalação',
     body: `${pivot.servidor.nome} não poderá servir em ${pivot.scale.celebracao} (${formatDataCurta(pivot.scale.dataCelebracao)}). Precisa de substituto.`,
     url: '/substituicoes',
   }).catch((err) => console.error('push recusar', err))
-  sendWhatsappToStaff(prisma, pivot.scale.teamId,
+  sendWhatsappToStaff(prisma, pivot.teamId,
     `*Recusa de escalação* ⚠️\n${pivot.servidor.nome} não poderá servir em *${pivot.scale.celebracao}* (${formatDataCurta(pivot.scale.dataCelebracao)}). Precisa de substituto.`
   ).catch((err) => console.error('whatsapp recusar', err))
 

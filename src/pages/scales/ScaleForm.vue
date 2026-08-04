@@ -24,7 +24,6 @@ interface FormData {
   dataCelebracao: string
   horario: string
   celebracao: string
-  teamId: number | null
   comunidadeId: number | null
   celebranteId: number | null
   observacoes: string
@@ -49,7 +48,6 @@ const form = ref<FormData>({
   dataCelebracao: props.initialData?.dataCelebracao ?? '',
   horario: props.initialData?.horario ?? '',
   celebracao: props.initialData?.celebracao ?? '',
-  teamId: props.initialData?.teamId ?? null,
   comunidadeId: props.initialData?.comunidadeId ?? props.comunidades[0]?.id ?? null,
   celebranteId: props.initialData?.celebranteId ?? null,
   observacoes: props.initialData?.observacoes ?? '',
@@ -142,8 +140,9 @@ function getNovoState(categoriaId: number) {
 function adicionarNaCategoria(categoriaId: number) {
   const state = getNovoState(categoriaId)
   if (!state.servidorId) return
-  const teamId = state.teamId ?? teamsDaCategoria(categoriaId)[0]?.id ?? null
-  adicionarServidor(state.servidorId, categoriaId, teamId)
+  // Ministério fica sempre opcional -- nem todo servidor de uma categoria integra um
+  // ministério formal, então nunca escolhemos um automaticamente.
+  adicionarServidor(state.servidorId, categoriaId, state.teamId)
   novoPorCategoria[categoriaId] = { servidorId: null, teamId: null }
 }
 
@@ -195,7 +194,6 @@ async function buscarSugestoes() {
       params: {
         data: form.value.dataCelebracao,
         horario: form.value.horario,
-        teamId: form.value.teamId ?? undefined,
         excludeIds: excludeIds.length ? excludeIds.join(',') : undefined,
       },
     })
@@ -207,9 +205,10 @@ async function buscarSugestoes() {
   }
 }
 
+// Sugestão não sabe em qual categoria a pessoa vai servir (não depende mais de um ministério
+// da escala) -- entra em "sem função definida" e o coordenador aloca na seção certa se quiser.
 function adicionarSugerido(s: Suggestion) {
-  const categoriaId = props.teams.find((t) => t.id === form.value.teamId)?.categoria.id ?? null
-  adicionarServidor(s.servidorId, categoriaId, form.value.teamId)
+  adicionarServidor(s.servidorId, null, null)
   suggestions.value = suggestions.value.filter((sug) => sug.servidorId !== s.servidorId)
 }
 </script>
@@ -241,14 +240,6 @@ function adicionarSugerido(s: Suggestion) {
           <option :value="null">Nenhum</option>
           <option v-for="c in celebrantes" :key="c.id" :value="c.id">{{ c.nome }}</option>
         </select>
-      </div>
-      <div>
-        <InputLabel value="Ministério responsável" />
-        <select v-model="form.teamId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
-          <option :value="null">Nenhum</option>
-          <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
-        </select>
-        <p class="mt-1 text-xs text-gray-500">Quem coordena esta escala e recebe as pendências dela -- não limita quais servidores podem ser escalados.</p>
       </div>
       <div>
         <InputLabel value="Status" />
@@ -324,12 +315,12 @@ function adicionarSugerido(s: Suggestion) {
               <option v-for="i in instrumentosDe(entry.servidorId)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
             </select>
             <select
-              v-if="teamsDaCategoria(cat.id).length > 1"
+              v-if="teamsDaCategoria(cat.id).length > 0"
               :value="entry.teamId"
               @change="setServidorTeam(entry.servidorId, ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
               class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
             >
-              <option :value="null">Sem ministério específico</option>
+              <option :value="null">Sem ministério</option>
               <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </select>
             <button type="button" @click="removerServidor(entry.servidorId)" class="text-red-600 hover:text-red-800 text-xs">Remover</button>
@@ -344,8 +335,8 @@ function adicionarSugerido(s: Suggestion) {
             <option :value="null">Adicionar servidor...</option>
             <option v-for="s in servidoresDaCategoria(cat.id)" :key="s.id" :value="s.id">{{ s.nome }}</option>
           </select>
-          <select v-if="teamsDaCategoria(cat.id).length > 1" v-model="getNovoState(cat.id).teamId" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md">
-            <option :value="null">{{ teamsDaCategoria(cat.id)[0].nome }} (padrão)</option>
+          <select v-if="teamsDaCategoria(cat.id).length > 0" v-model="getNovoState(cat.id).teamId" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md">
+            <option :value="null">Sem ministério</option>
             <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
           </select>
           <SecondaryButton type="button" :disabled="!getNovoState(cat.id).servidorId" @click="adicionarNaCategoria(cat.id)" class="!py-1.5 !px-3 text-xs">

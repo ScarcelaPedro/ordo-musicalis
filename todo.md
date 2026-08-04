@@ -197,6 +197,17 @@ Depois de usar o sistema de verdade, dois pontos da Fase 0/2 precisaram de ajust
       escalado como Acólito, já que o campo dependia só de ele ter instrumento cadastrado, não da
       função em que estava sendo escalado ali). Agora o instrumento é decidido pela seção da
       escala em que a pessoa entra, não pelo cadastro dela.
+- [x] **Campo "Ministério responsável" removido da criação/edição de escala** (não fazia mais
+      sentido: uma celebração pode reunir várias categorias, então não existe "o" ministério de
+      uma escala). Ministério por pessoa também virou sempre opcional em qualquer categoria
+      (antes, com só um ministério cadastrado numa categoria, ele era escolhido automaticamente
+      -- nem todo servidor de uma função integra um ministério formal). Como consequência, a
+      permissão de coordenador pra editar/excluir uma escala deixou de depender de um único
+      `Scale.teamId` e passou a considerar **qualquer** ministério de quem está escalado ali
+      (`requireAnyTeamOwnership`); o mesmo vale pra quem recebe pendências e notificação de
+      recusa, que agora usam o ministério da própria escalação. Testado local com dois
+      coordenadores: dono de um ministério escalado consegue editar, coordenador sem nenhum
+      ministério ali toma 403.
 
 ---
 

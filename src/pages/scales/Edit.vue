@@ -21,7 +21,6 @@ const initialData = computed(() => scale.value ? {
   dataCelebracao: scale.value.dataCelebracao.slice(0, 10),
   horario: scale.value.horario,
   celebracao: scale.value.celebracao,
-  teamId: scale.value.teamId ?? null,
   comunidadeId: scale.value.comunidadeId ?? null,
   celebranteId: scale.value.celebranteId ?? null,
   observacoes: scale.value.observacoes ?? '',
