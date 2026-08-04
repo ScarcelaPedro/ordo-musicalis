@@ -341,11 +341,11 @@ function formatFullDate(iso: string) {
                 :to="`/escalas/${scale.id}`"
                 class="flex items-center gap-1 mb-0.5 px-1.5 py-0.5 rounded-md border text-xs font-medium transition truncate"
                 :class="chipClass(scale.horario, scale.status)"
-                :title="`${scale.celebracao} · ${scale.servidores.map(s => s.servidor.nome).join(', ') || 'Sem servidores'}`"
+                :title="`${scale.celebracao} · ${scale.celebrante?.nome ?? 'Sem celebrante'}`"
               >
                 <span class="shrink-0 font-mono text-[10px]">{{ scale.horario }}</span>
-                <span v-if="scale.servidores.length" class="truncate hidden lg:inline text-[10px] ml-0.5 opacity-75">
-                  {{ scale.servidores.map(s => s.servidor.nome.split(' ')[0]).join(', ') }}
+                <span v-if="scale.celebrante" class="truncate hidden lg:inline text-[10px] ml-0.5 opacity-75">
+                  {{ scale.celebrante.nome }}
                 </span>
               </RouterLink>
             </template>
