@@ -177,14 +177,14 @@ function imprimir() {
         <div v-if="scale.servidores.length" class="space-y-5">
           <div v-for="grupo in gruposPorCategoria" :key="grupo.categoria.id">
             <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{{ grupo.categoria.nome }}</h4>
-            <div class="space-y-2">
-              <div v-for="s in grupo.servidores" :key="s.id" class="flex justify-between items-center py-2 border-b last:border-0">
-                <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
+              <div v-for="s in grupo.servidores" :key="s.id" class="flex justify-between items-center gap-2 py-2 border-b border-gray-100 last:border-0 sm:[&:nth-last-child(-n+2)]:border-0">
+                <div class="min-w-0">
                   <span class="text-sm font-medium text-gray-900">{{ s.servidor.nome }}</span>
                   <span v-if="s.instrument" class="text-xs text-gray-500 ml-2">· {{ s.instrument.nome }}</span>
                   <span v-if="s.funcaoLiturgica" class="text-xs text-gray-500 ml-2">· {{ FUNCAO_LITURGICA_LABELS[s.funcaoLiturgica] ?? s.funcaoLiturgica }}</span>
                 </div>
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center gap-1.5 shrink-0">
                   <Badge v-if="s.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
                   <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
                 </div>
