@@ -60,4 +60,5 @@ por data. Não traz Glória/Credo (calculado por regra local) nem tempo litúrgi
       regra litúrgica — ver Fase 1.
 - [x] Estado vazio (dia ainda não sincronizado) tratado no calendário (fundo neutro) e na tela de
       detalhe ("Liturgia ainda não disponível para esta data").
-- [ ] Deploy em produção (migration + push + smoke test) com confirmação do usuário.
+- [x] Deploy em produção (migration + push + smoke test) com confirmação do usuário. Cron de
+      sincronização já rodou uma vez em produção (20 dias sincronizados, 0 falhas).
