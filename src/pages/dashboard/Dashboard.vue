@@ -53,11 +53,11 @@ const filterComunidadeId = ref('')
 const liturgias    = ref<Liturgia[]>([])
 
 const CORES_LITURGICAS_CLASSES: Record<string, string> = {
-  Verde: 'bg-green-50',
-  Roxo: 'bg-purple-50',
-  Branco: 'bg-white',
-  Vermelho: 'bg-red-50',
-  Rosa: 'bg-pink-50',
+  Verde: 'bg-green-200',
+  Roxo: 'bg-purple-200',
+  Branco: 'bg-amber-100',
+  Vermelho: 'bg-red-200',
+  Rosa: 'bg-pink-200',
 }
 
 const MONTH_NAMES = [
