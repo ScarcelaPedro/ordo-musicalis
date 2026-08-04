@@ -38,7 +38,7 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
       nivel: nivel ?? 'apto',
       observacoes: observacoes ?? null,
       instruments: {
-        create: (instrumentIds as number[]).map((id) => ({ instrumentId: id })),
+        create: ((instrumentIds ?? []) as number[]).map((id) => ({ instrumentId: id })),
       },
       teams: teams?.length
         ? {
@@ -117,7 +117,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (r
       nivel: nivel ?? 'apto',
       observacoes: observacoes ?? null,
       instruments: {
-        create: (instrumentIds as number[]).map((iid) => ({ instrumentId: iid })),
+        create: ((instrumentIds ?? []) as number[]).map((iid) => ({ instrumentId: iid })),
       },
       teams: teams?.length
         ? {

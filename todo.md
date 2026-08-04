@@ -106,21 +106,29 @@ quem monta a escala (coordenador responsável ou admin) monta a equipe toda.
 
 ## Fase 2 — Escalas multi-equipe
 
-- [ ] `ScaleForm.vue`: seletor de Comunidade (obrigatório), seletor de Celebrante (opcional,
-      lista de Servidores). Ao adicionar alguém à equipe, escolher também o ministério que essa
-      pessoa representa ali (select de `Team`, opcionalmente filtrado por categoria).
-- [ ] "Adicionar equipe inteira": junto do jeito pessoa-por-pessoa, opção de escolher um
-      Ministério e adicionar todos os membros dele de uma vez à escala (com o `teamId` de cada um
-      já preenchido). Disponível pra qualquer ministério/categoria — hoje só faz sentido pra
-      Música (ex: "Coral"), mas nada impede o admin de cadastrar grupos fixos de Acólitos,
-      Leitores etc. no futuro, então a função não fica restrita a uma categoria específica.
-- [ ] Backend `scales.ts` (POST/PATCH): aceitar `comunidadeId`, `celebranteId`, e `teamId` por
-      item de `musicians[]` (a ser `servidores[]` já com o rename da Fase 0).
-- [ ] `scales/Show.vue`: cabeçalho mostra Comunidade e Celebrante. Corpo reagrupado por
-      `CategoriaFuncao` (ordenado por `categoria.ordem`), cada seção com os servidores daquela
-      categoria — reaproveitando os badges de status/vínculo fixo já existentes.
-- [ ] `MyScales.vue`, calendário do Dashboard: exibir Comunidade e/ou Celebrante quando fizer
-      sentido no espaço disponível.
+- [x] `ScaleForm.vue`: seletor de Comunidade (obrigatório), seletor de Celebrante (opcional,
+      lista de Servidores). Cada servidor escalado ganha seletor de Ministério individual (select
+      de `Team`); o filtro rígido antigo (que só deixava escalar gente do "Ministério" da escala)
+      foi removido — agora dá pra escalar qualquer servidor ativo pra qualquer celebração, com
+      busca por nome pra manter a lista usável. O "Ministério responsável" no topo do form virou
+      só o campo de permissão/coordenação (`Scale.teamId`), com texto explicando isso.
+- [x] "Adicionar equipe inteira": seletor de Ministério + botão que busca os membros via
+      `GET /teams/:id` e adiciona todos de uma vez à escala, já com o `teamId` de cada um
+      preenchido. Não é restrito a nenhuma categoria específica.
+- [x] Backend `scales.ts` (POST/PATCH): já aceitava `comunidadeId`, `celebranteId`, e `teamId` por
+      item de `servidores[]` desde a Fase 0 — nenhuma mudança adicional necessária aqui.
+- [x] `scales/Show.vue`: cabeçalho mostra Comunidade e Celebrante. Corpo reagrupado por
+      `CategoriaFuncao` (ordenado por `categoria.ordem`, com "Sem ministério definido" por
+      último), cada seção com os servidores daquela categoria — reaproveitando os badges de
+      status/vínculo fixo já existentes.
+- [x] `MyScales.vue` (próximas + histórico) e banner "Próxima celebração" do Dashboard: exibem
+      Comunidade e Celebrante quando presentes.
+- [x] Bug pré-existente corrigido durante os testes: `POST/PATCH /servidores` quebrava
+      (`TypeError`) quando o corpo da requisição não incluía `instruments` -- a UI sempre manda
+      `[]`, então nunca tinha aparecido antes.
+- [x] Testado local: escala criada com comunidade + celebrante + servidores de duas categorias
+      diferentes (Música e Leitores), resposta da API confere exatamente com o que `Show.vue`
+      espera pro agrupamento (`servidor.team.categoria.{nome,ordem}`).
 
 ## Fase 3 — Alcance paroquial
 

@@ -89,6 +89,7 @@ async function recusar(id: number) {
                 <RouterLink :to="`/escalas/${s.id}`" class="text-indigo-600 hover:underline font-medium">{{ s.celebracao }}</RouterLink>
                 <p class="text-sm text-gray-500">
                   {{ formatDate(s.dataCelebracao) }} · {{ s.horario }}
+                  <span v-if="s.comunidade"> · {{ s.comunidade.nome }}</span>
                   <span v-if="s.team"> · {{ s.team.nome }}</span>
                 </p>
               </div>
@@ -128,6 +129,7 @@ async function recusar(id: number) {
               <RouterLink :to="`/escalas/${s.id}`" class="text-indigo-600 hover:underline font-medium">{{ s.celebracao }}</RouterLink>
               <p class="text-sm text-gray-500">
                 {{ formatDate(s.dataCelebracao) }} · {{ s.horario }}
+                <span v-if="s.comunidade"> · {{ s.comunidade.nome }}</span>
                 <span v-if="s.team"> · {{ s.team.nome }}</span>
               </p>
             </div>

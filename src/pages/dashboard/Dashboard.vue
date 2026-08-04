@@ -20,6 +20,8 @@ interface Scale {
   celebracao: string
   status: 'rascunho' | 'confirmada'
   team: { id: number; nome: string } | null
+  comunidade: { id: number; nome: string } | null
+  celebrante: { id: number; nome: string } | null
   servidores: ScaleServidor[]
 }
 
@@ -206,8 +208,14 @@ function formatFullDate(iso: string) {
         <p class="mt-1.5 text-2xl font-bold leading-snug">{{ nextScale.celebracao }}</p>
         <p class="mt-1 text-indigo-200 text-sm">
           {{ formatFullDate(nextScale.dataCelebracao) }} · {{ nextScale.horario }}
+          <template v-if="nextScale.comunidade">
+            <span class="mx-1 text-indigo-400">·</span>{{ nextScale.comunidade.nome }}
+          </template>
           <template v-if="nextScale.team">
             <span class="mx-1 text-indigo-400">·</span>{{ nextScale.team.nome }}
+          </template>
+          <template v-if="nextScale.celebrante">
+            <span class="mx-1 text-indigo-400">·</span>{{ nextScale.celebrante.nome }}
           </template>
         </p>
         <div v-if="nextScale.servidores.length" class="mt-3 flex flex-wrap gap-1.5">

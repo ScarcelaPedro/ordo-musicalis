@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
@@ -65,6 +65,19 @@ async function recusar() {
 
 const isFuture = () => scale.value && scale.value.dataCelebracao.slice(0, 10) >= new Date().toISOString().slice(0, 10)
 
+const SEM_CATEGORIA = { id: -1, nome: 'Sem ministério definido', ordem: 999 }
+
+const gruposPorCategoria = computed(() => {
+  if (!scale.value) return []
+  const grupos = new Map<number, { categoria: { id: number; nome: string; ordem: number }; servidores: any[] }>()
+  for (const s of scale.value.servidores) {
+    const categoria = s.team?.categoria ?? SEM_CATEGORIA
+    if (!grupos.has(categoria.id)) grupos.set(categoria.id, { categoria, servidores: [] })
+    grupos.get(categoria.id)!.servidores.push(s)
+  }
+  return Array.from(grupos.values()).sort((a, b) => a.categoria.ordem - b.categoria.ordem)
+})
+
 function imprimir() {
   window.print()
 }
@@ -107,8 +120,16 @@ function imprimir() {
             <dt class="text-sm font-medium text-gray-500">Status</dt>
             <dd class="mt-1"><Badge :color="scale.status === 'confirmada' ? 'green' : 'yellow'">{{ scale.status }}</Badge></dd>
           </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Comunidade</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ scale.comunidade?.nome ?? '—' }}</dd>
+          </div>
+          <div v-if="scale.celebrante">
+            <dt class="text-sm font-medium text-gray-500">Celebrante</dt>
+            <dd class="mt-1 text-sm text-gray-900">{{ scale.celebrante.nome }}</dd>
+          </div>
           <div v-if="scale.team">
-            <dt class="text-sm font-medium text-gray-500">Ministério</dt>
+            <dt class="text-sm font-medium text-gray-500">Ministério responsável</dt>
             <dd class="mt-1 text-sm text-gray-900">{{ scale.team.nome }}</dd>
           </div>
           <div v-if="scale.observacoes" class="sm:col-span-2">
@@ -140,22 +161,27 @@ function imprimir() {
         </div>
       </div>
 
-      <!-- Servidores -->
+      <!-- Servidores, agrupados por categoria de função -->
       <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Servidores ({{ scale.servidores.length }})</h3>
-        <div class="space-y-2">
-          <div v-for="s in scale.servidores" :key="s.id" class="flex justify-between items-center py-2 border-b last:border-0">
-            <div>
-              <span class="text-sm font-medium text-gray-900">{{ s.servidor.nome }}</span>
-              <span v-if="s.instrument" class="text-xs text-gray-500 ml-2">· {{ s.instrument.nome }}</span>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <Badge v-if="s.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
-              <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
+        <h3 class="font-semibold text-gray-800 mb-4">Equipe da celebração ({{ scale.servidores.length }})</h3>
+        <div v-if="scale.servidores.length" class="space-y-5">
+          <div v-for="grupo in gruposPorCategoria" :key="grupo.categoria.id">
+            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{{ grupo.categoria.nome }}</h4>
+            <div class="space-y-2">
+              <div v-for="s in grupo.servidores" :key="s.id" class="flex justify-between items-center py-2 border-b last:border-0">
+                <div>
+                  <span class="text-sm font-medium text-gray-900">{{ s.servidor.nome }}</span>
+                  <span v-if="s.instrument" class="text-xs text-gray-500 ml-2">· {{ s.instrument.nome }}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <Badge v-if="s.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
+                  <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
+                </div>
+              </div>
             </div>
           </div>
-          <p v-if="!scale.servidores.length" class="text-sm text-gray-500">Nenhum servidor na escala.</p>
         </div>
+        <p v-else class="text-sm text-gray-500">Nenhum servidor na escala.</p>
       </div>
 
       <!-- Repertório -->

@@ -10,12 +10,14 @@ const router = useRouter()
 const flash = useFlashStore()
 const servidores = ref([])
 const teams = ref([])
+const comunidades = ref([])
 const loading = ref(false)
 
 onMounted(async () => {
-  const [s, t] = await Promise.all([client.get('/servidores'), client.get('/teams')])
+  const [s, t, c] = await Promise.all([client.get('/servidores'), client.get('/teams'), client.get('/comunidades')])
   servidores.value = s.data
   teams.value = t.data
+  comunidades.value = c.data
 })
 
 async function submit(data: object) {
@@ -36,7 +38,7 @@ async function submit(data: object) {
   <AuthenticatedLayout>
     <template #header><h2 class="font-semibold text-xl text-gray-800">Nova Escala</h2></template>
     <div class="bg-white shadow-sm rounded-lg p-6">
-      <ScaleForm :servidores="servidores" :teams="teams" :loading="loading" @submit="submit" />
+      <ScaleForm :servidores="servidores" :teams="teams" :comunidades="comunidades" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>
 </template>

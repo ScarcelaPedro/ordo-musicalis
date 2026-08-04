@@ -13,14 +13,17 @@ interface Servidor {
   teams: { teamId: number }[]
 }
 interface Team { id: number; nome: string }
+interface Comunidade { id: number; nome: string }
 
-interface ScaleServidor { servidorId: number; instrumentId: number | null }
+interface ScaleServidor { servidorId: number; instrumentId: number | null; teamId: number | null }
 
 interface FormData {
   dataCelebracao: string
   horario: string
   celebracao: string
   teamId: number | null
+  comunidadeId: number | null
+  celebranteId: number | null
   observacoes: string
   status: 'rascunho' | 'confirmada'
   lembreteDiasAntes: number
@@ -31,6 +34,7 @@ const props = defineProps<{
   initialData?: Partial<FormData>
   servidores: Servidor[]
   teams: Team[]
+  comunidades: Comunidade[]
   loading?: boolean
 }>()
 
@@ -41,6 +45,8 @@ const form = ref<FormData>({
   horario: props.initialData?.horario ?? '',
   celebracao: props.initialData?.celebracao ?? '',
   teamId: props.initialData?.teamId ?? null,
+  comunidadeId: props.initialData?.comunidadeId ?? props.comunidades[0]?.id ?? null,
+  celebranteId: props.initialData?.celebranteId ?? null,
   observacoes: props.initialData?.observacoes ?? '',
   status: props.initialData?.status ?? 'rascunho',
   lembreteDiasAntes: props.initialData?.lembreteDiasAntes ?? 3,
@@ -49,22 +55,19 @@ const form = ref<FormData>({
 
 watch(() => props.initialData, (val) => { if (val) Object.assign(form.value, val) })
 
-const filteredServidores = computed(() => {
-  if (!form.value.teamId) return props.servidores
-  return props.servidores.filter((s) => s.teams.some((t) => t.teamId === form.value.teamId))
-})
-
-watch(() => form.value.teamId, () => {
-  const validIds = new Set(filteredServidores.value.map((s) => s.id))
-  form.value.servidores = form.value.servidores.filter((s) => validIds.has(s.servidorId))
+const busca = ref('')
+const servidoresFiltrados = computed(() => {
+  const termo = busca.value.trim().toLowerCase()
+  if (!termo) return props.servidores
+  return props.servidores.filter((s) => s.nome.toLowerCase().includes(termo))
 })
 
 function isSelected(servidorId: number) {
   return form.value.servidores.some((s) => s.servidorId === servidorId)
 }
 
-function getInstrument(servidorId: number) {
-  return form.value.servidores.find((s) => s.servidorId === servidorId)?.instrumentId ?? null
+function getEntry(servidorId: number) {
+  return form.value.servidores.find((s) => s.servidorId === servidorId)
 }
 
 function toggleServidor(servidor: Servidor) {
@@ -73,13 +76,40 @@ function toggleServidor(servidor: Servidor) {
     form.value.servidores.splice(idx, 1)
   } else {
     const firstInstrument = servidor.instruments[0]?.instrumentId ?? null
-    form.value.servidores.push({ servidorId: servidor.id, instrumentId: firstInstrument })
+    form.value.servidores.push({ servidorId: servidor.id, instrumentId: firstInstrument, teamId: form.value.teamId })
   }
 }
 
 function setInstrument(servidorId: number, instrumentId: number) {
-  const entry = form.value.servidores.find((s) => s.servidorId === servidorId)
+  const entry = getEntry(servidorId)
   if (entry) entry.instrumentId = instrumentId
+}
+
+function setServidorTeam(servidorId: number, teamId: number | null) {
+  const entry = getEntry(servidorId)
+  if (entry) entry.teamId = teamId
+}
+
+// "Adicionar equipe inteira": busca os membros do ministério escolhido e adiciona
+// todos de uma vez, já com o teamId de cada um preenchido -- pensado sobretudo pra
+// grupos fixos (ex: um "Coral" específico), mas funciona pra qualquer categoria.
+const equipeParaAdicionar = ref<number | null>(null)
+const addingEquipe = ref(false)
+
+async function adicionarEquipeInteira() {
+  if (!equipeParaAdicionar.value) return
+  addingEquipe.value = true
+  try {
+    const { data: team } = await client.get(`/teams/${equipeParaAdicionar.value}`)
+    for (const membro of team.servidores as { servidorId: number }[]) {
+      if (isSelected(membro.servidorId)) continue
+      const servidor = props.servidores.find((s) => s.id === membro.servidorId)
+      const firstInstrument = servidor?.instruments[0]?.instrumentId ?? null
+      form.value.servidores.push({ servidorId: membro.servidorId, instrumentId: firstInstrument, teamId: team.id })
+    }
+  } finally {
+    addingEquipe.value = false
+  }
 }
 
 interface Suggestion { servidorId: number; nome: string; nivel: string; score: number; motivo: string }
@@ -118,7 +148,7 @@ function adicionarSugerido(s: Suggestion) {
   if (isSelected(s.servidorId)) return
   const servidor = props.servidores.find((sv) => sv.id === s.servidorId)
   const firstInstrument = servidor?.instruments[0]?.instrumentId ?? null
-  form.value.servidores.push({ servidorId: s.servidorId, instrumentId: firstInstrument })
+  form.value.servidores.push({ servidorId: s.servidorId, instrumentId: firstInstrument, teamId: form.value.teamId })
   suggestions.value = suggestions.value.filter((sug) => sug.servidorId !== s.servidorId)
 }
 </script>
@@ -139,11 +169,25 @@ function adicionarSugerido(s: Suggestion) {
         <TextInput v-model="form.celebracao" class="mt-1" />
       </div>
       <div>
-        <InputLabel value="Ministério" />
+        <InputLabel value="Comunidade" :required="true" />
+        <select v-model="form.comunidadeId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+          <option v-for="c in comunidades" :key="c.id" :value="c.id">{{ c.nome }}</option>
+        </select>
+      </div>
+      <div>
+        <InputLabel value="Celebrante" />
+        <select v-model="form.celebranteId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+          <option :value="null">Nenhum</option>
+          <option v-for="s in servidores" :key="s.id" :value="s.id">{{ s.nome }}</option>
+        </select>
+      </div>
+      <div>
+        <InputLabel value="Ministério responsável" />
         <select v-model="form.teamId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
           <option :value="null">Nenhum</option>
           <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
         </select>
+        <p class="mt-1 text-xs text-gray-500">Quem coordena esta escala e recebe as pendências dela -- não limita quais servidores podem ser escalados.</p>
       </div>
       <div>
         <InputLabel value="Status" />
@@ -187,27 +231,52 @@ function adicionarSugerido(s: Suggestion) {
     </div>
 
     <div>
+      <InputLabel value="Adicionar equipe inteira" />
+      <div class="mt-2 flex flex-wrap items-center gap-2">
+        <select v-model="equipeParaAdicionar" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+          <option :value="null">Selecione um ministério</option>
+          <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
+        </select>
+        <SecondaryButton type="button" :disabled="!equipeParaAdicionar || addingEquipe" @click="adicionarEquipeInteira" class="!py-1.5 !px-3 text-xs">
+          {{ addingEquipe ? 'Adicionando...' : 'Adicionar todos os membros' }}
+        </SecondaryButton>
+      </div>
+      <p class="mt-1 text-xs text-gray-500">Adiciona todos os membros do ministério de uma vez, já com o ministério de cada um preenchido. Útil pra grupos fixos (ex: um coral específico).</p>
+    </div>
+
+    <div>
       <InputLabel value="Servidores da escala" />
-      <div class="mt-2 space-y-2">
-        <p v-if="form.teamId && filteredServidores.length === 0" class="text-sm text-gray-500">Nenhum servidor cadastrado neste ministério.</p>
-        <div v-for="s in filteredServidores" :key="s.id" class="flex items-center gap-3 p-3 border rounded-md" :class="isSelected(s.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
+      <TextInput v-model="busca" placeholder="Buscar servidor por nome..." class="mt-2 w-full sm:w-80" />
+      <div class="mt-2 space-y-2 max-h-96 overflow-y-auto">
+        <p v-if="servidoresFiltrados.length === 0" class="text-sm text-gray-500">Nenhum servidor encontrado.</p>
+        <div v-for="s in servidoresFiltrados" :key="s.id" class="flex flex-wrap items-center gap-3 p-3 border rounded-md" :class="isSelected(s.id) ? 'border-indigo-300 bg-indigo-50' : 'border-gray-200'">
           <input
             type="checkbox"
             :checked="isSelected(s.id)"
             @change="toggleServidor(s)"
             class="rounded border-gray-300 text-indigo-600"
           />
-          <span class="flex-1 text-sm font-medium">{{ s.nome }}</span>
-          <select
-            v-if="isSelected(s.id) && s.instruments.length"
-            :value="getInstrument(s.id)"
-            @change="setInstrument(s.id, Number(($event.target as HTMLSelectElement).value))"
-            class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
-          >
-            <option v-for="i in s.instruments" :key="i.instrumentId" :value="i.instrumentId">
-              {{ i.instrument.nome }}
-            </option>
-          </select>
+          <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ s.nome }}</span>
+          <template v-if="isSelected(s.id)">
+            <select
+              v-if="s.instruments.length"
+              :value="getEntry(s.id)?.instrumentId"
+              @change="setInstrument(s.id, Number(($event.target as HTMLSelectElement).value))"
+              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+            >
+              <option v-for="i in s.instruments" :key="i.instrumentId" :value="i.instrumentId">
+                {{ i.instrument.nome }}
+              </option>
+            </select>
+            <select
+              :value="getEntry(s.id)?.teamId"
+              @change="setServidorTeam(s.id, ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
+              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+            >
+              <option :value="null">Sem ministério</option>
+              <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
+            </select>
+          </template>
         </div>
       </div>
     </div>
