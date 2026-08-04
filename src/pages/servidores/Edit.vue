@@ -12,6 +12,7 @@ const flash = useFlashStore()
 const servidor = ref<any>(null)
 const instruments = ref([])
 const teams = ref([])
+const categorias = ref([])
 const loading = ref(false)
 const errors = ref<Record<string, string>>({})
 
@@ -22,19 +23,22 @@ const initialData = computed(() => servidor.value ? {
   ativo: servidor.value.ativo,
   nivel: servidor.value.nivel,
   observacoes: servidor.value.observacoes ?? '',
+  categorias: servidor.value.categorias.map((c: any) => c.categoriaId),
   instruments: servidor.value.instruments.map((i: any) => i.instrumentId),
   teams: servidor.value.teams.map((t: any) => ({ teamId: t.teamId, funcao: t.funcao ?? '' })),
 } : undefined)
 
 onMounted(async () => {
-  const [s, inst, tm] = await Promise.all([
+  const [s, inst, tm, cat] = await Promise.all([
     client.get(`/servidores/${route.params.id}`),
     client.get('/instruments'),
     client.get('/teams'),
+    client.get('/categorias'),
   ])
   servidor.value = s.data
   instruments.value = inst.data
   teams.value = tm.data
+  categorias.value = cat.data
 })
 
 async function submit(data: object) {
@@ -58,7 +62,7 @@ async function submit(data: object) {
       <h2 class="font-semibold text-xl text-gray-800">Editar Servidor</h2>
     </template>
     <div class="bg-white shadow-sm rounded-lg p-6">
-      <ServidorForm v-if="servidor" :initial-data="initialData" :instruments="instruments" :teams="teams" :errors="errors" :loading="loading" @submit="submit" />
+      <ServidorForm v-if="servidor" :initial-data="initialData" :instruments="instruments" :teams="teams" :categorias="categorias" :errors="errors" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>
 </template>

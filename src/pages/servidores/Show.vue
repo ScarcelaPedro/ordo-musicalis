@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
@@ -26,6 +26,8 @@ const NIVEL_LABELS: Record<string, string> = {
   apto: 'Apto',
   lider: 'Líder/Responsável',
 }
+
+const isMusica = computed(() => servidor.value?.categorias.some((c: any) => c.categoria.nome === 'Música') ?? false)
 </script>
 
 <template>
@@ -60,12 +62,20 @@ const NIVEL_LABELS: Record<string, string> = {
             <dd class="mt-1"><Badge color="blue">{{ NIVEL_LABELS[servidor.nivel] ?? servidor.nivel }}</Badge></dd>
           </div>
           <div>
+            <dt class="text-sm font-medium text-gray-500">Função(ões)</dt>
+            <dd class="mt-1 flex flex-wrap gap-1">
+              <Badge v-for="c in servidor.categorias" :key="c.id" color="purple">{{ c.categoria.nome }}</Badge>
+              <span v-if="!servidor.categorias.length" class="text-sm text-gray-400">Nenhuma</span>
+            </dd>
+          </div>
+          <div v-if="isMusica">
             <dt class="text-sm font-medium text-gray-500">Instrumentos</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
               <Badge v-for="i in servidor.instruments" :key="i.id" color="blue">{{ i.instrument.nome }}</Badge>
+              <span v-if="!servidor.instruments.length" class="text-sm text-gray-400">Nenhum</span>
             </dd>
           </div>
-          <div>
+          <div v-if="isMusica">
             <dt class="text-sm font-medium text-gray-500">Ministérios</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
               <RouterLink v-for="t in servidor.teams" :key="t.id" :to="`/equipes/${t.team.id}`">

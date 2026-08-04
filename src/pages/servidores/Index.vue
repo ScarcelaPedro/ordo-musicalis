@@ -66,7 +66,7 @@ const NIVEL_LABELS: Record<string, string> = {
         <thead class="bg-gray-50">
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Instrumentos</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Função(ões)</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nível</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             <th v-if="auth.isStaff" class="px-6 py-3"></th>
@@ -82,7 +82,7 @@ const NIVEL_LABELS: Record<string, string> = {
             </td>
             <td class="px-6 py-4">
               <div class="flex flex-wrap gap-1">
-                <Badge v-for="i in s.instruments" :key="i.id" color="blue">{{ i.instrument.nome }}</Badge>
+                <Badge v-for="c in s.categorias" :key="c.id" color="purple">{{ c.categoria.nome }}</Badge>
               </div>
             </td>
             <td class="px-6 py-4">

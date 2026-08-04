@@ -10,13 +10,15 @@ const router = useRouter()
 const flash = useFlashStore()
 const instruments = ref([])
 const teams = ref([])
+const categorias = ref([])
 const loading = ref(false)
 const errors = ref<Record<string, string>>({})
 
 onMounted(async () => {
-  const [inst, tm] = await Promise.all([client.get('/instruments'), client.get('/teams')])
+  const [inst, tm, cat] = await Promise.all([client.get('/instruments'), client.get('/teams'), client.get('/categorias')])
   instruments.value = inst.data
   teams.value = tm.data
+  categorias.value = cat.data
 })
 
 async function submit(data: object) {
@@ -40,7 +42,7 @@ async function submit(data: object) {
       <h2 class="font-semibold text-xl text-gray-800">Novo Servidor</h2>
     </template>
     <div class="bg-white shadow-sm rounded-lg p-6">
-      <ServidorForm :instruments="instruments" :teams="teams" :errors="errors" :loading="loading" @submit="submit" />
+      <ServidorForm :instruments="instruments" :teams="teams" :categorias="categorias" :errors="errors" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>
 </template>

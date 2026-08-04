@@ -107,6 +107,7 @@ model Servidor {
   user          User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   instruments   InstrumentServidor[]
   teams         ServidorMinisterio[]
+  categorias    ServidorCategoria[]
   availabilities Availability[]
   scales        ScaleServidor[]
   teamsResponsavel Team[]            @relation("TeamResponsavel")
@@ -179,9 +180,23 @@ model CategoriaFuncao {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  teams Team[]
+  teams      Team[]
+  servidores ServidorCategoria[]
 
   @@map("categorias_funcao")
+}
+
+model ServidorCategoria {
+  id          Int      @id @default(autoincrement())
+  servidorId  Int      @map("servidor_id")
+  categoriaId Int      @map("categoria_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  servidor  Servidor        @relation(fields: [servidorId], references: [id], onDelete: Cascade)
+  categoria CategoriaFuncao @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  @@unique([servidorId, categoriaId])
+  @@map("servidor_categoria")
 }
 
 model Team {

@@ -9,6 +9,7 @@ const prisma = new PrismaClient()
 const include = {
   instruments: { include: { instrument: true } },
   teams: { include: { team: true } },
+  categorias: { include: { categoria: true } },
 }
 
 router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
@@ -27,7 +28,7 @@ router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
 })
 
 router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
-  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams } = req.body
+  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams, categorias } = req.body
 
   const servidor = await prisma.servidor.create({
     data: {
@@ -47,6 +48,9 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
               funcao: t.funcao ?? null,
             })),
           }
+        : undefined,
+      categorias: categorias?.length
+        ? { create: (categorias as number[]).map((categoriaId) => ({ categoriaId })) }
         : undefined,
     },
     include,
@@ -102,10 +106,11 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
 
 router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
-  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams } = req.body
+  const { nome, telefone, email, ativo, nivel, observacoes, instruments: instrumentIds, teams, categorias } = req.body
 
   await prisma.instrumentServidor.deleteMany({ where: { servidorId: id } })
   await prisma.servidorMinisterio.deleteMany({ where: { servidorId: id } })
+  await prisma.servidorCategoria.deleteMany({ where: { servidorId: id } })
 
   const servidor = await prisma.servidor.update({
     where: { id },
@@ -126,6 +131,9 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), async (r
               funcao: t.funcao ?? null,
             })),
           }
+        : undefined,
+      categorias: categorias?.length
+        ? { create: (categorias as number[]).map((categoriaId) => ({ categoriaId })) }
         : undefined,
     },
     include,

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
 import InputError from '@/components/InputError.vue'
@@ -8,6 +8,7 @@ import SecondaryButton from '@/components/SecondaryButton.vue'
 
 interface Instrument { id: number; nome: string }
 interface Team { id: number; nome: string }
+interface Categoria { id: number; nome: string; ordem: number }
 
 type Nivel = 'em_formacao' | 'apto' | 'lider'
 
@@ -20,6 +21,7 @@ interface FormData {
   ativo: boolean
   nivel: Nivel
   observacoes: string
+  categorias: number[]
   instruments: number[]
   teams: ServidorMinisterio[]
 }
@@ -34,6 +36,7 @@ const props = defineProps<{
   initialData?: Partial<FormData>
   instruments: Instrument[]
   teams: Team[]
+  categorias: Categoria[]
   errors?: Record<string, string>
   loading?: boolean
 }>()
@@ -47,6 +50,7 @@ const form = ref<FormData>({
   ativo: props.initialData?.ativo ?? true,
   nivel: props.initialData?.nivel ?? 'apto',
   observacoes: props.initialData?.observacoes ?? '',
+  categorias: props.initialData?.categorias ?? [],
   instruments: props.initialData?.instruments ?? [],
   teams: props.initialData?.teams ?? [],
 })
@@ -54,6 +58,26 @@ const form = ref<FormData>({
 watch(() => props.initialData, (val) => {
   if (val) Object.assign(form.value, val)
 })
+
+const categoriasOrdenadas = computed(() => [...props.categorias].sort((a, b) => a.ordem - b.ordem))
+
+// Instrumentos e Ministério só fazem sentido pra quem tem a função "Música" -- outras
+// funções (Acólito, Leitor...) não têm esses campos.
+const musicaId = computed(() => props.categorias.find((c) => c.nome === 'Música')?.id ?? null)
+const isMusica = computed(() => musicaId.value != null && form.value.categorias.includes(musicaId.value))
+
+watch(isMusica, (agora) => {
+  if (!agora) {
+    form.value.instruments = []
+    form.value.teams = []
+  }
+})
+
+function toggleCategoria(id: number) {
+  const idx = form.value.categorias.indexOf(id)
+  if (idx >= 0) form.value.categorias.splice(idx, 1)
+  else form.value.categorias.push(id)
+}
 
 function toggleInstrument(id: number) {
   const idx = form.value.instruments.indexOf(id)
@@ -110,47 +134,69 @@ function teamNome(id: number) {
     </div>
 
     <div>
-      <InputLabel value="Instrumentos" :required="true" />
-      <InputError :message="errors?.instruments" />
+      <InputLabel value="Função(ões)" :required="true" />
+      <InputError :message="errors?.categorias" />
+      <p class="mt-1 text-xs text-gray-500">Uma pessoa pode ter mais de uma função (ex: é Músico e também Acólito).</p>
       <div class="mt-2 flex flex-wrap gap-2">
         <button
-          v-for="inst in instruments"
-          :key="inst.id"
+          v-for="cat in categoriasOrdenadas"
+          :key="cat.id"
           type="button"
-          @click="toggleInstrument(inst.id)"
+          @click="toggleCategoria(cat.id)"
           class="px-3 py-1.5 rounded-full text-sm border transition"
-          :class="form.instruments.includes(inst.id)
-            ? 'bg-indigo-600 text-white border-indigo-600'
-            : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'"
+          :class="form.categorias.includes(cat.id)
+            ? 'bg-purple-600 text-white border-purple-600'
+            : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'"
         >
-          {{ inst.nome }}
+          {{ cat.nome }}
         </button>
       </div>
     </div>
 
-    <div>
-      <InputLabel value="Ministérios" />
-      <div class="mt-2 flex flex-wrap gap-2">
-        <button
-          v-for="team in teams"
-          :key="team.id"
-          type="button"
-          @click="toggleTeam(team.id)"
-          class="px-3 py-1.5 rounded-full text-sm border transition"
-          :class="form.teams.some((t) => t.teamId === team.id)
-            ? 'bg-green-600 text-white border-green-600'
-            : 'bg-white text-gray-700 border-gray-300 hover:border-green-400'"
-        >
-          {{ team.nome }}
-        </button>
-      </div>
-      <div v-if="form.teams.length" class="mt-3 space-y-2">
-        <div v-for="t in form.teams" :key="t.teamId" class="flex items-center gap-2">
-          <span class="text-sm text-gray-500 w-40 shrink-0 truncate">{{ teamNome(t.teamId) }}</span>
-          <TextInput v-model="t.funcao" placeholder="Função (opcional)" class="text-sm" />
+    <template v-if="isMusica">
+      <div>
+        <InputLabel value="Instrumentos" :required="true" />
+        <InputError :message="errors?.instruments" />
+        <div class="mt-2 flex flex-wrap gap-2">
+          <button
+            v-for="inst in instruments"
+            :key="inst.id"
+            type="button"
+            @click="toggleInstrument(inst.id)"
+            class="px-3 py-1.5 rounded-full text-sm border transition"
+            :class="form.instruments.includes(inst.id)
+              ? 'bg-indigo-600 text-white border-indigo-600'
+              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'"
+          >
+            {{ inst.nome }}
+          </button>
         </div>
       </div>
-    </div>
+
+      <div>
+        <InputLabel value="Ministérios" />
+        <div class="mt-2 flex flex-wrap gap-2">
+          <button
+            v-for="team in teams"
+            :key="team.id"
+            type="button"
+            @click="toggleTeam(team.id)"
+            class="px-3 py-1.5 rounded-full text-sm border transition"
+            :class="form.teams.some((t) => t.teamId === team.id)
+              ? 'bg-green-600 text-white border-green-600'
+              : 'bg-white text-gray-700 border-gray-300 hover:border-green-400'"
+          >
+            {{ team.nome }}
+          </button>
+        </div>
+        <div v-if="form.teams.length" class="mt-3 space-y-2">
+          <div v-for="t in form.teams" :key="t.teamId" class="flex items-center gap-2">
+            <span class="text-sm text-gray-500 w-40 shrink-0 truncate">{{ teamNome(t.teamId) }}</span>
+            <TextInput v-model="t.funcao" placeholder="Função (opcional)" class="text-sm" />
+          </div>
+        </div>
+      </div>
+    </template>
 
     <div class="flex items-center gap-4">
       <PrimaryButton :disabled="loading">
