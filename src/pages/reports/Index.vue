@@ -12,6 +12,15 @@ interface MinisterioResumo {
   taxaConfirmacao: number
 }
 
+interface CategoriaResumo {
+  categoriaId: number | null
+  nome: string
+  ordem: number
+  escalacoes: number
+  confirmadas: number
+  taxaConfirmacao: number
+}
+
 interface Resumo {
   totalCelebracoes: number
   totalEscalacoes: number
@@ -20,10 +29,12 @@ interface Resumo {
   taxaConfirmacao: number
   substituicoesPendentes: number
   porMinisterio: MinisterioResumo[]
+  porCategoria: CategoriaResumo[]
 }
 
 const resumo = ref<Resumo | null>(null)
 const loading = ref(true)
+const agrupamento = ref<'ministerio' | 'categoria'>('ministerio')
 const hoje = new Date()
 const inicio = ref(new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().slice(0, 10))
 const fim = ref(new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().slice(0, 10))
@@ -88,7 +99,24 @@ onMounted(load)
         </div>
 
         <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-          <div class="overflow-x-auto">
+          <div class="p-4 border-b flex gap-2">
+            <button
+              @click="agrupamento = 'ministerio'"
+              class="px-3 py-1.5 rounded-full text-xs font-semibold uppercase transition"
+              :class="agrupamento === 'ministerio' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+            >
+              Por Ministério
+            </button>
+            <button
+              @click="agrupamento = 'categoria'"
+              class="px-3 py-1.5 rounded-full text-xs font-semibold uppercase transition"
+              :class="agrupamento === 'categoria' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'"
+            >
+              Por Categoria de Função
+            </button>
+          </div>
+
+          <div v-if="agrupamento === 'ministerio'" class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
               <tr>
@@ -107,6 +135,28 @@ onMounted(load)
               </tr>
               <tr v-if="!resumo.porMinisterio.length">
                 <td colspan="4" class="px-6 py-8 text-center text-gray-500">Nenhuma celebração no período.</td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+
+          <div v-else class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoria de Função</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Escalações</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Taxa de confirmação</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr v-for="c in resumo.porCategoria" :key="c.categoriaId ?? 'sem'">
+                <td class="px-6 py-4 font-medium text-gray-900">{{ c.nome }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ c.escalacoes }}</td>
+                <td class="px-6 py-4 text-sm text-gray-700">{{ c.taxaConfirmacao }}%</td>
+              </tr>
+              <tr v-if="!resumo.porCategoria.length">
+                <td colspan="3" class="px-6 py-8 text-center text-gray-500">Nenhuma escalação no período.</td>
               </tr>
             </tbody>
           </table>

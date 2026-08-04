@@ -12,6 +12,7 @@ interface PublicScale {
   celebracao: string
   observacoes: string | null
   team: { id: number; nome: string } | null
+  comunidade: { id: number; nome: string } | null
   servidores: { status: string; servidor: { nome: string }; instrument: { nome: string } | null }[]
 }
 
@@ -20,6 +21,8 @@ const currentMonth = ref(today.getMonth())
 const currentYear = ref(today.getFullYear())
 const scales = ref<PublicScale[]>([])
 const loading = ref(false)
+const comunidades = ref<{ id: number; nome: string }[]>([])
+const filterComunidadeId = ref('')
 
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -30,15 +33,22 @@ async function load() {
   loading.value = true
   try {
     const mes = `${currentYear.value}-${String(currentMonth.value + 1).padStart(2, '0')}`
-    const { data } = await client.get('/public/scales', { params: { mes } })
+    const { data } = await client.get('/public/scales', {
+      params: { mes, comunidadeId: filterComunidadeId.value || undefined },
+    })
     scales.value = data
   } finally {
     loading.value = false
   }
 }
 
-onMounted(load)
-watch([currentMonth, currentYear], load)
+async function loadComunidades() {
+  const { data } = await client.get('/public/comunidades')
+  comunidades.value = data
+}
+
+onMounted(() => { load(); loadComunidades() })
+watch([currentMonth, currentYear, filterComunidadeId], load)
 
 function prevMonth() {
   if (currentMonth.value === 0) { currentMonth.value = 11; currentYear.value-- }
@@ -75,6 +85,12 @@ function imprimir() {
         <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ MONTH_NAMES[currentMonth] }} {{ currentYear }}</h2>
         <button @click="nextMonth" class="px-3 py-1.5 rounded-md bg-white dark:bg-gray-800 shadow-sm text-gray-600 dark:text-gray-300">&rarr;</button>
       </div>
+      <div v-if="comunidades.length > 1" class="mb-6 no-print">
+        <select v-model="filterComunidadeId" class="w-full sm:w-auto border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-md shadow-sm text-sm">
+          <option value="">Todas as comunidades</option>
+          <option v-for="c in comunidades" :key="c.id" :value="c.id">{{ c.nome }}</option>
+        </select>
+      </div>
       <h2 class="hidden print:block text-lg font-semibold mb-6">Escala — {{ MONTH_NAMES[currentMonth] }} {{ currentYear }}</h2>
 
       <div v-if="loading" class="text-center text-gray-500 py-8">Carregando...</div>
@@ -85,7 +101,10 @@ function imprimir() {
             <h3 class="font-semibold text-gray-800 dark:text-gray-100">{{ s.celebracao }}</h3>
             <span v-if="s.team" class="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200 px-2 py-0.5 rounded-full">{{ s.team.nome }}</span>
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 capitalize">{{ formatDate(s.dataCelebracao) }} · {{ s.horario }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 capitalize">
+            {{ formatDate(s.dataCelebracao) }} · {{ s.horario }}
+            <span v-if="s.comunidade"> · {{ s.comunidade.nome }}</span>
+          </p>
           <ul class="space-y-1">
             <li v-for="(sv, idx) in s.servidores" :key="idx" class="flex items-center justify-between text-sm py-1 border-t border-gray-100 dark:border-gray-700 first:border-0">
               <span class="text-gray-700 dark:text-gray-300">

@@ -43,6 +43,8 @@ const currentYear  = ref(today.getFullYear())
 const scales       = ref<Scale[]>([])
 const loading      = ref(false)
 const pendencias   = ref<Pendencia[]>([])
+const comunidades  = ref<{ id: number; nome: string }[]>([])
+const filterComunidadeId = ref('')
 
 const MONTH_NAMES = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
@@ -54,7 +56,9 @@ async function load() {
   loading.value = true
   try {
     const mes = `${currentYear.value}-${String(currentMonth.value + 1).padStart(2,'0')}`
-    const { data } = await client.get('/scales', { params: { mes } })
+    const { data } = await client.get('/scales', {
+      params: { mes, comunidadeId: filterComunidadeId.value || undefined },
+    })
     scales.value = data
   } finally {
     loading.value = false
@@ -67,8 +71,13 @@ async function loadPendencias() {
   pendencias.value = data.slice(0, 8)
 }
 
-onMounted(() => { load(); loadPendencias() })
-watch([currentMonth, currentYear], load)
+async function loadComunidades() {
+  const { data } = await client.get('/comunidades')
+  comunidades.value = data
+}
+
+onMounted(() => { load(); loadPendencias(); loadComunidades() })
+watch([currentMonth, currentYear, filterComunidadeId], load)
 
 function prevMonth() {
   if (currentMonth.value === 0) { currentMonth.value = 11; currentYear.value-- }
@@ -283,6 +292,10 @@ function formatFullDate(iso: string) {
           <h3 class="text-base font-bold text-gray-700 tracking-wide">
             {{ MONTH_NAMES[currentMonth] }} {{ currentYear }}
           </h3>
+          <select v-if="comunidades.length > 1" v-model="filterComunidadeId" class="border-gray-300 rounded-md shadow-sm text-sm">
+            <option value="">Todas as comunidades</option>
+            <option v-for="c in comunidades" :key="c.id" :value="c.id">{{ c.nome }}</option>
+          </select>
           <button @click="nextMonth"
             class="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

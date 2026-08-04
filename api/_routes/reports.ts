@@ -17,7 +17,12 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
     select: {
       id: true,
       team: { select: { id: true, nome: true } },
-      servidores: { select: { status: true } },
+      servidores: {
+        select: {
+          status: true,
+          team: { select: { categoria: { select: { id: true, nome: true, ordem: true } } } },
+        },
+      },
     },
   })
 
@@ -28,6 +33,10 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
   let totalEscalacoes = 0
   let confirmadas = 0
   const porMinisterio = new Map<string, { teamId: number | null; nome: string; celebracoes: number; escalacoes: number; confirmadas: number }>()
+  // Diferente de porMinisterio (que agrupa pela escala inteira via Scale.teamId), porCategoria
+  // agrupa por escalação individual via ScaleServidor.team.categoria -- já que, desde a Fase 2,
+  // uma única celebração pode reunir servidores de várias categorias ao mesmo tempo.
+  const porCategoria = new Map<string, { categoriaId: number | null; nome: string; ordem: number; escalacoes: number; confirmadas: number }>()
 
   for (const scale of scales) {
     const key = scale.team ? String(scale.team.id) : 'sem-ministerio'
@@ -45,6 +54,21 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
         confirmadas += 1
         bucket.confirmadas += 1
       }
+
+      const categoria = sm.team?.categoria
+      const catKey = categoria ? String(categoria.id) : 'sem-categoria'
+      if (!porCategoria.has(catKey)) {
+        porCategoria.set(catKey, {
+          categoriaId: categoria?.id ?? null,
+          nome: categoria?.nome ?? 'Sem categoria',
+          ordem: categoria?.ordem ?? 999,
+          escalacoes: 0,
+          confirmadas: 0,
+        })
+      }
+      const catBucket = porCategoria.get(catKey)!
+      catBucket.escalacoes += 1
+      if (sm.status === 'confirmado') catBucket.confirmadas += 1
     }
   }
 
@@ -55,6 +79,13 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
     }))
     .sort((a, b) => b.celebracoes - a.celebracoes)
 
+  const resumoCategorias = Array.from(porCategoria.values())
+    .map((b) => ({
+      ...b,
+      taxaConfirmacao: b.escalacoes > 0 ? Math.round((b.confirmadas / b.escalacoes) * 100) : 0,
+    }))
+    .sort((a, b) => a.ordem - b.ordem)
+
   return res.json({
     periodo: { inicio: gte, fim: lte },
     totalCelebracoes: scales.length,
@@ -64,6 +95,7 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
     taxaConfirmacao: totalEscalacoes > 0 ? Math.round((confirmadas / totalEscalacoes) * 100) : 0,
     substituicoesPendentes,
     porMinisterio: resumoMinisterios,
+    porCategoria: resumoCategorias,
   })
 })
 

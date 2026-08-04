@@ -5,7 +5,7 @@ const router = Router()
 const prisma = new PrismaClient()
 
 router.get('/scales', async (req: Request, res: Response) => {
-  const { mes, teamId } = req.query as Record<string, string>
+  const { mes, teamId, comunidadeId } = req.query as Record<string, string>
   const where: Record<string, unknown> = {}
 
   if (mes) {
@@ -16,6 +16,7 @@ router.get('/scales', async (req: Request, res: Response) => {
     }
   }
   if (teamId) where.teamId = Number(teamId)
+  if (comunidadeId) where.comunidadeId = Number(comunidadeId)
 
   const scales = await prisma.scale.findMany({
     where,
@@ -26,6 +27,7 @@ router.get('/scales', async (req: Request, res: Response) => {
       celebracao: true,
       observacoes: true,
       team: { select: { id: true, nome: true } },
+      comunidade: { select: { id: true, nome: true } },
       servidores: {
         select: {
           status: true,
@@ -37,6 +39,15 @@ router.get('/scales', async (req: Request, res: Response) => {
     orderBy: { dataCelebracao: 'asc' },
   })
   return res.json(scales)
+})
+
+router.get('/comunidades', async (_req: Request, res: Response) => {
+  const comunidades = await prisma.comunidade.findMany({
+    where: { ativo: true },
+    select: { id: true, nome: true },
+    orderBy: { nome: 'asc' },
+  })
+  return res.json(comunidades)
 })
 
 export default router

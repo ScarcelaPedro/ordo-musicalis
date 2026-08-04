@@ -11,20 +11,24 @@ const auth = useAuthStore()
 const flash = useFlashStore()
 const scales = ref<any[]>([])
 const teams = ref<any[]>([])
+const comunidades = ref<any[]>([])
 const filterMes = ref('')
 const filterTeam = ref('')
+const filterComunidade = ref('')
 
 async function load() {
   const params: Record<string, string> = {}
   if (filterMes.value) params.mes = filterMes.value
   if (filterTeam.value) params.teamId = filterTeam.value
+  if (filterComunidade.value) params.comunidadeId = filterComunidade.value
   const { data } = await client.get('/scales', { params })
   scales.value = data
 }
 
 onMounted(async () => {
-  const [, tm] = await Promise.all([load(), client.get('/teams')])
+  const [, tm, cm] = await Promise.all([load(), client.get('/teams'), client.get('/comunidades')])
   teams.value = tm.data
+  comunidades.value = cm.data
 })
 
 function formatDate(d: string) {
@@ -71,6 +75,10 @@ async function copiarLinkPublico() {
           <option value="">Todos os ministérios</option>
           <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
         </select>
+        <select v-if="comunidades.length > 1" v-model="filterComunidade" @change="load" class="border-gray-300 rounded-md shadow-sm text-sm">
+          <option value="">Todas as comunidades</option>
+          <option v-for="c in comunidades" :key="c.id" :value="c.id">{{ c.nome }}</option>
+        </select>
       </div>
 
       <div class="overflow-x-auto">
@@ -79,6 +87,7 @@ async function copiarLinkPublico() {
           <tr>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Celebração</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Comunidade</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ministério</th>
             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
             <th class="px-6 py-3"></th>
@@ -93,6 +102,7 @@ async function copiarLinkPublico() {
               </RouterLink>
               <div class="text-xs text-gray-500">{{ s.horario }}</div>
             </td>
+            <td class="px-6 py-4 text-sm text-gray-500">{{ s.comunidade?.nome ?? '—' }}</td>
             <td class="px-6 py-4 text-sm text-gray-500">{{ s.team?.nome ?? '—' }}</td>
             <td class="px-6 py-4">
               <Badge :color="s.status === 'confirmada' ? 'green' : 'yellow'">{{ s.status }}</Badge>
@@ -106,7 +116,7 @@ async function copiarLinkPublico() {
             </td>
           </tr>
           <tr v-if="scales.length === 0">
-            <td colspan="5" class="px-6 py-8 text-center text-gray-500">Nenhuma escala encontrada.</td>
+            <td colspan="6" class="px-6 py-8 text-center text-gray-500">Nenhuma escala encontrada.</td>
           </tr>
         </tbody>
       </table>

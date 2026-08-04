@@ -132,10 +132,15 @@ quem monta a escala (coordenador responsável ou admin) monta a equipe toda.
 
 ## Fase 3 — Alcance paroquial
 
-- [ ] Filtro por Comunidade no Dashboard (calendário) e em `scales/Index.vue`.
-- [ ] Calendário público (`public/Calendar.vue`): filtro por Comunidade; nome da comunidade
-      aparece na celebração.
-- [ ] Relatórios: agrupar (opcionalmente) por categoria além de por ministério.
+- [x] Filtro por Comunidade no Dashboard (calendário) e em `scales/Index.vue` (só aparece quando
+      há mais de uma comunidade cadastrada); `scales/Index.vue` também ganhou coluna Comunidade.
+- [x] Calendário público (`public/Calendar.vue`): filtro por Comunidade (via novo endpoint
+      público `GET /api/public/comunidades`); nome da comunidade aparece na celebração.
+- [x] Relatórios: toggle "Por Ministério" / "Por Categoria de Função". A visão por categoria
+      agrupa por `ScaleServidor.team.categoria` (não pela `Scale.teamId`), já que uma celebração
+      pode reunir várias categorias ao mesmo tempo desde a Fase 2.
+- [x] Testado local: filtro de comunidade em `/scales`, `/public/scales` e no calendário público;
+      novo endpoint público de comunidades; `porCategoria` no relatório.
 
 ## Fase 4 — Polimento
 
