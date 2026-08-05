@@ -89,6 +89,21 @@ async function salvar() {
 function leituras(campo: Leitura[] | null | undefined): Leitura[] {
   return campo ?? []
 }
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+// A fonte marca o início de cada versículo com o número colado na palavra seguinte
+// (ex: "12Isto diz o Senhor..."), sem separá-lo em outro campo -- destacamos esses
+// números por cima do texto escapado, sem abrir espaço pra HTML arbitrário.
+function formatarTexto(texto: string | undefined): string {
+  if (!texto) return ''
+  return escapeHtml(texto).replace(
+    /(^|\s)(\d{1,3})(?=[A-Za-zÀ-ÿ"“'’])/g,
+    (_, pre, num) => `${pre}<span class="numero-versiculo">${num}</span>`,
+  )
+}
 </script>
 
 <template>
@@ -163,73 +178,93 @@ function leituras(campo: Leitura[] | null | undefined): Leitura[] {
     </div>
 
     <!-- Visualização -->
-    <div v-else class="space-y-6">
+    <div v-else class="liturgia-serif space-y-6">
       <div class="bg-white shadow-sm rounded-lg p-6">
-        <div class="flex flex-wrap items-center gap-2 mb-2">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="CORES_CLASSES[liturgia.cor] ?? CORES_CLASSES.Verde">{{ liturgia.cor }}</span>
-          <span v-if="liturgia.temGloria" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">Tem Glória</span>
-          <span v-if="liturgia.temCredo" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">Tem Credo</span>
-          <span v-if="liturgia.editadoManualmente" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Corrigido manualmente</span>
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans" :class="CORES_CLASSES[liturgia.cor] ?? CORES_CLASSES.Verde">{{ liturgia.cor }}</span>
+          <span v-if="liturgia.temGloria" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">Tem Glória</span>
+          <span v-if="liturgia.temCredo" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">Tem Credo</span>
+          <span v-if="liturgia.editadoManualmente" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Corrigido manualmente</span>
         </div>
-        <h3 class="font-semibold text-lg text-gray-900">{{ liturgia.liturgia }}</h3>
+        <h3 class="liturgia-titulo text-2xl font-semibold text-gray-900">{{ liturgia.liturgia }}</h3>
       </div>
 
       <div v-if="liturgia.antifonaEntrada" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Antífona de Entrada</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Antífona de Entrada</h4>
         <p class="text-sm text-gray-800 whitespace-pre-line">{{ liturgia.antifonaEntrada }}</p>
       </div>
 
       <div v-if="liturgia.coleta" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Oração da Coleta</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Oração da Coleta</h4>
         <p class="text-sm text-gray-800 whitespace-pre-line">{{ liturgia.coleta }}</p>
       </div>
 
       <div v-for="l in leituras(liturgia.primeiraLeitura)" :key="'1L-' + l.referencia" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Primeira Leitura</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Primeira Leitura</h4>
         <p v-if="l.titulo" class="text-sm font-medium text-gray-900">{{ l.titulo }}</p>
         <p v-if="l.referencia" class="text-xs text-gray-500 mb-3">{{ l.referencia }}</p>
-        <p class="text-sm text-gray-800 whitespace-pre-line">{{ l.texto }}</p>
+        <p class="text-base text-gray-800 whitespace-pre-line" v-html="formatarTexto(l.texto)"></p>
         <p class="text-sm text-gray-500 italic mt-3">— Palavra do Senhor.<br>— Graças a Deus.</p>
       </div>
 
       <div v-for="l in leituras(liturgia.salmo)" :key="'salmo-' + l.referencia" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Salmo Responsorial</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Salmo Responsorial</h4>
         <p v-if="l.referencia" class="text-xs text-gray-500 mb-1">{{ l.referencia }}</p>
         <p v-if="l.refrao" class="text-sm font-medium text-gray-900 mb-3">{{ l.refrao }}</p>
-        <p class="text-sm text-gray-800 whitespace-pre-line">{{ l.texto }}</p>
+        <p class="text-base text-gray-800 whitespace-pre-line" v-html="formatarTexto(l.texto)"></p>
       </div>
 
       <div v-for="l in leituras(liturgia.segundaLeitura)" :key="'2L-' + l.referencia" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Segunda Leitura</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Segunda Leitura</h4>
         <p v-if="l.titulo" class="text-sm font-medium text-gray-900">{{ l.titulo }}</p>
         <p v-if="l.referencia" class="text-xs text-gray-500 mb-3">{{ l.referencia }}</p>
-        <p class="text-sm text-gray-800 whitespace-pre-line">{{ l.texto }}</p>
+        <p class="text-base text-gray-800 whitespace-pre-line" v-html="formatarTexto(l.texto)"></p>
         <p class="text-sm text-gray-500 italic mt-3">— Palavra do Senhor.<br>— Graças a Deus.</p>
       </div>
 
       <div v-for="l in leituras(liturgia.evangelho)" :key="'ev-' + l.referencia" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Evangelho</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Evangelho</h4>
         <p class="text-sm text-gray-500 italic mb-2">℣. O Senhor esteja convosco.<br>℟. Ele está no meio de nós.</p>
         <p v-if="l.titulo" class="text-sm font-medium text-gray-900">{{ l.titulo }}</p>
         <p v-if="l.referencia" class="text-xs text-gray-500 mb-3">{{ l.referencia }}</p>
-        <p class="text-sm text-gray-800 whitespace-pre-line">{{ l.texto }}</p>
+        <p class="text-base text-gray-800 whitespace-pre-line" v-html="formatarTexto(l.texto)"></p>
         <p class="text-sm text-gray-500 italic mt-3">— Palavra da Salvação.<br>— Glória a vós, Senhor.</p>
       </div>
 
       <div v-if="liturgia.oferendas" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Oração sobre as Oferendas</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Oração sobre as Oferendas</h4>
         <p class="text-sm text-gray-800 whitespace-pre-line">{{ liturgia.oferendas }}</p>
       </div>
 
       <div v-if="liturgia.antifonaComunhao" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Antífona de Comunhão</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Antífona de Comunhão</h4>
         <p class="text-sm text-gray-800 whitespace-pre-line">{{ liturgia.antifonaComunhao }}</p>
       </div>
 
       <div v-if="liturgia.oracaoComunhao" class="bg-white shadow-sm rounded-lg p-6">
-        <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Oração Pós-Comunhão</h4>
+        <h4 class="liturgia-titulo text-xl font-bold text-red-700 mb-3">Oração Pós-Comunhão</h4>
         <p class="text-sm text-gray-800 whitespace-pre-line">{{ liturgia.oracaoComunhao }}</p>
       </div>
     </div>
   </AuthenticatedLayout>
 </template>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Playfair+Display:wght@600;700&display=swap');
+
+.liturgia-serif {
+  font-family: 'EB Garamond', Georgia, 'Times New Roman', serif;
+}
+
+.liturgia-titulo {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+
+.numero-versiculo {
+  font-size: 0.65em;
+  color: #f87171;
+  font-weight: 600;
+  vertical-align: super;
+  margin-right: 0.05em;
+}
+</style>
