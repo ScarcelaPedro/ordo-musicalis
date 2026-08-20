@@ -16,8 +16,8 @@ O roadmap e as prioridades atuais ainda não estão consolidados em `docs/SCOPE.
 |---|---|---|---|
 | `src/` | SPA (Vue 3 + Vite) | Frontend — todas as telas e stores da aplicação | [`src/AGENTS.md`](src/AGENTS.md) |
 | `api/` | API (Express + Prisma) | Backend serverless, lógica de negócio e persistência | [`api/AGENTS.md`](api/AGENTS.md) |
-| `evolution/` | Infra (Docker Compose) | Stack self-hosted da Evolution API (WhatsApp) + Postgres + Redis, consumida por `api/_lib/sendWhatsapp.ts` | — |
-| `public/` | Estático | Assets servidos como estão (`sw.js` — Service Worker de push) | — |
+| `evolution/` | Infra (Docker Compose) | Stack self-hosted da Evolution API (WhatsApp) + Postgres + Redis, consumida por `api/_lib/sendWhatsapp.ts` | [`evolution/AGENTS.md`](evolution/AGENTS.md) |
+| `public/` | Estático | Assets servidos como estão (`sw.js` — Service Worker de push) | [`public/AGENTS.md`](public/AGENTS.md) |
 | `docs/` | Documentação | `arquitetura.md`, `SCOPE.md`, `decisions/`, `tasks/` | — |
 | `resources/` | ⚠️ Código morto | Scaffold Laravel Breeze/Inertia abandonado, não usado pelo build atual — ver [`src/AGENTS.md`](src/AGENTS.md) | — |
 | `dist/` | Build gerado | Saída de `npm run build`, não editar manualmente. ⚠️ Está versionada no Git (não consta em `.gitignore`), o que é atípico já que o deploy na Vercel gera o build automaticamente — provavelmente sobra de um fluxo anterior; não é necessário atualizá-la manualmente a cada commit | — |
