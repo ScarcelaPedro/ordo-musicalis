@@ -1,191 +1,131 @@
-Projeto Escala de Músicos
+# Documento de Arquitetura de Software
 
-A Arquitetura do Sistema vai compor: Front-end Vue 3 + Tailwind CSS, integrado via Inertia.js;
-Back-end Laravel 11 (PHP 8.3+) Arquitetura MVC;
-Banco de Dados PostgreSQL 17.
+## Sistema de Gerenciamento de Escala de Músicos Litúrgicos
 
-Estava pensando em um sistema com uma interface simples, de fácil entendimento e moderna, com um sistema de login, e um sistema de notificação onde a pessoa possa ser notificada um dia antes da missa que ela irá tocar/cantar, com também uma aba de repertórios litúrgicos que possa ser atualizado a cada semana, outra aba onde a pessoa possa falar os dias que ela tem disponibilidade além do dia que ela já toca para conseguirmos suprir a falta de músicos (como se fosse um questionário), também um sistema automatizado que possa atualizar a agenda todo mês preenchendo com os dias fixos…
-DOCUMENTO DE ARQUITETURA DE SOFTWARE
-Sistema de Gerenciamento de Escala de Músicos Litúrgicos
-Versão: 2.0
-Data: Junho de 2026
-Autor: Pedro Scarcela
+**Versão**: 3.0 (atualizado para refletir a implementação real — substitui a v2.0, que descrevia um plano Laravel/Inertia nunca concluído; ver histórico no Git para a versão anterior)
 
-1. Visão Geral
-1.1 Objetivo
-Este documento descreve a arquitetura do Sistema de Gerenciamento de Escala de Músicos Litúrgicos, desenvolvido para facilitar o planejamento, organização e comunicação entre coordenadores e músicos da paróquia.
-O sistema permitirá o cadastro de usuários, gerenciamento de equipes, criação de escalas, notificações automáticas e consulta de repertórios.
+## 1. Visão Geral
 
-2. Objetivos de Negócio
-Reduzir o trabalho manual na criação de escalas.
-Centralizar informações em uma única plataforma.
-Melhorar a comunicação entre coordenadores e músicos.
-Diminuir faltas por esquecimento através de notificações.
-Disponibilizar repertórios e partituras digitalmente.
+### 1.1 Objetivo
 
-3. Requisitos Funcionais
-RF01 – Autenticação
-O sistema deverá permitir login e logout de usuários.
-RF02 – Cadastro de Músicos
-O coordenador poderá cadastrar músicos e seus instrumentos.
-RF03 – Gerenciamento de Equipes
-O sistema deverá permitir criar equipes musicais.
-RF04 – Criação de Escalas
-O coordenador poderá criar escalas para celebrações.
-RF05 – Notificações
-Os músicos receberão notificações quando forem escalados.
-RF06 – Repertórios
-O sistema deverá disponibilizar repertórios organizados por celebração.
-RF07 – Download de Partituras
-O sistema permitirá o download de arquivos PDF.
+Este documento descreve a arquitetura do Sistema de Gerenciamento de Escala de Músicos Litúrgicos (Ordo Musicalis), desenvolvido para facilitar o planejamento, organização e comunicação entre coordenadores e músicos/servidores da paróquia.
 
-4. Requisitos Não Funcionais
-RNF01 – Segurança
-Senhas criptografadas com Bcrypt (hashing padrão do Laravel).
-Proteção contra SQL Injection (Eloquent ORM com prepared statements).
-Proteção contra XSS (escaping automático do Blade/Vue).
-Proteção contra CSRF (middleware nativo do Laravel).
-RNF02 – Performance
-Tempo médio de resposta inferior a 2 segundos.
-RNF03 – Disponibilidade
-Disponibilidade mínima de 99%.
-RNF04 – Responsividade
-Compatível com dispositivos móveis e desktop (layout responsivo via Tailwind CSS).
+O sistema permite o cadastro de usuários e servidores, gerenciamento de equipes, criação de escalas, coleta de disponibilidade, vínculos fixos recorrentes, repertório musical, liturgia diária, substituições, notificações automáticas e relatórios.
 
-5. Arquitetura do Sistema
-Padrão Arquitetural
-O sistema utilizará:
-Arquitetura MVC
-Arquitetura em Camadas (Layered Architecture)
-Monolito moderno com Laravel + Inertia.js (sem necessidade de API REST separada)
-Camadas
-Apresentação (Front-End)
-Tecnologias:
-Vue 3 (Composition API)
-Tailwind CSS
-Inertia.js (ponte entre rotas Laravel e componentes Vue)
-Vite (build e hot-reload)
-Responsabilidades:
-Interface do usuário
-Validação inicial dos formulários
-Renderização das páginas via componentes Vue, com navegação SPA entregue pelo Inertia
-Camada de Aplicação
-Tecnologias:
-PHP 8.3+ (versão mais recente)
-Laravel 11
-Responsabilidades:
-Regras de negócio
-Autenticação (Laravel Breeze/Fortify com Inertia)
-Controle de permissões (Policies/Gates)
-Agendamento de tarefas (Laravel Scheduler) e notificações
-Camada de Persistência
-Tecnologias:
-PostgreSQL 17
-Eloquent ORM
-Responsabilidades:
-Armazenamento de dados
-Consultas
-Integridade das informações (constraints, migrations versionadas)
+## 2. Objetivos de Negócio
 
-6. Diagrama de Arquitetura
-Usuário
-↓
-Front-End (Vue 3 + Tailwind CSS, renderizado via Inertia.js)
-↓
-Rotas + Controllers (Laravel)
-↓
-Services / Form Requests
-↓
-Models (Eloquent) / Repositories
-↓
-PostgreSQL Database
+- Reduzir o trabalho manual na criação de escalas.
+- Centralizar informações em uma única plataforma.
+- Melhorar a comunicação entre coordenadores e músicos/servidores.
+- Diminuir faltas por esquecimento através de notificações (push, e-mail, WhatsApp).
+- Disponibilizar repertórios, partituras (PDF) e a liturgia do dia digitalmente.
 
-7. Estrutura de Diretórios
-project/
-├── app/
-│ ├── Http/
-│ │ ├── Controllers/
-│ │ ├── Middleware/
-│ │ └── Requests/
-│ ├── Models/
-│ ├── Services/
-│ ├── Policies/
-│ └── Notifications/
-├── database/
-│ ├── migrations/
-│ ├── factories/
-│ └── seeders/
-├── resources/
-│ ├── js/
-│ │ ├── Pages/
-│ │ ├── Components/
-│ │ └── Layouts/
-│ └── css/
-├── routes/
-│ └── web.php
-├── config/
-├── tests/
-└── public/
+## 3. Arquitetura do Sistema
 
-8. Banco de Dados
-Principais Entidades
-Usuários
-id
-nome
-email
-senha
-perfil
-Músicos
-id
-nome
-instrumento
-telefone
-Escalas
-id
-data
-horário
-celebração
-Escala_Músicos
-escala_id
-músico_id
+### Padrão arquitetural
 
-9. Segurança
-Autenticação
-Sessões autenticadas do Laravel (Breeze/Fortify), com suporte a Sanctum caso seja necessário expor API para apps externos no futuro.
-Criptografia
-Bcrypt para senhas (padrão do Laravel)
-Controle de Acesso
-Perfis:
-Administrador
-Coordenador
-Músico
+- **SPA (Single Page Application)** consumindo uma **API HTTP** própria — não é um monolito server-rendered.
+- Front-end e back-end são deployados juntos na Vercel, mas como processos logicamente separados (frontend estático + função serverless).
 
-10. Escalabilidade
-A arquitetura permite futura evolução para:
-Laravel Octane (performance em alta concorrência)
-Filas assíncronas (Laravel Queues + Redis) para envio de notificações
-Docker
-Kubernetes
-AWS
-Azure
-Sem necessidade de reescrever as regras de negócio.
+### Camadas
 
-11. Tecnologias Utilizadas
-Front-End:
-Vue 3
-Tailwind CSS
-Inertia.js
-Vite
-Back-End:
-PHP 8.3+ (versão mais recente)
-Laravel 11
-Banco de Dados:
-PostgreSQL 17
-Ferramentas:
-Git
-GitHub
-VS Code
-Composer / NPM
+**Apresentação (Front-end)** — [`src/`](../src/AGENTS.md)
+- Tecnologias: Vue 3 (Composition API), Vue Router 4, Pinia, Tailwind CSS, Vite.
+- Responsabilidades: interface do usuário, roteamento client-side com guards de autenticação/papel (`admin`/`coordenador`/`musico`), estado de sessão e tema.
 
-12. Conclusão
-A arquitetura proposta oferece simplicidade, segurança, manutenibilidade e escalabilidade, atendendo às necessidades atuais da paróquia e permitindo futuras expansões sem impactos significativos na estrutura existente.
+**Aplicação / API** — [`api/`](../api/AGENTS.md)
+- Tecnologias: Node.js, Express, TypeScript.
+- Responsabilidades: regras de negócio, autenticação (JWT + bcrypt), autorização por papel e por equipe (middlewares `auth`/`roles`/`teamScope`), integrações externas (liturgia diária, e-mail, push, WhatsApp), endpoints REST sob `/api/*`.
+
+**Persistência** — PostgreSQL (Supabase)
+- Tecnologias: PostgreSQL, Prisma ORM.
+- Responsabilidades: armazenamento de dados, migrations versionadas ([`api/prisma/migrations/`](../api/prisma/migrations)), integridade referencial (constraints, `onDelete` cascades definidos no schema).
+
+**Integrações externas**
+- **Resend** — envio de e-mail (lembretes).
+- **Web Push** (`web-push` + Service Worker em [`public/sw.js`](../public/sw.js)) — notificações no navegador.
+- **Evolution API** (self-hosted via [`evolution/docker-compose.yml`](../evolution/docker-compose.yml)) — notificações via WhatsApp.
+- **Vercel Blob** — armazenamento de PDFs de repertório.
+- **API pública de liturgia diária** (`LITURGIA_API_URL`) — sincronização automática da liturgia do dia.
+
+## 4. Diagrama de Arquitetura
+
+```text
+Usuário (navegador)
+   ↓
+SPA Vue 3 (src/), servida como estático pela Vercel
+   ↓ HTTP (fetch/axios, JSON)
+API Express (api/), função serverless na Vercel
+   ↓
+Prisma ORM
+   ↓
+PostgreSQL (Supabase)
+
+Integrações a partir da API:
+  → Resend (e-mail)
+  → Web Push (navegador do usuário)
+  → Evolution API (WhatsApp, self-hosted)
+  → Vercel Blob (PDFs)
+  → API pública de liturgia diária
+
+Cron jobs da Vercel (vercel.json) chamam periodicamente:
+  → POST /api/cron/lembretes (diário)
+  → POST /api/cron/liturgia-sync (diário)
+```
+
+## 5. Estrutura de Diretórios
+
+```text
+ordo-musicalis/
+├── src/                  # SPA Vue 3 — ver src/AGENTS.md
+│   ├── pages/
+│   ├── components/
+│   ├── layouts/
+│   ├── stores/           # Pinia
+│   ├── router/
+│   ├── api/               # cliente axios
+│   └── utils/
+├── api/                   # API Express — ver api/AGENTS.md
+│   ├── _routes/
+│   ├── _middleware/
+│   ├── _lib/
+│   └── prisma/             # schema, migrations, seeds
+├── evolution/              # infra Docker do WhatsApp (Evolution API)
+├── public/                 # estáticos (Service Worker de push)
+├── docs/                   # este documento, SCOPE.md, decisions/, tasks/
+└── dist/                   # build gerado (npm run build)
+```
+
+## 6. Banco de dados
+
+Modelo completo em [`api/prisma/schema.prisma`](../api/prisma/schema.prisma) (fonte de verdade). Principais entidades: `User`, `Servidor`, `Team`, `Comunidade`, `Celebrante`, `Instrument`, `CategoriaFuncao`, `Scale` (celebração/escala), `ScaleServidor` (escalação de um servidor numa escala), `Substituicao`, `Repertoire`/`RepertoireItem`, `Availability`, `ScaleTemplate`/`VinculoFixo` (recorrência), `AvailabilityWindow`, `Liturgia`, `PushSubscription`.
+
+## 7. Segurança
+
+- **Autenticação**: JWT (`jsonwebtoken`), assinado com `JWT_SECRET`; token enviado pelo front-end como `Authorization: Bearer <token>` (ver [`src/api/client.ts`](../src/api/client.ts)).
+- **Senhas**: hash com `bcryptjs`.
+- **Autorização**: por papel (`admin`/`coordenador`/`musico`), aplicada tanto no roteamento do front-end (`meta.roles`) quanto nos middlewares da API.
+- **Validação de entrada**: `zod` nos endpoints da API.
+- **CORS**: restrito à origem definida em `FRONTEND_URL`.
+- **Segredos**: nunca commitados — `.env.example` documenta as variáveis necessárias com placeholders; `.env*` está no `.gitignore`.
+
+## 8. Performance e disponibilidade
+
+Sem SLA formal definido ainda. A aplicação roda inteiramente sobre a infraestrutura serverless da Vercel (frontend + API), o que dá escalonamento automático e alta disponibilidade por padrão da plataforma; a única infraestrutura self-hosted é a stack de WhatsApp (Evolution API + Postgres + Redis via Docker Compose), que roda fora da Vercel.
+
+## 9. Escalabilidade / evolução futura
+
+Ver [`docs/SCOPE.md`](SCOPE.md) para a direção atual do projeto e roadmap (a preencher pelo time). Decisões técnicas não triviais tomadas ao longo do desenvolvimento ficam registradas em [`docs/decisions/`](decisions/).
+
+## 10. Tecnologias utilizadas
+
+**Front-end**: Vue 3, Vue Router, Pinia, Tailwind CSS, Vite, TypeScript.
+**Back-end**: Node.js, Express, TypeScript, Prisma.
+**Banco de dados**: PostgreSQL (Supabase).
+**Integrações**: Resend, Vercel Blob, Web Push, Evolution API.
+**Infra/deploy**: Vercel (hosting + serverless functions + cron), Docker Compose (Evolution API).
+**Ferramentas**: Git, GitHub.
+
+## 11. Conclusão
+
+A arquitetura atual — SPA Vue 3 desacoplada de uma API Express própria, com Prisma/PostgreSQL — oferece simplicidade operacional (deploy único na Vercel), boa produtividade de desenvolvimento em TypeScript de ponta a ponta, e espaço para evolução incremental sem necessidade de reescrita, atendendo às necessidades atuais da paróquia.
