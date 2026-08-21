@@ -117,6 +117,10 @@ Sem SLA formal definido ainda. A aplicação roda inteiramente sobre a infraestr
 
 Ver [`docs/SCOPE.md`](SCOPE.md) para a direção atual do projeto e roadmap (a preencher pelo time). Decisões técnicas não triviais tomadas ao longo do desenvolvimento ficam registradas em [`docs/decisions/`](decisions/).
 
+Um redesign de UX/UI está em andamento, formalizado em specs (`docs/specs/`) e tasks
+(`docs/tasks/`). A Etapa 1 (arquitetura da interface e navegação) está documentada em
+[`docs/arquitetura-interface.md`](arquitetura-interface.md).
+
 ## 10. Tecnologias utilizadas
 
 **Front-end**: Vue 3, Vue Router, Pinia, Tailwind CSS, Vite, TypeScript.
