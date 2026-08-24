@@ -119,7 +119,9 @@ Ver [`docs/SCOPE.md`](SCOPE.md) para a direção atual do projeto e roadmap (a p
 
 Um redesign de UX/UI está em andamento, formalizado em specs (`docs/specs/`) e tasks
 (`docs/tasks/`). A Etapa 1 (arquitetura da interface e navegação) está documentada em
-[`docs/arquitetura-interface.md`](arquitetura-interface.md).
+[`docs/arquitetura-interface.md`](arquitetura-interface.md); a Etapa 2 (UX e wireframes) em
+[`docs/ux-wireframes-etapa2.md`](ux-wireframes-etapa2.md); a Etapa 3 (Design System) em
+[`docs/design-system.md`](design-system.md).
 
 ## 10. Tecnologias utilizadas
 
