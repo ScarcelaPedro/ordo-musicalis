@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-type FlashType = 'success' | 'error' | 'info'
+type FlashType = 'success' | 'error' | 'info' | 'warning'
 
 interface FlashMessage {
   type: FlashType

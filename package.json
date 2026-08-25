@@ -15,6 +15,7 @@
     "db:studio": "prisma studio --schema=api/prisma/schema.prisma"
   },
   "dependencies": {
+    "@heroicons/vue": "^2.2.0",
     "@prisma/client": "^5.14.0",
     "@vercel/blob": "^0.23.4",
     "axios": "^1.7.2",

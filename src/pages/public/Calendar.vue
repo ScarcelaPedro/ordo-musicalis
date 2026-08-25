@@ -101,7 +101,7 @@ function imprimir() {
             <h3 class="font-semibold text-gray-800 dark:text-gray-100">{{ s.celebracao }}</h3>
             <span v-if="s.team" class="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200 px-2 py-0.5 rounded-full">{{ s.team.nome }}</span>
           </div>
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-3 capitalize">
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 capitalize">
             {{ formatDate(s.dataCelebracao) }} · {{ s.horario }}
             <span v-if="s.comunidade"> · {{ s.comunidade.nome }}</span>
           </p>

@@ -4,11 +4,24 @@ import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
-import Badge from '@/components/Badge.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import Skeleton from '@/components/Skeleton.vue'
+import ScaleCard from '@/components/scale/ScaleCard.vue'
 import { parseDateOnly } from '@/utils/date'
-import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
+
+// Mesmo mapa já usado em ScaleForm.vue/scales/Show.vue -- ainda não centralizado num util
+// compartilhado (não é escopo desta task criar esse util, só reaproveitar o dado já disponível
+// no pivot de GET /scales?mine=true).
+const FUNCAO_LITURGICA_LABELS: Record<string, string> = {
+  cerimoniario_1: 'Cerimoniário 1',
+  cerimoniario_2: 'Cerimoniário 2',
+  librifero: 'Librífero',
+  cruciferario: 'Cruciferário',
+  ceroferario: 'Ceroferário',
+  turiferario: 'Turiferário',
+  naveteiro: 'Naveteiro',
+}
 
 const auth = useAuthStore()
 const flash = useFlashStore()
@@ -30,6 +43,20 @@ onMounted(load)
 
 function myPivot(scale: any) {
   return scale.servidores.find((s: any) => s.servidorId === auth.user?.servidorId)
+}
+
+// Função/instrumento da pessoa (TASK-0048) -- confirmado que GET /scales?mine=true já retorna
+// esses campos no pivot (instrument via include; funcaoLiturgica é coluna escalar, sempre vem),
+// nenhum dado novo consultado.
+function detalheMinha(scale: any): string | null {
+  const pivot = myPivot(scale)
+  const parts: string[] = []
+  if (pivot?.instrument) parts.push(pivot.instrument.nome)
+  if (pivot?.funcaoLiturgica) parts.push(FUNCAO_LITURGICA_LABELS[pivot.funcaoLiturgica] ?? pivot.funcaoLiturgica)
+  // Ministério da escala (legado, distinto do teamId do pivot) -- já aparecia na linha de
+  // metadados antes; ScaleCard não tem um 4º campo pra isso na subtitle, então entra aqui.
+  if (scale.team) parts.push(scale.team.nome)
+  return parts.length ? parts.join(' · ') : null
 }
 
 function formatDate(d: string) {
@@ -77,69 +104,70 @@ async function recusar(id: number) {
       <h2 class="font-semibold text-xl text-gray-800">Minha Escala</h2>
     </template>
 
-    <div v-if="loading" class="p-8 text-center text-gray-500">Carregando...</div>
+    <div v-if="loading" class="space-y-6">
+      <div class="bg-white shadow-sm rounded-lg p-6 space-y-2 dark:bg-gray-800">
+        <Skeleton width="w-40" height="h-4" />
+        <Skeleton height="h-16" rounded="rounded-xl" />
+        <Skeleton height="h-16" rounded="rounded-xl" />
+      </div>
+    </div>
 
     <div v-else class="space-y-6">
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Próximas celebrações</h3>
+      <div class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">
+        <h3 class="font-semibold text-gray-800 mb-4 dark:text-gray-100">Próximas celebrações</h3>
         <div v-if="proximas.length" class="space-y-2">
-          <div v-for="s in proximas" :key="s.id" class="py-3 border-b last:border-0">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <RouterLink :to="`/escalas/${s.id}`" class="text-indigo-600 hover:underline font-medium">{{ s.celebracao }}</RouterLink>
-                <p class="text-sm text-gray-500">
-                  {{ formatDate(s.dataCelebracao) }} · {{ s.horario }}
-                  <span v-if="s.comunidade"> · {{ s.comunidade.nome }}</span>
-                  <span v-if="s.team"> · {{ s.team.nome }}</span>
-                </p>
-              </div>
-              <div class="flex items-center gap-3">
-                <Badge v-if="myPivot(s)?.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
-                <Badge :color="STATUS_COLORS[myPivot(s)?.status]">{{ STATUS_LABELS[myPivot(s)?.status] ?? myPivot(s)?.status }}</Badge>
-                <template v-if="myPivot(s)?.status === 'convidado'">
-                  <PrimaryButton :disabled="confirmingId === s.id" @click="confirmar(s.id)" class="!py-1.5 !px-3 text-xs">
-                    {{ confirmingId === s.id ? 'Confirmando...' : 'Confirmar' }}
-                  </PrimaryButton>
-                  <SecondaryButton v-if="motivoAbertoId !== s.id" @click="motivoAbertoId = s.id" class="!py-1.5 !px-3 text-xs">
-                    Não posso ir
-                  </SecondaryButton>
-                </template>
-              </div>
-            </div>
-            <div v-if="motivoAbertoId === s.id" class="mt-3 space-y-2">
-              <textarea v-model="motivo" rows="2" placeholder="Motivo (opcional)"
-                class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-              <div class="flex gap-2">
-                <PrimaryButton :disabled="recusandoId === s.id" @click="recusar(s.id)" class="!py-1.5 !px-3 text-xs">
-                  {{ recusandoId === s.id ? 'Enviando...' : 'Confirmar recusa' }}
+          <ScaleCard
+            v-for="s in proximas" :key="s.id"
+            :celebracao="s.celebracao"
+            :dataFormatada="formatDate(s.dataCelebracao)"
+            :horario="s.horario"
+            :comunidade="s.comunidade?.nome"
+            :detalhe="detalheMinha(s)"
+            :minhaConfirmacao="myPivot(s)?.status"
+            :vinculoFixo="myPivot(s)?.origem === 'fixo'"
+            :to="`/escalas/${s.id}`"
+          >
+            <template v-if="myPivot(s)?.status === 'convidado'" #actions>
+              <div class="flex flex-wrap items-center gap-2">
+                <PrimaryButton :disabled="confirmingId === s.id" @click="confirmar(s.id)" class="!py-1.5 !px-3 text-xs">
+                  {{ confirmingId === s.id ? 'Confirmando...' : 'Confirmar' }}
                 </PrimaryButton>
-                <SecondaryButton @click="motivoAbertoId = null; motivo = ''" class="!py-1.5 !px-3 text-xs">Cancelar</SecondaryButton>
+                <SecondaryButton v-if="motivoAbertoId !== s.id" @click="motivoAbertoId = s.id" class="!py-1.5 !px-3 text-xs">
+                  Não posso ir
+                </SecondaryButton>
               </div>
-            </div>
-          </div>
+              <div v-if="motivoAbertoId === s.id" class="mt-3 space-y-2">
+                <textarea v-model="motivo" rows="2" placeholder="Motivo (opcional)"
+                  class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+                <div class="flex gap-2">
+                  <PrimaryButton :disabled="recusandoId === s.id" @click="recusar(s.id)" class="!py-1.5 !px-3 text-xs">
+                    {{ recusandoId === s.id ? 'Enviando...' : 'Confirmar recusa' }}
+                  </PrimaryButton>
+                  <SecondaryButton @click="motivoAbertoId = null; motivo = ''" class="!py-1.5 !px-3 text-xs">Cancelar</SecondaryButton>
+                </div>
+              </div>
+            </template>
+          </ScaleCard>
         </div>
-        <p v-else class="text-sm text-gray-500">Nenhuma celebração futura na sua escala.</p>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Nenhuma celebração futura na sua escala.</p>
       </div>
 
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Histórico</h3>
+      <div class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">
+        <h3 class="font-semibold text-gray-800 mb-4 dark:text-gray-100">Histórico</h3>
         <div v-if="passadas.length" class="space-y-2">
-          <div v-for="s in passadas" :key="s.id" class="flex flex-wrap items-center justify-between gap-3 py-3 border-b last:border-0">
-            <div>
-              <RouterLink :to="`/escalas/${s.id}`" class="text-indigo-600 hover:underline font-medium">{{ s.celebracao }}</RouterLink>
-              <p class="text-sm text-gray-500">
-                {{ formatDate(s.dataCelebracao) }} · {{ s.horario }}
-                <span v-if="s.comunidade"> · {{ s.comunidade.nome }}</span>
-                <span v-if="s.team"> · {{ s.team.nome }}</span>
-              </p>
-            </div>
-            <div class="flex items-center gap-1.5">
-              <Badge v-if="myPivot(s)?.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
-              <Badge :color="STATUS_COLORS[myPivot(s)?.status]">{{ STATUS_LABELS[myPivot(s)?.status] ?? myPivot(s)?.status }}</Badge>
-            </div>
-          </div>
+          <ScaleCard
+            v-for="s in passadas" :key="s.id"
+            :celebracao="s.celebracao"
+            :dataFormatada="formatDate(s.dataCelebracao)"
+            :horario="s.horario"
+            :comunidade="s.comunidade?.nome"
+            :detalhe="detalheMinha(s)"
+            :minhaConfirmacao="myPivot(s)?.status"
+            :vinculoFixo="myPivot(s)?.origem === 'fixo'"
+            :to="`/escalas/${s.id}`"
+          />
         </div>
-        <p v-else class="text-sm text-gray-500">Nenhuma celebração no histórico.</p>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Nenhuma celebração no histórico.</p>
       </div>
     </div>
   </AuthenticatedLayout>

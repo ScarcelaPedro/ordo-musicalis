@@ -8,6 +8,11 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import CelebrationHeader from '@/components/scale/CelebrationHeader.vue'
+import ScaleRole from '@/components/scale/ScaleRole.vue'
+import ScaleMember from '@/components/scale/ScaleMember.vue'
+import EmptyRole from '@/components/scale/EmptyRole.vue'
+import ConflictAlert from '@/components/scale/ConflictAlert.vue'
 import { parseDateOnly } from '@/utils/date'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
 
@@ -19,10 +24,19 @@ const confirming = ref(false)
 const recusando = ref(false)
 const mostrarMotivo = ref(false)
 const motivo = ref('')
+// Lista completa de categorias cadastradas (mesmo endpoint /categorias que ScaleForm.vue já
+// usa) -- necessária pra "Equipe da celebração" mostrar também categoria sem ninguém escalado
+// (TASK-0041). Sem isso, `gruposPorCategoria` só enxergaria categorias presentes em
+// scale.servidores, e uma categoria vazia simplesmente não apareceria (achado da TASK-0010).
+const categorias = ref<{ id: number; nome: string; ordem: number }[]>([])
 
 onMounted(async () => {
-  const { data } = await client.get(`/scales/${route.params.id}`)
+  const [{ data }, categoriasRes] = await Promise.all([
+    client.get(`/scales/${route.params.id}`),
+    client.get('/categorias').catch(() => ({ data: [] })),
+  ])
   scale.value = data
+  categorias.value = categoriasRes.data
 })
 
 function formatDate(d: string) {
@@ -94,13 +108,59 @@ function colunas(servidores: any[]): any[][] {
 const gruposPorCategoria = computed(() => {
   if (!scale.value) return []
   const grupos = new Map<number, { categoria: { id: number; nome: string; ordem: number }; servidores: any[] }>()
+
+  // Começa pela lista completa de categorias cadastradas -- garante que uma categoria sem
+  // ninguém escalado ainda apareça (EmptyRole), em vez de simplesmente sumir da tela.
+  for (const c of categorias.value) grupos.set(c.id, { categoria: c, servidores: [] })
+
   for (const s of scale.value.servidores) {
+    // "substituido": o registro antigo é só histórico -- o substituto já entra como um novo
+    // ScaleServidor ativo (api/_routes/substituicoes.ts), então não conta como presença nem
+    // deixa a categoria com vaga.
+    if (s.status === 'substituido') continue
     const categoria = s.categoria ?? s.team?.categoria ?? SEM_CATEGORIA
     if (!grupos.has(categoria.id)) grupos.set(categoria.id, { categoria, servidores: [] })
     grupos.get(categoria.id)!.servidores.push(s)
   }
   return Array.from(grupos.values()).sort((a, b) => a.categoria.ordem - b.categoria.ordem)
 })
+
+function detalheServidor(s: any): string | null {
+  const parts: string[] = []
+  if (s.instrument) parts.push(s.instrument.nome)
+  if (s.funcaoLiturgica) parts.push(FUNCAO_LITURGICA_LABELS[s.funcaoLiturgica] ?? s.funcaoLiturgica)
+  return parts.length ? parts.join(' · ') : null
+}
+
+// Faixa-resumo de situação (TASK-0041) -- calculada client-side a partir de
+// scale.servidores[].status já carregado, nenhuma nova consulta de API.
+const activeServidores = computed(() => (scale.value?.servidores ?? []).filter((s: any) => s.status !== 'substituido'))
+const confirmadosCount = computed(() => activeServidores.value.filter((s: any) => s.status === 'confirmado').length)
+const pendentesCount   = computed(() => activeServidores.value.filter((s: any) => s.status === 'convidado').length)
+const recusadosCount   = computed(() => activeServidores.value.filter((s: any) => s.status === 'recusado').length)
+const vagasCount       = computed(() => gruposPorCategoria.value.filter((g) => g.servidores.length === 0).length)
+
+// Alteração recente (TASK-0042, SPEC-004 §32) -- usa só createdAt/updatedAt, já retornados por
+// GET /scales/:id hoje (campos escalares do model Scale, confirmado em api/prisma/schema.prisma
+// -- não exigiu nenhuma mudança de API). Sem um limiar definido pela spec ("a refinar na
+// implementação"), 5 minutos é o suficiente pra distinguir uma edição real do instante da
+// própria criação (createdAt/updatedAt nascem praticamente iguais nesse momento).
+const LIMIAR_ALTERACAO_MS = 5 * 60 * 1000
+const alteradaRecentemente = computed(() => {
+  if (!scale.value?.createdAt || !scale.value?.updatedAt) return false
+  const criada = new Date(scale.value.createdAt).getTime()
+  const atualizada = new Date(scale.value.updatedAt).getTime()
+  return atualizada - criada > LIMIAR_ALTERACAO_MS
+})
+
+// Conflitos (TASK-0042, SPEC-004 §22) -- nenhum endpoint retorna esse dado hoje (confirmado em
+// docs/tasks/0009-*.md: não existe detecção de conflito em lugar nenhum do backend). Este
+// computed só lê um campo (`scale.conflitos`) que a API nunca preenche hoje -- nenhuma lógica de
+// detecção implementada aqui. Fica pronto para o dia em que o backend passar a retornar esse
+// dado; até lá, a lista é sempre vazia e o bloco correspondente no template não renderiza nada.
+const conflitos = computed<{ type: 'indisponivel' | 'ja-escalado' | 'incompativel'; detail?: string }[]>(
+  () => scale.value?.conflitos ?? [],
+)
 
 function imprimir() {
   window.print()
@@ -112,7 +172,7 @@ function imprimir() {
     <template #header>
       <div class="flex justify-between items-center flex-wrap gap-2">
         <h2 class="font-semibold text-xl text-gray-800">{{ scale?.celebracao ?? '...' }}</h2>
-        <div class="flex gap-2 no-print">
+        <div class="flex flex-wrap gap-2 no-print">
           <button v-if="scale" @click="imprimir"
             class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
             Imprimir
@@ -134,37 +194,45 @@ function imprimir() {
     </template>
 
     <div v-if="scale" class="space-y-6">
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="bg-white shadow-sm rounded-lg p-6 space-y-4 dark:bg-gray-800">
+        <CelebrationHeader
+          :celebracao="scale.celebracao"
+          :dataFormatada="formatDate(scale.dataCelebracao)"
+          :horario="scale.horario"
+          :comunidade="scale.comunidade?.nome"
+          :celebrante="scale.celebrante?.nome"
+        />
+
+        <p v-if="alteradaRecentemente" class="-mt-2 inline-flex items-center gap-1.5 text-body-sm font-medium text-warning-700 dark:text-warning-300">
+          <span class="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true"></span>
+          Escala atualizada
+        </p>
+
+        <!-- Informações secundárias -- Data/Horário/Comunidade já aparecem no subtítulo do
+             CelebrationHeader acima; nada foi removido, só reorganizado por hierarquia
+             (TASK-0040). Ministério/Observações ficam aqui, rebaixados visualmente, até a
+             TASK-0041 desenhar a seção "Situação da equipe" completa. -->
+        <dl class="grid grid-cols-1 gap-3 border-t border-gray-100 pt-4 text-body-sm sm:grid-cols-3 dark:border-gray-700">
           <div>
-            <dt class="text-sm font-medium text-gray-500">Data</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ formatDate(scale.dataCelebracao) }}</dd>
-          </div>
-          <div>
-            <dt class="text-sm font-medium text-gray-500">Horário</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ scale.horario }}</dd>
-          </div>
-          <div>
-            <dt class="text-sm font-medium text-gray-500">Status</dt>
+            <dt class="text-gray-600 dark:text-gray-400">Status</dt>
             <dd class="mt-1"><Badge :color="scale.status === 'confirmada' ? 'green' : 'yellow'">{{ scale.status }}</Badge></dd>
           </div>
-          <div>
-            <dt class="text-sm font-medium text-gray-500">Comunidade</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ scale.comunidade?.nome ?? '—' }}</dd>
-          </div>
-          <div v-if="scale.celebrante">
-            <dt class="text-sm font-medium text-gray-500">Celebrante</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ scale.celebrante.nome }}</dd>
-          </div>
           <div v-if="scale.team">
-            <dt class="text-sm font-medium text-gray-500">Ministério responsável</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ scale.team.nome }}</dd>
+            <dt class="text-gray-600 dark:text-gray-400">Ministério responsável</dt>
+            <dd class="mt-1 text-gray-700 dark:text-gray-200">{{ scale.team.nome }}</dd>
           </div>
-          <div v-if="scale.observacoes" class="sm:col-span-2">
-            <dt class="text-sm font-medium text-gray-500">Observações</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ scale.observacoes }}</dd>
+          <div v-if="scale.observacoes" class="sm:col-span-3">
+            <dt class="text-gray-600 dark:text-gray-400">Observações</dt>
+            <dd class="mt-1 text-gray-700 dark:text-gray-200">{{ scale.observacoes }}</dd>
           </div>
         </dl>
+      </div>
+
+      <!-- Conflitos (TASK-0042) -- só renderiza se `scale.conflitos` vier preenchido pela API;
+           hoje esse campo não existe em nenhum endpoint (pendência registrada, ver notas de
+           progresso), então este bloco fica pronto mas normalmente invisível. -->
+      <div v-if="conflitos.length" class="space-y-2">
+        <ConflictAlert v-for="(c, idx) in conflitos" :key="idx" :type="c.type" :detail="c.detail" />
       </div>
 
       <!-- Confirmação para servidor -->
@@ -190,44 +258,68 @@ function imprimir() {
       </div>
 
       <!-- Servidores, agrupados por categoria de função -->
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Equipe da celebração ({{ scale.servidores.length }})</h3>
-        <div v-if="scale.servidores.length" class="space-y-5">
-          <div v-for="grupo in gruposPorCategoria" :key="grupo.categoria.id">
-            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{{ grupo.categoria.nome }}</h4>
+      <div class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">
+        <h3 class="font-semibold text-gray-800 mb-4 dark:text-gray-100">Equipe da celebração ({{ activeServidores.length }})</h3>
 
-            <div v-if="deveDividir(grupo)" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6">
-              <div v-for="(coluna, ci) in colunas(grupo.servidores)" :key="ci">
-                <div v-for="s in coluna" :key="s.id" class="flex justify-between items-center gap-2 py-2 border-b border-gray-100 last:border-0">
-                  <div class="min-w-0">
-                    <span class="text-sm font-medium text-gray-900">{{ s.servidor.nome }}</span>
-                    <span v-if="s.instrument" class="text-xs text-gray-500 ml-2">· {{ s.instrument.nome }}</span>
-                    <span v-if="s.funcaoLiturgica" class="text-xs text-gray-500 ml-2">· {{ FUNCAO_LITURGICA_LABELS[s.funcaoLiturgica] ?? s.funcaoLiturgica }}</span>
-                  </div>
-                  <div class="flex items-center gap-1.5 shrink-0">
-                    <Badge v-if="s.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
-                    <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div v-else class="space-y-2">
-              <div v-for="s in grupo.servidores" :key="s.id" class="flex justify-between items-center py-2 border-b last:border-0">
-                <div>
-                  <span class="text-sm font-medium text-gray-900">{{ s.servidor.nome }}</span>
-                  <span v-if="s.instrument" class="text-xs text-gray-500 ml-2">· {{ s.instrument.nome }}</span>
-                  <span v-if="s.funcaoLiturgica" class="text-xs text-gray-500 ml-2">· {{ FUNCAO_LITURGICA_LABELS[s.funcaoLiturgica] ?? s.funcaoLiturgica }}</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                  <Badge v-if="s.origem === 'fixo'" color="purple">Vínculo fixo</Badge>
-                  <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
-                </div>
-              </div>
-            </div>
-          </div>
+        <!-- Faixa-resumo (TASK-0041) -- contagem calculada de scale.servidores[].status, sem
+             nova consulta de API. -->
+        <div class="mb-4 flex flex-wrap gap-x-5 gap-y-2 border-b border-gray-100 pb-4 text-body-sm dark:border-gray-700">
+          <span class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-success-500" aria-hidden="true"></span>
+            <span class="font-semibold text-gray-800 dark:text-gray-100">{{ confirmadosCount }}</span>
+            <span class="text-gray-600 dark:text-gray-400">confirmados</span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-warning-500" aria-hidden="true"></span>
+            <span class="font-semibold text-gray-800 dark:text-gray-100">{{ pendentesCount }}</span>
+            <span class="text-gray-600 dark:text-gray-400">pendentes</span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-danger-500" aria-hidden="true"></span>
+            <span class="font-semibold text-gray-800 dark:text-gray-100">{{ recusadosCount }}</span>
+            <span class="text-gray-600 dark:text-gray-400">recusados</span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="h-2 w-2 rounded-full bg-gray-300 dark:bg-gray-600" aria-hidden="true"></span>
+            <span class="font-semibold text-gray-800 dark:text-gray-100">{{ vagasCount }}</span>
+            <span class="text-gray-600 dark:text-gray-400">vagas</span>
+          </span>
         </div>
-        <p v-else class="text-sm text-gray-500">Nenhum servidor na escala.</p>
+
+        <div v-if="gruposPorCategoria.length" class="space-y-5">
+          <ScaleRole v-for="grupo in gruposPorCategoria" :key="grupo.categoria.id" :nome="grupo.categoria.nome" :count="grupo.servidores.length">
+            <EmptyRole v-if="!grupo.servidores.length">
+              <template v-if="auth.isStaff" #action>
+                <RouterLink :to="`/escalas/${scale.id}/editar`" class="text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-400">
+                  Resolver
+                </RouterLink>
+              </template>
+            </EmptyRole>
+
+            <div v-else-if="deveDividir(grupo)" class="grid grid-cols-1 gap-x-6 sm:grid-cols-2">
+              <div v-for="(coluna, ci) in colunas(grupo.servidores)" :key="ci" class="space-y-2">
+                <ScaleMember
+                  v-for="s in coluna" :key="s.id"
+                  :nome="s.servidor.nome"
+                  :detalhe="detalheServidor(s)"
+                  :status="s.status"
+                  :vinculoFixo="s.origem === 'fixo'"
+                />
+              </div>
+            </div>
+
+            <template v-else>
+              <ScaleMember
+                v-for="s in grupo.servidores" :key="s.id"
+                :nome="s.servidor.nome"
+                :detalhe="detalheServidor(s)"
+                :status="s.status"
+                :vinculoFixo="s.origem === 'fixo'"
+              />
+            </template>
+          </ScaleRole>
+        </div>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Nenhuma categoria cadastrada nem servidor na escala.</p>
       </div>
 
       <!-- Repertório -->
