@@ -2,6 +2,9 @@
 import { ref, watch } from 'vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
+import Select from '@/components/Select.vue'
+import Textarea from '@/components/Textarea.vue'
+import Checkbox from '@/components/Checkbox.vue'
 import InputError from '@/components/InputError.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
@@ -51,53 +54,48 @@ watch(() => props.initialData, (val) => {
   <form @submit.prevent="emit('submit', form)" class="space-y-6">
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
       <div class="sm:col-span-2">
-        <InputLabel value="Celebração" :required="true" />
-        <TextInput v-model="form.celebracao" placeholder="Ex: Santa Missa" class="mt-1" />
+        <InputLabel value="Celebração" :required="true" for="input-celebracao" />
+        <TextInput id="input-celebracao" v-model="form.celebracao" placeholder="Ex: Santa Missa" class="mt-1" />
         <InputError :message="errors?.celebracao" />
       </div>
       <div>
-        <InputLabel value="Horário" :required="true" />
-        <TextInput v-model="form.horario" type="time" class="mt-1" />
+        <InputLabel value="Horário" :required="true" for="input-horario" />
+        <TextInput id="input-horario" v-model="form.horario" type="time" class="mt-1" />
       </div>
       <div>
-        <InputLabel value="Dia da semana" :required="true" />
-        <select v-model.number="form.diaSemana" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+        <InputLabel value="Dia da semana" :required="true" for="input-dia-semana" />
+        <Select id="input-dia-semana" v-model.number="form.diaSemana" class="mt-1">
           <option v-for="(dia, idx) in DIAS" :key="idx" :value="idx">{{ dia }}</option>
-        </select>
+        </Select>
       </div>
       <div>
-        <InputLabel value="Recorrência" :required="true" />
-        <select v-model="form.tipoRecorrencia" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+        <InputLabel value="Recorrência" :required="true" for="input-recorrencia" />
+        <Select id="input-recorrencia" v-model="form.tipoRecorrencia" class="mt-1">
           <option value="semanal">Toda semana</option>
           <option value="mensal_ordinal">Uma semana específica do mês</option>
-        </select>
+        </Select>
       </div>
       <div v-if="form.tipoRecorrencia === 'mensal_ordinal'">
-        <InputLabel value="Qual semana do mês" :required="true" />
-        <select v-model.number="form.ordinal" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+        <InputLabel value="Qual semana do mês" :required="true" for="input-ordinal" />
+        <Select id="input-ordinal" v-model.number="form.ordinal" class="mt-1">
           <option v-for="(label, idx) in ORDINAIS" :key="idx" :value="idx + 1">{{ label }}</option>
-        </select>
+        </Select>
       </div>
       <div>
-        <InputLabel value="Ministério esperado" />
-        <select v-model="form.teamId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+        <InputLabel value="Ministério esperado" for="input-team" />
+        <Select id="input-team" v-model="form.teamId" class="mt-1">
           <option :value="null">Nenhum</option>
           <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
-        </select>
+        </Select>
       </div>
-      <div class="flex items-center gap-3 mt-6">
-        <input v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-        <InputLabel value="Ativa (gera escalas automaticamente)" />
+      <div class="mt-6">
+        <Checkbox v-model="form.ativo" label="Ativa (gera escalas automaticamente)" />
       </div>
     </div>
 
     <div>
-      <InputLabel value="Observações" />
-      <textarea
-        v-model="form.observacoes"
-        rows="3"
-        class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full"
-      />
+      <InputLabel value="Observações" for="input-observacoes" />
+      <Textarea id="input-observacoes" v-model="form.observacoes" :rows="3" class="mt-1" />
     </div>
 
     <div class="flex items-center gap-4">

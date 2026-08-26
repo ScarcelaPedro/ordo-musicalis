@@ -66,6 +66,7 @@ onMounted(async () => {
 })
 
 async function submit() {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   loading.value = true
   const availabilities: { diaSemana: number; periodo: string; disponivel: boolean }[] = []
 

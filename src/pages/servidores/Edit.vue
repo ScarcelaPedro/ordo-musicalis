@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import client from '@/api/client'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import Card from '@/components/Card.vue'
 import ServidorForm from './ServidorForm.vue'
 
 const route = useRoute()
@@ -42,6 +43,7 @@ onMounted(async () => {
 })
 
 async function submit(data: object) {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   loading.value = true
   try {
     await client.patch(`/servidores/${route.params.id}`, data)
@@ -59,10 +61,10 @@ async function submit(data: object) {
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">Editar Servidor</h2>
+      <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100">Editar Servidor</h2>
     </template>
-    <div class="bg-white shadow-sm rounded-lg p-6">
+    <Card>
       <ServidorForm v-if="servidor" :initial-data="initialData" :instruments="instruments" :teams="teams" :categorias="categorias" :errors="errors" :loading="loading" @submit="submit" />
-    </div>
+    </Card>
   </AuthenticatedLayout>
 </template>

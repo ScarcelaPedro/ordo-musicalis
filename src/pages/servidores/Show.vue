@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import Card from '@/components/Card.vue'
 import Badge from '@/components/Badge.vue'
 import { parseDateOnly } from '@/utils/date'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
@@ -34,7 +35,7 @@ const isMusica = computed(() => servidor.value?.categorias.some((c: any) => c.ca
   <AuthenticatedLayout>
     <template #header>
       <div class="flex flex-wrap justify-between items-center gap-3">
-        <h2 class="font-semibold text-xl text-gray-800 min-w-0 truncate">{{ servidor?.nome ?? '...' }}</h2>
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 min-w-0 truncate">{{ servidor?.nome ?? '...' }}</h2>
         <RouterLink v-if="auth.isStaff && servidor" :to="`/servidores/${servidor.id}/editar`"
           class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
           Editar
@@ -43,69 +44,69 @@ const isMusica = computed(() => servidor.value?.categorias.some((c: any) => c.ca
     </template>
 
     <div v-if="servidor" class="space-y-6">
-      <div class="bg-white shadow-sm rounded-lg p-6">
+      <Card>
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <dt class="text-sm font-medium text-gray-500">Email</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ servidor.email ?? '—' }}</dd>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Email</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ servidor.email ?? '—' }}</dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Telefone</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ servidor.telefone ?? '—' }}</dd>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Telefone</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ servidor.telefone ?? '—' }}</dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Status</dt>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Status</dt>
             <dd class="mt-1"><Badge :color="servidor.ativo ? 'green' : 'gray'">{{ servidor.ativo ? 'Ativo' : 'Inativo' }}</Badge></dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Nível</dt>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Nível</dt>
             <dd class="mt-1"><Badge color="blue">{{ NIVEL_LABELS[servidor.nivel] ?? servidor.nivel }}</Badge></dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Função(ões)</dt>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Função(ões)</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
               <Badge v-for="c in servidor.categorias" :key="c.id" color="purple">{{ c.categoria.nome }}</Badge>
-              <span v-if="!servidor.categorias.length" class="text-sm text-gray-400">Nenhuma</span>
+              <span v-if="!servidor.categorias.length" class="text-sm text-gray-600 dark:text-gray-400">Nenhuma</span>
             </dd>
           </div>
           <div v-if="isMusica">
-            <dt class="text-sm font-medium text-gray-500">Instrumentos</dt>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Instrumentos</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
               <Badge v-for="i in servidor.instruments" :key="i.id" color="blue">{{ i.instrument.nome }}</Badge>
-              <span v-if="!servidor.instruments.length" class="text-sm text-gray-400">Nenhum</span>
+              <span v-if="!servidor.instruments.length" class="text-sm text-gray-600 dark:text-gray-400">Nenhum</span>
             </dd>
           </div>
           <div v-if="isMusica">
-            <dt class="text-sm font-medium text-gray-500">Ministérios</dt>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Ministérios</dt>
             <dd class="mt-1 flex flex-wrap gap-1">
               <RouterLink v-for="t in servidor.teams" :key="t.id" :to="`/equipes/${t.team.id}`">
                 <Badge color="green">{{ t.team.nome }}<span v-if="t.funcao"> · {{ t.funcao }}</span></Badge>
               </RouterLink>
-              <span v-if="!servidor.teams.length" class="text-sm text-gray-400">Nenhum</span>
+              <span v-if="!servidor.teams.length" class="text-sm text-gray-600 dark:text-gray-400">Nenhum</span>
             </dd>
           </div>
           <div v-if="servidor.observacoes">
-            <dt class="text-sm font-medium text-gray-500">Observações</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ servidor.observacoes }}</dd>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Observações</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ servidor.observacoes }}</dd>
           </div>
         </dl>
-      </div>
+      </Card>
 
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Histórico de Escalas</h3>
+      <Card>
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-4">Histórico de Escalas</h3>
         <div v-if="servidor.scales.length" class="space-y-2">
-          <div v-for="s in servidor.scales" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b">
-            <RouterLink :to="`/escalas/${s.scale.id}`" class="text-indigo-600 hover:underline">
+          <div v-for="s in servidor.scales" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b dark:border-gray-700">
+            <RouterLink :to="`/escalas/${s.scale.id}`" class="text-indigo-600 dark:text-primary-400 hover:underline">
               {{ s.scale.celebracao }}
             </RouterLink>
             <div class="flex items-center gap-3">
-              <span class="text-gray-500">{{ formatDate(s.scale.dataCelebracao) }}</span>
+              <span class="text-gray-600 dark:text-gray-400">{{ formatDate(s.scale.dataCelebracao) }}</span>
               <Badge :color="STATUS_COLORS[s.status]">{{ STATUS_LABELS[s.status] ?? s.status }}</Badge>
             </div>
           </div>
         </div>
-        <p v-else class="text-sm text-gray-500">Nenhuma escala registrada.</p>
-      </div>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Nenhuma escala registrada.</p>
+      </Card>
     </div>
   </AuthenticatedLayout>
 </template>

@@ -12,7 +12,7 @@ SPA (Single Page Application) em Vue 3 — a interface web do Ordo Musicalis, o 
 Diretórios:
 
 - `src/pages/` — uma pasta por domínio (`servidores`, `teams`, `scales`, `comunidades`, `categorias`, `celebrantes`, `repertoire`, `liturgia`, `availability`, `substitutions`, `reports`, `scaleTemplates`, `profile`, `auth`, `public`, `dashboard`), cada uma tipicamente com `Index.vue`/`Create.vue`/`Edit.vue`/`Show.vue`. Roteadas em [`src/router/index.ts`](router/index.ts).
-- `src/components/` — componentes de UI reutilizáveis e genéricos (`Badge`, `PrimaryButton`, `SecondaryButton`, `DangerButton`, `TextInput`, `InputLabel`, `InputError`, `FlashMessage`, `ThemeToggle`).
+- `src/components/` — componentes de UI reutilizáveis e genéricos (`Badge`, `PrimaryButton`, `SecondaryButton`, `DangerButton`, `TextInput`, `InputLabel`, `InputError`, `Toast`, `ThemeToggle`).
 - `src/layouts/` — `AuthenticatedLayout.vue` e `GuestLayout.vue`.
 - `src/stores/` — Pinia stores: `auth.ts` (sessão/token JWT), `flash.ts` (mensagens flash), `theme.ts` (tema claro/escuro, lido de `localStorage`/`prefers-color-scheme` já no `index.html` para evitar flash).
 - `src/router/index.ts` — todas as rotas da aplicação; usa `meta.auth`, `meta.guest` e `meta.roles` (`admin`/`coordenador`/`musico`) com um guard global (`router.beforeEach`) que consulta a store `auth`.

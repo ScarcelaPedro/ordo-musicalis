@@ -4,8 +4,10 @@ import { useRouter } from 'vue-router'
 import client from '@/api/client'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import Card from '@/components/Card.vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
+import Checkbox from '@/components/Checkbox.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 
@@ -15,6 +17,7 @@ const form = ref({ nome: '', telefone: '', email: '', ativo: true })
 const loading = ref(false)
 
 async function submit() {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   loading.value = true
   try {
     await client.post('/celebrantes', form.value)
@@ -30,31 +33,28 @@ async function submit() {
 
 <template>
   <AuthenticatedLayout>
-    <template #header><h2 class="font-semibold text-xl text-gray-800">Novo Celebrante</h2></template>
-    <div class="bg-white shadow-sm rounded-lg p-6">
+    <template #header><h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100">Novo Celebrante</h2></template>
+    <Card>
       <form @submit.prevent="submit" class="space-y-6">
         <div>
-          <InputLabel value="Nome" :required="true" />
-          <TextInput v-model="form.nome" class="mt-1" autofocus />
+          <InputLabel value="Nome" :required="true" for="input-nome" />
+          <TextInput id="input-nome" v-model="form.nome" class="mt-1" autofocus />
         </div>
         <div>
-          <InputLabel value="Telefone" />
-          <TextInput v-model="form.telefone" type="tel" class="mt-1" />
+          <InputLabel value="Telefone" for="input-telefone" />
+          <TextInput id="input-telefone" v-model="form.telefone" type="tel" class="mt-1" />
         </div>
         <div>
-          <InputLabel value="Email" />
-          <TextInput v-model="form.email" type="email" class="mt-1" />
+          <InputLabel value="Email" for="input-email" />
+          <TextInput id="input-email" v-model="form.email" type="email" class="mt-1" />
         </div>
-        <div class="flex items-center gap-3">
-          <input id="ativo" v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-          <InputLabel value="Ativo" />
-        </div>
+        <Checkbox v-model="form.ativo" label="Ativo" />
 
         <div class="flex items-center gap-4">
           <PrimaryButton :disabled="loading">{{ loading ? 'Salvando...' : 'Salvar' }}</PrimaryButton>
           <RouterLink to="/celebrantes"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
         </div>
       </form>
-    </div>
+    </Card>
   </AuthenticatedLayout>
 </template>

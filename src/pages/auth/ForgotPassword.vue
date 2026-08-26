@@ -13,6 +13,7 @@ const error = ref('')
 const loading = ref(false)
 
 async function submit() {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   loading.value = true
   error.value = ''
   status.value = ''
@@ -30,21 +31,21 @@ async function submit() {
 
 <template>
   <GuestLayout>
-    <p class="mb-4 text-sm text-gray-600">
+    <p class="mb-4 text-sm text-gray-600 dark:text-gray-400">
       Informe seu email e enviaremos um link para redefinir sua senha.
     </p>
 
-    <p v-if="status" class="mb-4 text-sm text-green-600">{{ status }}</p>
+    <p v-if="status" class="mb-4 text-sm text-success-700 dark:text-success-400">{{ status }}</p>
 
     <form @submit.prevent="submit" class="space-y-6">
       <div>
-        <InputLabel value="Email" :required="true" />
-        <TextInput v-model="email" type="email" class="mt-1" autofocus />
+        <InputLabel value="Email" :required="true" for="input-email" />
+        <TextInput id="input-email" v-model="email" type="email" class="mt-1" autofocus />
         <InputError :message="error" />
       </div>
 
       <div class="flex items-center justify-between">
-        <RouterLink to="/login" class="text-sm text-gray-600 hover:text-gray-900 underline">Voltar</RouterLink>
+        <RouterLink to="/login" class="text-sm text-gray-600 hover:text-gray-900 underline dark:text-gray-400 dark:hover:text-gray-200">Voltar</RouterLink>
         <PrimaryButton :disabled="loading">
           {{ loading ? 'Enviando...' : 'Enviar link' }}
         </PrimaryButton>

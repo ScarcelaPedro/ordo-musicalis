@@ -5,6 +5,7 @@ import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import Card from '@/components/Card.vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
 import InputError from '@/components/InputError.vue'
@@ -115,55 +116,55 @@ async function deleteAccount() {
 
 <template>
   <AuthenticatedLayout>
-    <template #header><h2 class="font-semibold text-xl text-gray-800">Perfil</h2></template>
+    <template #header><h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100">Perfil</h2></template>
 
     <div class="space-y-6">
       <!-- Dados pessoais -->
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-700 mb-4">Informações do Perfil</h3>
+      <Card>
+        <h3 class="font-semibold text-gray-700 mb-4 dark:text-gray-300">Informações do Perfil</h3>
         <form @submit.prevent="saveProfile" class="space-y-4">
           <div>
-            <InputLabel value="Nome" />
-            <TextInput v-model="profileForm.name" class="mt-1" />
+            <InputLabel value="Nome" for="input-profile-nome" />
+            <TextInput id="input-profile-nome" v-model="profileForm.name" class="mt-1" />
           </div>
           <div>
-            <InputLabel value="Email" />
-            <TextInput v-model="profileForm.email" type="email" class="mt-1" />
+            <InputLabel value="Email" for="input-profile-email" />
+            <TextInput id="input-profile-email" v-model="profileForm.email" type="email" class="mt-1" />
           </div>
           <InputError :message="profileError" />
           <PrimaryButton :disabled="savingProfile">{{ savingProfile ? 'Salvando...' : 'Salvar' }}</PrimaryButton>
         </form>
-      </div>
+      </Card>
 
       <!-- Senha -->
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-700 mb-4">Atualizar Senha</h3>
+      <Card>
+        <h3 class="font-semibold text-gray-700 mb-4 dark:text-gray-300">Atualizar Senha</h3>
         <form @submit.prevent="savePassword" class="space-y-4">
           <div>
-            <InputLabel value="Senha atual" />
-            <TextInput v-model="passwordForm.currentPassword" type="password" class="mt-1" />
+            <InputLabel value="Senha atual" for="input-senha-atual" />
+            <TextInput id="input-senha-atual" v-model="passwordForm.currentPassword" type="password" class="mt-1" />
           </div>
           <div>
-            <InputLabel value="Nova senha" />
-            <TextInput v-model="passwordForm.newPassword" type="password" class="mt-1" />
+            <InputLabel value="Nova senha" for="input-nova-senha" />
+            <TextInput id="input-nova-senha" v-model="passwordForm.newPassword" type="password" class="mt-1" />
           </div>
           <div>
-            <InputLabel value="Confirmar nova senha" />
-            <TextInput v-model="passwordForm.confirmPassword" type="password" class="mt-1" />
+            <InputLabel value="Confirmar nova senha" for="input-confirmar-nova-senha" />
+            <TextInput id="input-confirmar-nova-senha" v-model="passwordForm.confirmPassword" type="password" class="mt-1" />
           </div>
           <InputError :message="passwordError" />
           <PrimaryButton :disabled="savingPassword">{{ savingPassword ? 'Salvando...' : 'Atualizar senha' }}</PrimaryButton>
         </form>
-      </div>
+      </Card>
 
       <!-- Notificações -->
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-700 mb-2">Notificações</h3>
-        <p v-if="!pushSupported" class="text-sm text-gray-500">
+      <Card>
+        <h3 class="font-semibold text-gray-700 mb-2 dark:text-gray-300">Notificações</h3>
+        <p v-if="!pushSupported" class="text-sm text-gray-600 dark:text-gray-400">
           Seu navegador não suporta notificações push.
         </p>
         <template v-else>
-          <p class="text-sm text-gray-600 mb-4">
+          <p class="text-sm text-gray-600 mb-4 dark:text-gray-400">
             Receba avisos quando for escalado(a) ou quando uma substituição envolver você.
           </p>
           <SecondaryButton :disabled="pushLoading" @click="togglePush">
@@ -171,22 +172,22 @@ async function deleteAccount() {
           </SecondaryButton>
           <InputError :message="pushError" class="mt-2" />
         </template>
-      </div>
+      </Card>
 
       <!-- Excluir conta -->
-      <div class="bg-white shadow-sm rounded-lg p-6 border border-red-100">
-        <h3 class="font-semibold text-red-700 mb-2">Excluir Conta</h3>
-        <p class="text-sm text-gray-600 mb-4">Esta ação é permanente e não pode ser desfeita.</p>
+      <Card class="border border-red-100 dark:border-red-900/40">
+        <h3 class="font-semibold text-red-700 mb-2 dark:text-red-400">Excluir Conta</h3>
+        <p class="text-sm text-gray-600 mb-4 dark:text-gray-400">Esta ação é permanente e não pode ser desfeita.</p>
         <div class="space-y-3">
           <div>
-            <InputLabel value="Confirme sua senha" />
-            <TextInput v-model="deletePassword" type="password" class="mt-1 max-w-xs" />
+            <InputLabel value="Confirme sua senha" for="input-delete-senha" />
+            <TextInput id="input-delete-senha" v-model="deletePassword" type="password" class="mt-1 max-w-xs" />
           </div>
           <DangerButton :disabled="deleting" @click="deleteAccount">
             {{ deleting ? 'Excluindo...' : 'Excluir conta' }}
           </DangerButton>
         </div>
-      </div>
+      </Card>
     </div>
   </AuthenticatedLayout>
 </template>

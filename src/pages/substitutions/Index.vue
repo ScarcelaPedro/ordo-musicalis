@@ -5,6 +5,7 @@ import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import Alert from '@/components/Alert.vue'
+import ErrorState from '@/components/ErrorState.vue'
 import Modal from '@/components/Modal.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
@@ -14,15 +15,24 @@ import { parseDateOnly } from '@/utils/date'
 const flash = useFlashStore()
 const substituicoes = ref<any[]>([])
 const loading = ref(true)
+const error = ref(false)
 const sugestoesAbertoId = ref<number | null>(null)
 const sugestoes = ref<any[]>([])
 const loadingSugestoes = ref(false)
 
+// TASK-0076 (correção): antes, uma falha de rede/API deixava a tela presa em "Carregando..." pra
+// sempre, sem nenhuma indicação de erro -- catch adicionado + ErrorState com "Tentar novamente".
 async function load() {
   loading.value = true
-  const { data } = await client.get('/substituicoes')
-  substituicoes.value = data
-  loading.value = false
+  error.value = false
+  try {
+    const { data } = await client.get('/substituicoes')
+    substituicoes.value = data
+  } catch {
+    error.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(load)
@@ -119,6 +129,11 @@ async function confirmarRejeitar() {
     </template>
 
     <div v-if="loading" class="p-8 text-center text-gray-600 dark:text-gray-400">Carregando...</div>
+
+    <ErrorState v-else-if="error" title="Não foi possível carregar as substituições."
+      description="Verifique sua conexão e tente novamente.">
+      <template #action><SecondaryButton type="button" @click="load">Tentar novamente</SecondaryButton></template>
+    </ErrorState>
 
     <div v-else class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">
       <div v-if="substituicoes.length" class="space-y-4">

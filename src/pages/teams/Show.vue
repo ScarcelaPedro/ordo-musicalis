@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import Card from '@/components/Card.vue'
 import Badge from '@/components/Badge.vue'
 import { recorrenciaLabel } from '@/utils/recurrence'
 
@@ -21,7 +22,7 @@ onMounted(async () => {
   <AuthenticatedLayout>
     <template #header>
       <div class="flex flex-wrap justify-between items-center gap-3">
-        <h2 class="font-semibold text-xl text-gray-800 min-w-0 truncate">{{ team?.nome ?? '...' }}</h2>
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100 min-w-0 truncate">{{ team?.nome ?? '...' }}</h2>
         <RouterLink v-if="auth.isStaff && team" :to="`/equipes/${team.id}/editar`"
           class="inline-flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-semibold uppercase rounded-md hover:bg-gray-700">
           Editar
@@ -30,48 +31,48 @@ onMounted(async () => {
     </template>
 
     <div v-if="team" class="space-y-6">
-      <div class="bg-white shadow-sm rounded-lg p-6">
+      <Card>
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div v-if="team.descricao" class="sm:col-span-2">
-            <dt class="text-sm font-medium text-gray-500">Descrição</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ team.descricao }}</dd>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Descrição</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ team.descricao }}</dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Categoria de função</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ team.categoria?.nome ?? '—' }}</dd>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Categoria de função</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ team.categoria?.nome ?? '—' }}</dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Responsável</dt>
-            <dd class="mt-1 text-sm text-gray-900">{{ team.responsavel?.nome ?? '—' }}</dd>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Responsável</dt>
+            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ team.responsavel?.nome ?? '—' }}</dd>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500">Status</dt>
+            <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Status</dt>
             <dd class="mt-1"><Badge :color="team.ativo ? 'green' : 'gray'">{{ team.ativo ? 'Ativo' : 'Inativo' }}</Badge></dd>
           </div>
         </dl>
-      </div>
+      </Card>
 
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Horários recorrentes</h3>
+      <Card>
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-4">Horários recorrentes</h3>
         <div v-if="team.scaleTemplates.length" class="space-y-2">
-          <div v-for="t in team.scaleTemplates" :key="t.id" class="flex justify-between items-center text-sm py-2 border-b last:border-0">
-            <span class="font-medium text-gray-900">{{ t.celebracao }}</span>
-            <span class="text-gray-500">{{ recorrenciaLabel(t) }} · {{ t.horario }}</span>
+          <div v-for="t in team.scaleTemplates" :key="t.id" class="flex justify-between items-center text-sm py-2 border-b last:border-0 dark:border-gray-700">
+            <span class="font-medium text-gray-900 dark:text-gray-100">{{ t.celebracao }}</span>
+            <span class="text-gray-600 dark:text-gray-400">{{ recorrenciaLabel(t) }} · {{ t.horario }}</span>
           </div>
         </div>
-        <p v-else class="text-sm text-gray-500">Nenhum horário recorrente cadastrado para este ministério.</p>
-      </div>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Nenhum horário recorrente cadastrado para este ministério.</p>
+      </Card>
 
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Membros ({{ team.servidores.length }})</h3>
+      <Card>
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-4">Membros ({{ team.servidores.length }})</h3>
         <div v-if="team.servidores.length" class="space-y-2">
-          <div v-for="s in team.servidores" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b last:border-0">
-            <RouterLink :to="`/servidores/${s.servidor.id}`" class="text-indigo-600 hover:underline">{{ s.servidor.nome }}</RouterLink>
-            <span v-if="s.funcao" class="text-gray-500">{{ s.funcao }}</span>
+          <div v-for="s in team.servidores" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b last:border-0 dark:border-gray-700">
+            <RouterLink :to="`/servidores/${s.servidor.id}`" class="text-indigo-600 dark:text-primary-400 hover:underline">{{ s.servidor.nome }}</RouterLink>
+            <span v-if="s.funcao" class="text-gray-600 dark:text-gray-400">{{ s.funcao }}</span>
           </div>
         </div>
-        <p v-else class="text-sm text-gray-500">Nenhum servidor neste ministério.</p>
-      </div>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400">Nenhum servidor neste ministério.</p>
+      </Card>
     </div>
   </AuthenticatedLayout>
 </template>

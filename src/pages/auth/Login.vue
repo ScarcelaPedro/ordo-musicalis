@@ -18,6 +18,7 @@ const error = ref('')
 const loading = ref(false)
 
 async function submit() {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   loading.value = true
   error.value = ''
   try {
@@ -37,19 +38,19 @@ async function submit() {
   <GuestLayout>
     <form @submit.prevent="submit" class="space-y-6">
       <div>
-        <InputLabel value="Email" :required="true" />
-        <TextInput v-model="email" type="email" class="mt-1" autofocus />
+        <InputLabel value="Email" :required="true" for="input-email" />
+        <TextInput id="input-email" v-model="email" type="email" class="mt-1" autofocus />
       </div>
 
       <div>
-        <InputLabel value="Senha" :required="true" />
-        <TextInput v-model="password" type="password" class="mt-1" />
+        <InputLabel value="Senha" :required="true" for="input-senha" />
+        <TextInput id="input-senha" v-model="password" type="password" class="mt-1" />
       </div>
 
       <InputError :message="error" />
 
       <div class="flex items-center justify-between">
-        <RouterLink to="/forgot-password" class="text-sm text-gray-600 hover:text-gray-900 underline">
+        <RouterLink to="/forgot-password" class="text-sm text-gray-600 hover:text-gray-900 underline dark:text-gray-400 dark:hover:text-gray-200">
           Esqueceu a senha?
         </RouterLink>
         <PrimaryButton :disabled="loading">

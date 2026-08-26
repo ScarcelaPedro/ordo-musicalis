@@ -6,6 +6,7 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import Card from '@/components/Card.vue'
 import Skeleton from '@/components/Skeleton.vue'
+import ErrorState from '@/components/ErrorState.vue'
 import Modal from '@/components/Modal.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
@@ -31,20 +32,29 @@ const creating = ref(false)
 // Não existia estado de loading neste componente (achado confirmado em docs/tasks/0013-*.md) --
 // corrigido nesta task.
 const loading = ref(true)
+const error = ref(false)
 const busca = ref('')
 
+// TASK-0076 (correção): antes, uma falha de rede/API deixava a tela presa no Skeleton pra
+// sempre, sem nenhuma indicação de erro -- catch adicionado + ErrorState com "Tentar novamente".
 async function load() {
   loading.value = true
-  const [avail, wins, svs] = await Promise.all([
-    client.get('/availability/panel'),
-    client.get('/availability-windows'),
-    client.get('/servidores'),
-  ])
-  availabilities.value = avail.data
-  windows.value = wins.data
-  servidoresAtivos.value = (svs.data as any[]).filter((s) => s.ativo)
-  await loadPendentes()
-  loading.value = false
+  error.value = false
+  try {
+    const [avail, wins, svs] = await Promise.all([
+      client.get('/availability/panel'),
+      client.get('/availability-windows'),
+      client.get('/servidores'),
+    ])
+    availabilities.value = avail.data
+    windows.value = wins.data
+    servidoresAtivos.value = (svs.data as any[]).filter((s) => s.ativo)
+    await loadPendentes()
+  } catch {
+    error.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 async function loadPendentes() {
@@ -204,6 +214,11 @@ function temSlot(sv: any, dia: number, periodo: string) {
         <div v-if="loading" class="space-y-2 p-4">
           <Skeleton v-for="i in 5" :key="i" height="h-14" rounded="rounded-lg" />
         </div>
+
+        <ErrorState v-else-if="error" title="Não foi possível carregar o painel de disponibilidade."
+          description="Verifique sua conexão e tente novamente.">
+          <template #action><SecondaryButton type="button" @click="load">Tentar novamente</SecondaryButton></template>
+        </ErrorState>
 
         <template v-else>
           <!-- Desktop: grade Servidor × 7 dias mantida (favorece comparação, §11.1). -->

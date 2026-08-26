@@ -53,6 +53,7 @@ onMounted(async () => {
 })
 
 async function submit(data: object) {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   loading.value = true
   try {
     await client.patch(`/scales/${route.params.id}`, data)

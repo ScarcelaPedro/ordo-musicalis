@@ -7,6 +7,7 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import Skeleton from '@/components/Skeleton.vue'
+import ErrorState from '@/components/ErrorState.vue'
 import ScaleCard from '@/components/scale/ScaleCard.vue'
 import { parseDateOnly } from '@/utils/date'
 
@@ -27,16 +28,25 @@ const auth = useAuthStore()
 const flash = useFlashStore()
 const scales = ref<any[]>([])
 const loading = ref(true)
+const error = ref(false)
 const confirmingId = ref<number | null>(null)
 const recusandoId = ref<number | null>(null)
 const motivoAbertoId = ref<number | null>(null)
 const motivo = ref('')
 
+// TASK-0076 (correção): antes, uma falha de rede/API deixava a tela presa no Skeleton pra
+// sempre, sem nenhuma indicação de erro -- catch adicionado + ErrorState com "Tentar novamente".
 async function load() {
   loading.value = true
-  const { data } = await client.get('/scales', { params: { mine: 'true' } })
-  scales.value = data
-  loading.value = false
+  error.value = false
+  try {
+    const { data } = await client.get('/scales', { params: { mine: 'true' } })
+    scales.value = data
+  } catch {
+    error.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(load)
@@ -111,6 +121,11 @@ async function recusar(id: number) {
         <Skeleton height="h-16" rounded="rounded-xl" />
       </div>
     </div>
+
+    <ErrorState v-else-if="error" title="Não foi possível carregar sua escala."
+      description="Verifique sua conexão e tente novamente.">
+      <template #action><SecondaryButton type="button" @click="load">Tentar novamente</SecondaryButton></template>
+    </ErrorState>
 
     <div v-else class="space-y-6">
       <div class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">

@@ -4,8 +4,12 @@ import { useRoute, useRouter } from 'vue-router'
 import client from '@/api/client'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
+import Card from '@/components/Card.vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
+import Select from '@/components/Select.vue'
+import Textarea from '@/components/Textarea.vue'
+import Checkbox from '@/components/Checkbox.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 
@@ -47,10 +51,13 @@ function servidorNome(id: number) {
 }
 
 async function submit() {
+  // TASK-0075 (correção): guarda síncrona -- não depende do próximo ciclo de renderização do
+  // Vue pra impedir cliques repetidos enquanto a submissão anterior ainda está em andamento.
+  if (loading.value) return
   loading.value = true
   try {
     await client.patch(`/teams/${route.params.id}`, form.value)
-    flash.set('success', 'Ministério atualizado!')
+    flash.set('success', 'Ministério atualizado com sucesso!')
     router.push('/equipes')
   } catch (e: any) {
     flash.set('error', e.response?.data?.message ?? 'Erro ao atualizar')
@@ -62,35 +69,32 @@ async function submit() {
 
 <template>
   <AuthenticatedLayout>
-    <template #header><h2 class="font-semibold text-xl text-gray-800">Editar Ministério</h2></template>
-    <div class="bg-white shadow-sm rounded-lg p-6">
+    <template #header><h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100">Editar Ministério</h2></template>
+    <Card>
       <form @submit.prevent="submit" class="space-y-6">
         <div>
-          <InputLabel value="Nome" :required="true" />
-          <TextInput v-model="form.nome" class="mt-1" />
+          <InputLabel value="Nome" :required="true" for="input-nome" />
+          <TextInput id="input-nome" v-model="form.nome" class="mt-1" />
         </div>
         <div>
-          <InputLabel value="Descrição" />
-          <textarea v-model="form.descricao" rows="3" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full" />
+          <InputLabel value="Descrição" for="input-descricao" />
+          <Textarea id="input-descricao" v-model="form.descricao" :rows="3" class="mt-1" />
         </div>
         <div>
-          <InputLabel value="Categoria de função" :required="true" />
-          <select v-model="form.categoriaId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+          <InputLabel value="Categoria de função" :required="true" for="input-categoria" />
+          <Select id="input-categoria" v-model="form.categoriaId" class="mt-1">
             <option :value="null">Selecione</option>
             <option v-for="c in categorias" :key="c.id" :value="c.id">{{ c.nome }}</option>
-          </select>
+          </Select>
         </div>
         <div>
-          <InputLabel value="Responsável/coordenador" />
-          <select v-model="form.responsavelId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+          <InputLabel value="Responsável/coordenador" for="input-responsavel" />
+          <Select id="input-responsavel" v-model="form.responsavelId" class="mt-1">
             <option :value="null">Nenhum</option>
             <option v-for="s in allServidores" :key="s.id" :value="s.id">{{ s.nome }}</option>
-          </select>
+          </Select>
         </div>
-        <div class="flex items-center gap-3">
-          <input v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-          <InputLabel value="Ministério ativo" />
-        </div>
+        <Checkbox v-model="form.ativo" label="Ministério ativo" />
 
         <div>
           <InputLabel value="Servidores" />
@@ -103,15 +107,15 @@ async function submit() {
               class="px-3 py-1.5 rounded-full text-sm border transition"
               :class="form.servidores.some((fs) => fs.servidorId === s.id)
                 ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'"
+                : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:border-indigo-500'"
             >
               {{ s.nome }}
             </button>
           </div>
-          <p v-if="allServidores.length === 0" class="mt-2 text-sm text-gray-500">Nenhum servidor cadastrado.</p>
+          <p v-if="allServidores.length === 0" class="mt-2 text-sm text-gray-600 dark:text-gray-400">Nenhum servidor cadastrado.</p>
           <div v-if="form.servidores.length" class="mt-3 space-y-2">
             <div v-for="fs in form.servidores" :key="fs.servidorId" class="flex items-center gap-2">
-              <span class="text-sm text-gray-500 w-40 shrink-0 truncate">{{ servidorNome(fs.servidorId) }}</span>
+              <span class="text-sm text-gray-600 dark:text-gray-400 w-40 shrink-0 truncate">{{ servidorNome(fs.servidorId) }}</span>
               <TextInput v-model="fs.funcao" placeholder="Função (opcional)" class="text-sm" />
             </div>
           </div>
@@ -122,6 +126,6 @@ async function submit() {
           <RouterLink to="/equipes"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
         </div>
       </form>
-    </div>
+    </Card>
   </AuthenticatedLayout>
 </template>

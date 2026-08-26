@@ -5,10 +5,31 @@ import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 const open = ref(false)
 const root = ref<HTMLElement | null>(null)
+const triggerWrapper = ref<HTMLElement | null>(null)
+const itemsWrapper = ref<HTMLElement | null>(null)
 
 function toggle() {
   open.value = !open.value
 }
+
+// TASK-0074 (correção): quando um item (ex. "Excluir") dispara a abertura de um Modal, o
+// consumidor (ex. servidores/Index.vue) muda um estado reativo no mesmo clique -- isso agenda o
+// watcher assíncrono do Modal (que decide pra onde o foco vai a seguir) antes mesmo de o clique
+// terminar de "borbulhar" até o listener de fechamento do Dropdown (`@click` normal, fase de
+// bubble, roda por último). Resultado: quando o Dropdown finalmente tentaria devolver o foco pro
+// próprio trigger, o Modal já tinha assumido o foco (ou o item já não era mais o elemento focado
+// por outro motivo) -- a correção chega tarde demais pra evitar a perda.
+//
+// A correção real: mover o foco pro trigger na FASE DE CAPTURA (`@click.capture`), que roda
+// ANTES do próprio handler do item (fase de bubble) -- inclusive antes do que abre o Modal.
+// `click.capture` dispara tanto para clique de mouse quanto para Enter/Space num botão focado
+// (o navegador sintetiza um `click` real nos dois casos, passando pelas mesmas duas fases).
+function onItemsClickCapture() {
+  if (!itemsWrapper.value?.contains(document.activeElement)) return
+  const focavel = triggerWrapper.value?.querySelector<HTMLElement>('button, a, [tabindex]')
+  focavel?.focus()
+}
+
 function close() {
   open.value = false
 }
@@ -22,7 +43,7 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
 
 <template>
   <div ref="root" class="relative inline-block">
-    <div @click="toggle">
+    <div ref="triggerWrapper" @click="toggle">
       <slot name="trigger" :open="open" />
     </div>
     <Transition
@@ -35,8 +56,10 @@ onBeforeUnmount(() => document.removeEventListener('click', onClickOutside))
     >
       <div
         v-if="open"
+        ref="itemsWrapper"
         role="menu"
         class="absolute right-0 z-40 mt-2 min-w-[10rem] rounded-md bg-white py-1 shadow-md dark:bg-gray-800"
+        @click.capture="onItemsClickCapture"
         @click="close"
       >
         <slot name="items" />

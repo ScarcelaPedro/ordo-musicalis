@@ -2,7 +2,6 @@
 import { ref, computed, watch } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import FlashMessage from '@/components/FlashMessage.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import Drawer from '@/components/Drawer.vue'
 import IconButton from '@/components/IconButton.vue'
@@ -271,7 +270,6 @@ async function logout() {
     <main>
       <div class="py-12 pb-24 md:pb-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-          <FlashMessage />
           <slot />
         </div>
       </div>

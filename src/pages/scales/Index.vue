@@ -7,6 +7,7 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
 import Card from '@/components/Card.vue'
 import Skeleton from '@/components/Skeleton.vue'
+import ErrorState from '@/components/ErrorState.vue'
 import Dropdown from '@/components/Dropdown.vue'
 import Modal from '@/components/Modal.vue'
 import TertiaryButton from '@/components/TertiaryButton.vue'
@@ -25,16 +26,25 @@ const filterComunidade = ref('')
 // Não existia estado de loading nesta tela (achado confirmado em docs/tasks/0012-*.md) --
 // corrigido nesta task.
 const loading = ref(true)
+const error = ref(false)
 
+// TASK-0076 (correção): antes, uma falha de rede/API deixava a tela presa no Skeleton pra
+// sempre, sem nenhuma indicação de erro -- catch adicionado + ErrorState com "Tentar novamente".
 async function load() {
   loading.value = true
+  error.value = false
   const params: Record<string, string> = {}
   if (filterMes.value) params.mes = filterMes.value
   if (filterTeam.value) params.teamId = filterTeam.value
   if (filterComunidade.value) params.comunidadeId = filterComunidade.value
-  const { data } = await client.get('/scales', { params })
-  scales.value = data
-  loading.value = false
+  try {
+    const { data } = await client.get('/scales', { params })
+    scales.value = data
+  } catch {
+    error.value = true
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(async () => {
@@ -111,6 +121,11 @@ async function copiarLinkPublico() {
       <div v-if="loading" class="space-y-2 p-4">
         <Skeleton v-for="i in 5" :key="i" height="h-14" rounded="rounded-lg" />
       </div>
+
+      <ErrorState v-else-if="error" title="Não foi possível carregar as escalas."
+        description="Verifique sua conexão e tente novamente.">
+        <template #action><SecondaryButton type="button" @click="load">Tentar novamente</SecondaryButton></template>
+      </ErrorState>
 
       <template v-else>
         <div class="hidden md:block">

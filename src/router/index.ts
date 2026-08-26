@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useFlashStore } from '@/stores/flash'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -289,12 +290,22 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore()
+  const flash = useFlashStore()
+
+  // TASK-0081 (correção): precisa ser lido antes de fetchMe() -- um token inválido é apagado
+  // por logout() dentro de fetchMe(), então depois disso não dá mais pra distinguir "tinha
+  // sessão e expirou" de "nunca esteve autenticado" só olhando auth.token/isAuthenticated.
+  const hadToken = !!auth.token
 
   if (!auth.user && auth.token) {
     await auth.fetchMe()
   }
 
   if (to.meta.auth && !auth.isAuthenticated) {
+    // Só mostra a mensagem quando havia mesmo uma sessão que caiu (token inválido/expirado) --
+    // uma visita direta a uma rota protegida sem nunca ter feito login continua silenciosa,
+    // mesmo comportamento de hoje (critério desta task: não mudar o redirecionamento em si).
+    if (hadToken) flash.set('warning', 'Sua sessão expirou. Entre novamente.')
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
@@ -304,6 +315,7 @@ router.beforeEach(async (to) => {
 
   const roles = to.meta.roles as string[] | undefined
   if (roles && auth.user && !roles.includes(auth.user.role)) {
+    flash.set('warning', 'Você não tem permissão para acessar esta página.')
     return { name: 'dashboard' }
   }
 })

@@ -5,7 +5,9 @@ import client from '@/api/client'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import ScaleTemplateForm from './ScaleTemplateForm.vue'
+import Card from '@/components/Card.vue'
 import InputLabel from '@/components/InputLabel.vue'
+import Select from '@/components/Select.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 
 const route = useRoute()
@@ -39,10 +41,11 @@ onMounted(async () => {
 })
 
 async function submit(data: object) {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   loading.value = true
   try {
     await client.patch(`/scale-templates/${route.params.id}`, data)
-    flash.set('success', 'Recorrência atualizada!')
+    flash.set('success', 'Recorrência atualizada com sucesso!')
     router.push('/escalas-recorrentes')
   } catch (e: any) {
     errors.value = e.response?.data?.errors ?? {}
@@ -102,50 +105,50 @@ async function removeVinculo(id: number) {
 <template>
   <AuthenticatedLayout>
     <template #header>
-      <h2 class="font-semibold text-xl text-gray-800">Editar Recorrência</h2>
+      <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100">Editar Recorrência</h2>
     </template>
     <div class="space-y-6">
-      <div class="bg-white shadow-sm rounded-lg p-6">
+      <Card>
         <ScaleTemplateForm v-if="template" :initial-data="initialData" :teams="teams" :errors="errors" :loading="loading" @submit="submit" />
-      </div>
+      </Card>
 
-      <div class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-medium text-gray-800 mb-1">Vínculos fixos</h3>
-        <p class="text-sm text-gray-500 mb-4">
+      <Card>
+        <h3 class="font-medium text-gray-800 mb-1 dark:text-gray-100">Vínculos fixos</h3>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
           Servidores escalados automaticamente sempre que essa recorrência gerar uma nova celebração.
         </p>
 
         <div v-if="vinculos.length" class="space-y-2 mb-4">
-          <div v-for="v in vinculos" :key="v.id" class="flex items-center justify-between py-2 border-b last:border-0">
+          <div v-for="v in vinculos" :key="v.id" class="flex items-center justify-between py-2 border-b last:border-0 dark:border-gray-700">
             <div class="text-sm">
-              <span class="font-medium text-gray-900">{{ v.servidor.nome }}</span>
-              <span v-if="v.instrument" class="text-gray-500"> · {{ v.instrument.nome }}</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{ v.servidor.nome }}</span>
+              <span v-if="v.instrument" class="text-gray-600 dark:text-gray-400"> · {{ v.instrument.nome }}</span>
             </div>
-            <button @click="removeVinculo(v.id)" class="text-red-600 hover:text-red-800 text-sm">Remover</button>
+            <button @click="removeVinculo(v.id)" class="text-red-600 hover:text-red-800 text-sm dark:text-red-400 dark:hover:text-red-300">Remover</button>
           </div>
         </div>
-        <p v-else class="text-sm text-gray-400 mb-4">Nenhum vínculo fixo ainda.</p>
+        <p v-else class="text-sm text-gray-600 dark:text-gray-400 mb-4">Nenhum vínculo fixo ainda.</p>
 
-        <div class="flex flex-wrap items-end gap-3 pt-3 border-t">
+        <div class="flex flex-wrap items-end gap-3 pt-3 border-t dark:border-gray-700">
           <div>
-            <InputLabel value="Servidor" />
-            <select v-model="novoVinculo.servidorId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+            <InputLabel value="Servidor" for="input-vinculo-servidor" />
+            <Select id="input-vinculo-servidor" v-model="novoVinculo.servidorId" class="mt-1 text-sm">
               <option :value="null">Selecione</option>
               <option v-for="s in allServidores" :key="s.id" :value="s.id">{{ s.nome }}</option>
-            </select>
+            </Select>
           </div>
           <div>
-            <InputLabel value="Instrumento (opcional)" />
-            <select v-model="novoVinculo.instrumentId" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm text-sm">
+            <InputLabel value="Instrumento (opcional)" for="input-vinculo-instrument" />
+            <Select id="input-vinculo-instrument" v-model="novoVinculo.instrumentId" class="mt-1 text-sm">
               <option :value="null">Nenhum</option>
               <option v-for="i in allInstruments" :key="i.id" :value="i.id">{{ i.nome }}</option>
-            </select>
+            </Select>
           </div>
           <SecondaryButton type="button" :disabled="addingVinculo" @click="addVinculo">
             {{ addingVinculo ? 'Adicionando...' : 'Adicionar vínculo' }}
           </SecondaryButton>
         </div>
-      </div>
+      </Card>
     </div>
   </AuthenticatedLayout>
 </template>

@@ -18,6 +18,17 @@ client.interceptors.response.use(
       localStorage.removeItem('auth_token')
       router.push('/login')
     }
+
+    // TASK-0082 (correção): sem `error.response`, a requisição não recebeu resposta nenhuma do
+    // servidor (rede fora do ar, timeout, CORS) -- todo catch do sistema já lê
+    // `e.response?.data?.message ?? 'mensagem genérica'`, então sintetizar essa mesma forma aqui
+    // corrige a mensagem em toda tela de uma vez só, sem repetir a lógica em cada formulário.
+    if (!error.response) {
+      error.response = {
+        data: { message: 'Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.' },
+      }
+    }
+
     return Promise.reject(error)
   },
 )

@@ -2,6 +2,9 @@
 import { ref, watch, computed } from 'vue'
 import InputLabel from '@/components/InputLabel.vue'
 import TextInput from '@/components/TextInput.vue'
+import Select from '@/components/Select.vue'
+import Textarea from '@/components/Textarea.vue'
+import Checkbox from '@/components/Checkbox.vue'
 import InputError from '@/components/InputError.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
@@ -100,43 +103,38 @@ function teamNome(id: number) {
   <form @submit.prevent="emit('submit', form)" class="space-y-6">
     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
       <div>
-        <InputLabel value="Nome" :required="true" />
-        <TextInput v-model="form.nome" class="mt-1" />
+        <InputLabel value="Nome" :required="true" for="input-nome" />
+        <TextInput id="input-nome" v-model="form.nome" class="mt-1" />
         <InputError :message="errors?.nome" />
       </div>
       <div>
-        <InputLabel value="Telefone" />
-        <TextInput v-model="form.telefone" type="tel" class="mt-1" />
+        <InputLabel value="Telefone" for="input-telefone" />
+        <TextInput id="input-telefone" v-model="form.telefone" type="tel" class="mt-1" />
       </div>
       <div>
-        <InputLabel value="Email" />
-        <TextInput v-model="form.email" type="email" class="mt-1" />
+        <InputLabel value="Email" for="input-email" />
+        <TextInput id="input-email" v-model="form.email" type="email" class="mt-1" />
       </div>
       <div>
-        <InputLabel value="Nível" />
-        <select v-model="form.nivel" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full">
+        <InputLabel value="Nível" for="input-nivel" />
+        <Select id="input-nivel" v-model="form.nivel" class="mt-1">
           <option v-for="(label, value) in NIVEL_LABELS" :key="value" :value="value">{{ label }}</option>
-        </select>
+        </Select>
       </div>
-      <div class="flex items-center gap-3 mt-6">
-        <input id="ativo" v-model="form.ativo" type="checkbox" class="rounded border-gray-300 text-indigo-600" />
-        <InputLabel value="Ativo" />
+      <div class="mt-6">
+        <Checkbox v-model="form.ativo" label="Ativo" />
       </div>
     </div>
 
     <div>
-      <InputLabel value="Observações" />
-      <textarea
-        v-model="form.observacoes"
-        rows="3"
-        class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full"
-      />
+      <InputLabel value="Observações" for="input-observacoes" />
+      <Textarea id="input-observacoes" v-model="form.observacoes" :rows="3" class="mt-1" />
     </div>
 
     <div>
       <InputLabel value="Função(ões)" :required="true" />
       <InputError :message="errors?.categorias" />
-      <p class="mt-1 text-xs text-gray-500">Uma pessoa pode ter mais de uma função (ex: é Músico e também Acólito).</p>
+      <p class="mt-1 text-xs text-gray-600 dark:text-gray-400">Uma pessoa pode ter mais de uma função (ex: é Músico e também Acólito).</p>
       <div class="mt-2 flex flex-wrap gap-2">
         <button
           v-for="cat in categoriasOrdenadas"
@@ -146,7 +144,7 @@ function teamNome(id: number) {
           class="px-3 py-1.5 rounded-full text-sm border transition"
           :class="form.categorias.includes(cat.id)
             ? 'bg-purple-600 text-white border-purple-600'
-            : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'"
+            : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:border-purple-500'"
         >
           {{ cat.nome }}
         </button>
@@ -166,7 +164,7 @@ function teamNome(id: number) {
             class="px-3 py-1.5 rounded-full text-sm border transition"
             :class="form.instruments.includes(inst.id)
               ? 'bg-indigo-600 text-white border-indigo-600'
-              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400'"
+              : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:border-indigo-500'"
           >
             {{ inst.nome }}
           </button>
@@ -184,14 +182,14 @@ function teamNome(id: number) {
             class="px-3 py-1.5 rounded-full text-sm border transition"
             :class="form.teams.some((t) => t.teamId === team.id)
               ? 'bg-green-600 text-white border-green-600'
-              : 'bg-white text-gray-700 border-gray-300 hover:border-green-400'"
+              : 'bg-white text-gray-700 border-gray-300 hover:border-green-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:border-green-500'"
           >
             {{ team.nome }}
           </button>
         </div>
         <div v-if="form.teams.length" class="mt-3 space-y-2">
           <div v-for="t in form.teams" :key="t.teamId" class="flex items-center gap-2">
-            <span class="text-sm text-gray-500 w-40 shrink-0 truncate">{{ teamNome(t.teamId) }}</span>
+            <span class="text-sm text-gray-600 dark:text-gray-400 w-40 shrink-0 truncate">{{ teamNome(t.teamId) }}</span>
             <TextInput v-model="t.funcao" placeholder="Função (opcional)" class="text-sm" />
           </div>
         </div>

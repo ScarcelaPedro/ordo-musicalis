@@ -17,6 +17,7 @@ const error = ref('')
 const loading = ref(false)
 
 async function submit() {
+  if (loading.value) return // TASK-0075: guarda síncrona contra duplo clique
   if (password.value !== confirmPassword.value) {
     error.value = 'As senhas não coincidem'
     return
@@ -43,12 +44,12 @@ async function submit() {
   <GuestLayout>
     <form @submit.prevent="submit" class="space-y-6">
       <div>
-        <InputLabel value="Nova senha" :required="true" />
-        <TextInput v-model="password" type="password" class="mt-1" autofocus />
+        <InputLabel value="Nova senha" :required="true" for="input-nova-senha" />
+        <TextInput id="input-nova-senha" v-model="password" type="password" class="mt-1" autofocus />
       </div>
       <div>
-        <InputLabel value="Confirmar senha" :required="true" />
-        <TextInput v-model="confirmPassword" type="password" class="mt-1" />
+        <InputLabel value="Confirmar senha" :required="true" for="input-confirmar-senha" />
+        <TextInput id="input-confirmar-senha" v-model="confirmPassword" type="password" class="mt-1" />
       </div>
       <InputError :message="error" />
       <div class="flex justify-end">

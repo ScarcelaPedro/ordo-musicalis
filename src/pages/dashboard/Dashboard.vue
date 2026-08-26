@@ -59,6 +59,13 @@ const comunidades  = ref<{ id: number; nome: string }[]>([])
 const filterComunidadeId = ref('')
 const liturgias    = ref<Liturgia[]>([])
 
+// TASK-0088 (correção): "Sua próxima escala" (servidor) precisa de uma fonte de dado própria,
+// sem o filtro de `mes` do calendário -- senão uma escala real do mês seguinte desaparece do
+// bloco de prioridade #1 assim que o calendário não estiver mostrando aquele mês. Mesmo padrão
+// já usado com sucesso em MyScales.vue (`GET /scales?mine=true`, sem `mes`).
+const myScalesAll     = ref<Scale[]>([])
+const loadingMyScales = ref(false)
+
 const CORES_LITURGICAS_CLASSES: Record<string, string> = {
   Verde: 'bg-green-200',
   Roxo: 'bg-purple-200',
@@ -86,6 +93,17 @@ async function loadPendencias() {
   pendencias.value = data.slice(0, 8)
 }
 
+async function loadMyScales() {
+  if (auth.isStaff) return
+  loadingMyScales.value = true
+  try {
+    const { data } = await client.get('/scales', { params: { mine: 'true' } })
+    myScalesAll.value = data
+  } finally {
+    loadingMyScales.value = false
+  }
+}
+
 async function loadComunidades() {
   const { data } = await client.get('/comunidades')
   comunidades.value = data
@@ -101,7 +119,7 @@ async function loadLiturgias() {
   }
 }
 
-onMounted(() => { load(); loadPendencias(); loadComunidades(); loadLiturgias() })
+onMounted(() => { load(); loadPendencias(); loadComunidades(); loadLiturgias(); loadMyScales() })
 watch([currentMonth, currentYear, filterComunidadeId], load)
 watch([currentMonth, currentYear], loadLiturgias)
 
@@ -135,10 +153,10 @@ function hasEvents(dateKey: string) {
 }
 
 function chipClass(horario: string, status: string) {
-  if (status === 'confirmada') return 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+  if (status === 'confirmada') return 'bg-success-50 text-success-700 border-success-200 hover:bg-success-100'
   const h = parseInt(horario.slice(0, 2))
-  if (h < 12) return 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-  return 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+  if (h < 12) return 'bg-accent-50 text-accent-700 border-accent-200 hover:bg-accent-100'
+  return 'bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100'
 }
 
 const totalScales = computed(() => scales.value.length)
@@ -173,11 +191,14 @@ function upcomingScaleCardProps(s: Scale) {
   }
 }
 
+// TASK-0088 (correção): fonte própria (myScalesAll, `GET /scales?mine=true`, sem `mes`), não
+// mais `scales.value` (que só contém o mês em exibição no calendário do coordenador -- um
+// conceito visual que não tem relação nenhuma com "qual é a próxima escala do servidor").
 const myNextScales = computed(() => {
   const mid = auth.user?.servidorId
   if (!mid) return []
   const todayStr = today.toISOString().slice(0, 10)
-  return scales.value
+  return myScalesAll.value
     .filter(s => s.dataCelebracao.slice(0, 10) >= todayStr && s.servidores.some(sv => sv.servidorId === mid))
     .slice(0, 3)
 })
@@ -278,13 +299,13 @@ function formatFullDate(iso: string) {
             <p class="mt-1 text-xs text-gray-600">celebrações no mês</p>
           </div>
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <p class="text-xs font-semibold text-emerald-700 uppercase tracking-widest">Confirmadas</p>
-            <p class="mt-2 text-4xl font-extrabold text-emerald-600">{{ confirmed }}</p>
+            <p class="text-xs font-semibold text-success-700 uppercase tracking-widest">Confirmadas</p>
+            <p class="mt-2 text-4xl font-extrabold text-success-600">{{ confirmed }}</p>
             <p class="mt-1 text-xs text-gray-600">escalas prontas</p>
           </div>
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <p class="text-xs font-semibold text-amber-700 uppercase tracking-widest">Rascunhos</p>
-            <p class="mt-2 text-4xl font-extrabold text-amber-600">{{ drafts }}</p>
+            <p class="text-xs font-semibold text-accent-700 uppercase tracking-widest">Rascunhos</p>
+            <p class="mt-2 text-4xl font-extrabold text-accent-600">{{ drafts }}</p>
             <p class="mt-1 text-xs text-gray-600">aguardando servidores</p>
           </div>
         </div>
@@ -297,7 +318,7 @@ function formatFullDate(iso: string) {
       <template v-if="!auth.isStaff">
 
         <!-- 1) Próxima escala em destaque + 2) confirmação pendente embutida -->
-        <div v-if="loading" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-3 dark:bg-gray-800 dark:border-gray-700">
+        <div v-if="loadingMyScales" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-3 dark:bg-gray-800 dark:border-gray-700">
           <Skeleton width="w-32" height="h-3" />
           <Skeleton width="w-2/3" height="h-7" />
           <Skeleton width="w-1/2" height="h-4" />
@@ -376,12 +397,12 @@ function formatFullDate(iso: string) {
         <p class="text-xs font-semibold text-gray-600 uppercase tracking-widest mb-3">Pendências de confirmação</p>
         <div class="space-y-2">
           <RouterLink v-for="p in pendencias" :key="p.scaleServidorId" :to="`/escalas/${p.scaleId}`"
-            class="flex items-center justify-between p-3 rounded-xl bg-amber-50 hover:bg-amber-100 transition group">
+            class="flex items-center justify-between p-3 rounded-xl bg-accent-50 hover:bg-accent-100 transition group">
             <div class="min-w-0">
-              <p class="text-sm font-semibold text-amber-800 truncate">{{ p.servidorNome }} — {{ p.celebracao }}</p>
-              <p class="text-xs text-amber-600">{{ formatFullDate(p.dataCelebracao) }} · {{ p.horario }}</p>
+              <p class="text-sm font-semibold text-accent-800 truncate">{{ p.servidorNome }} — {{ p.celebracao }}</p>
+              <p class="text-xs text-accent-600">{{ formatFullDate(p.dataCelebracao) }} · {{ p.horario }}</p>
             </div>
-            <span class="shrink-0 ml-3 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-1 rounded-full">
+            <span class="shrink-0 ml-3 text-xs font-semibold text-accent-700 bg-accent-100 px-2 py-1 rounded-full">
               {{ p.diasRestantes === 0 ? 'hoje' : `${p.diasRestantes}d` }}
             </span>
           </RouterLink>
@@ -455,13 +476,13 @@ function formatFullDate(iso: string) {
         <!-- Legenda -->
         <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400">
           <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-amber-50 border border-amber-200 inline-block"></span> Manhã
+            <span class="w-3 h-3 rounded bg-accent-50 border border-accent-200 inline-block"></span> Manhã
           </span>
           <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-indigo-50 border border-indigo-200 inline-block"></span> Tarde / Noite
+            <span class="w-3 h-3 rounded bg-primary-50 border border-primary-200 inline-block"></span> Tarde / Noite
           </span>
           <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-emerald-50 border border-emerald-200 inline-block"></span> Confirmada
+            <span class="w-3 h-3 rounded bg-success-50 border border-success-200 inline-block"></span> Confirmada
           </span>
           <span class="ml-auto text-gray-600 dark:text-gray-400 italic hidden sm:inline">Passe o cursor sobre a celebração para ver os servidores</span>
         </div>

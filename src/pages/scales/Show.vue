@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useFlashStore } from '@/stores/flash'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Badge from '@/components/Badge.vue'
+import Modal from '@/components/Modal.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
+import DangerButton from '@/components/DangerButton.vue'
 import CelebrationHeader from '@/components/scale/CelebrationHeader.vue'
 import ScaleRole from '@/components/scale/ScaleRole.vue'
 import ScaleMember from '@/components/scale/ScaleMember.vue'
@@ -17,6 +19,7 @@ import { parseDateOnly } from '@/utils/date'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 const flash = useFlashStore()
 const scale = ref<any>(null)
@@ -165,6 +168,22 @@ const conflitos = computed<{ type: 'indisponivel' | 'ja-escalado' | 'incompative
 function imprimir() {
   window.print()
 }
+
+// Exclusão via Modal (TASK-0080), mesmo endpoint e padrão de confirmação já usados em
+// scales/Index.vue -- só sem lista local pra filtrar, redireciona pra /escalas ao confirmar.
+const confirmandoExclusao = ref(false)
+const excluindo = ref(false)
+
+async function confirmarExclusao() {
+  excluindo.value = true
+  try {
+    await client.delete(`/scales/${route.params.id}`)
+    flash.set('success', 'Escala excluída.')
+    router.push('/escalas')
+  } finally {
+    excluindo.value = false
+  }
+}
 </script>
 
 <template>
@@ -189,6 +208,10 @@ function imprimir() {
             class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold uppercase rounded-md hover:bg-indigo-700">
             Liturgia
           </RouterLink>
+          <button v-if="auth.isStaff && scale" type="button" @click="confirmandoExclusao = true"
+            class="px-4 py-2 bg-danger-600 text-white text-xs font-semibold uppercase rounded-md hover:bg-danger-700">
+            Excluir
+          </button>
         </div>
       </div>
     </template>
@@ -337,5 +360,15 @@ function imprimir() {
         </ol>
       </div>
     </div>
+
+    <Modal v-model="confirmandoExclusao" title="Excluir escala" maxWidth="max-w-sm">
+      <p class="text-body-sm text-gray-600 dark:text-gray-300">
+        Confirma a exclusão de <strong>{{ scale?.celebracao }}</strong>? Essa ação não pode ser desfeita.
+      </p>
+      <div class="mt-4 flex justify-end gap-2">
+        <SecondaryButton type="button" @click="confirmandoExclusao = false">Cancelar</SecondaryButton>
+        <DangerButton type="button" :loading="excluindo" @click="confirmarExclusao">Excluir</DangerButton>
+      </div>
+    </Modal>
   </AuthenticatedLayout>
 </template>

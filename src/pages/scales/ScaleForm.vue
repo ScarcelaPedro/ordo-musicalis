@@ -80,7 +80,7 @@ const form = ref<FormData>({
   dataCelebracao: props.initialData?.dataCelebracao ?? '',
   horario: props.initialData?.horario ?? '',
   celebracao: props.initialData?.celebracao ?? '',
-  comunidadeId: props.initialData?.comunidadeId ?? props.comunidades[0]?.id ?? null,
+  comunidadeId: props.initialData?.comunidadeId ?? null,
   celebranteId: props.initialData?.celebranteId ?? null,
   observacoes: props.initialData?.observacoes ?? '',
   status: props.initialData?.status ?? 'rascunho',
@@ -89,6 +89,17 @@ const form = ref<FormData>({
 })
 
 watch(() => props.initialData, (val) => { if (val) Object.assign(form.value, val) })
+
+// TASK-0073 (correção): `comunidades` chega de forma assíncrona em Create.vue -- calcular o
+// padrão só na inicialização do `form` (acima) deixava o campo permanentemente vazio, porque o
+// fetch ainda não tinha resolvido naquele momento. Preenche assim que a lista chegar, mas nunca
+// sobrescreve uma comunidade já definida (por `initialData`, em Edit.vue, ou por uma escolha
+// manual do usuário antes do fetch terminar).
+watch(() => props.comunidades, (lista) => {
+  if (lista.length && form.value.comunidadeId == null) {
+    form.value.comunidadeId = lista[0].id
+  }
+}, { immediate: true })
 
 // Navegação por etapas (TASK-0043, docs/tasks/0009-*.md §7.2) -- indicador textual simples
 // ("Etapa N de 4"), sem componente de stepper visual novo (decisão já registrada na
@@ -108,8 +119,27 @@ function validarEtapa1(): boolean {
   return !Object.values(etapa1Erros).some(Boolean)
 }
 
+// TASK-0084 (correção): SPEC-005 §38 -- move o foco pro primeiro campo inválido, na mesma
+// ordem em que aparecem no formulário, em vez de deixar o foco parado no botão "Avançar".
+const ORDEM_ETAPA1: { chave: string; id: string }[] = [
+  { chave: 'dataCelebracao', id: 'input-data' },
+  { chave: 'horario', id: 'input-horario' },
+  { chave: 'celebracao', id: 'input-celebracao' },
+  { chave: 'comunidadeId', id: 'input-comunidade' },
+]
+
+async function focarPrimeiroErroEtapa1() {
+  const primeiro = ORDEM_ETAPA1.find((campo) => etapa1Erros[campo.chave])
+  if (!primeiro) return
+  await nextTick()
+  document.getElementById(primeiro.id)?.focus()
+}
+
 function avancar() {
-  if (etapaAtual.value === 1 && !validarEtapa1()) return
+  if (etapaAtual.value === 1 && !validarEtapa1()) {
+    focarPrimeiroErroEtapa1()
+    return
+  }
   if (etapaAtual.value === 3 && obrigatoriosFaltando.value.length) return
   if (etapaAtual.value < 4) etapaAtual.value++
 }

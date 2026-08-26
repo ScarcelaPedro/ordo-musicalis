@@ -122,7 +122,9 @@ Um redesign de UX/UI está em andamento, formalizado em specs (`docs/specs/`) e 
 [`docs/arquitetura-interface.md`](arquitetura-interface.md); a Etapa 2 (UX e wireframes) em
 [`docs/ux-wireframes-etapa2.md`](ux-wireframes-etapa2.md); a Etapa 3 (Design System) em
 [`docs/design-system.md`](design-system.md); a Etapa 4 (Implementação Frontend) em
-[`docs/relatorio-implementacao-etapa4.md`](relatorio-implementacao-etapa4.md).
+[`docs/relatorio-implementacao-etapa4.md`](relatorio-implementacao-etapa4.md); a Etapa 5
+(Validação, Testes de UX e Polimento) em
+[`docs/relatorio-validacao-etapa5.md`](relatorio-validacao-etapa5.md).
 
 ## 10. Tecnologias utilizadas
 
