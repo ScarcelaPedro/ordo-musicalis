@@ -6,6 +6,7 @@ import ThemeToggle from '@/components/ThemeToggle.vue'
 import Drawer from '@/components/Drawer.vue'
 import IconButton from '@/components/IconButton.vue'
 import Avatar from '@/components/Avatar.vue'
+import brasaoUrl from '@/assets/images/brasao-paroquia.png'
 import { longDate } from '@/utils/greeting'
 import {
   HomeIcon, CalendarDaysIcon, UsersIcon, ChartBarIcon, Cog6ToothIcon, ChevronDownIcon,
@@ -233,21 +234,20 @@ async function logout() {
         ref="sidebarPanel"
         @keydown="onSidebarKeydown"
       >
-        <div class="flex h-20 items-center justify-between gap-2 border-b border-white/10 px-4">
+        <div class="flex h-24 items-center justify-between gap-2 border-b border-white/10 px-4">
           <RouterLink
             to="/dashboard"
             @click="sidebarOpen = false"
             class="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
           >
-            <!-- Discreet liturgical mark (SPEC-003.1 §20): a simple cross in the accent color. -->
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-accent-300" aria-hidden="true">
-              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
-                <path d="M12 3v18M7 8h10" />
-              </svg>
-            </span>
+            <!-- Parish coat of arms (TASK-0113) -- real identity provided by the parish; replaces
+                 the generic cross used before. The text next to it already names the parish, so
+                 the image is decorative for screen readers. -->
+            <img :src="brasaoUrl" alt="" class="h-14 w-auto shrink-0" width="48" height="56" />
             <span class="min-w-0">
-              <span class="block truncate text-body font-semibold text-white">Ordo Musicalis</span>
-              <span class="block truncate text-caption text-primary-300">Escalas da paróquia</span>
+              <span class="block truncate text-caption text-primary-300">Paróquia</span>
+              <span class="block text-body font-semibold leading-tight text-white">São João Batista</span>
+              <span class="block truncate text-caption text-primary-300">Ordo Musicalis</span>
             </span>
           </RouterLink>
           <button

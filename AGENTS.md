@@ -36,7 +36,9 @@ Conteúdo:
   - `push` — recebe o payload (`title`, `body`, `url`) enviado pela API (`api/_lib/sendPush.ts`, ver [`api/AGENTS.md`](api/AGENTS.md)) e exibe a notificação do navegador.
   - `notificationclick` — ao clicar na notificação, foca uma aba já aberta com a URL de destino ou abre uma nova.
 
-⚠️ **`favicon.svg` está referenciado mas não existe**: [`index.html`](index.html) aponta `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />`, mas não há nenhum `favicon.svg` em `public/` (nem em outro lugar do repositório), então o ícone da aba não carrega. Corrigir é pequeno (adicionar `public/favicon.svg`), mas envolve escolher/gerar um ícone real, por isso fica registrado aqui em vez de corrigido silenciosamente.
+- [`public/favicon.ico`](public/favicon.ico) — ícone da aba do navegador, fornecido pela paróquia (`TASK-0113`), referenciado em [`index.html`](index.html) como `/favicon.ico`. Resolve a pendência antiga de um `/favicon.svg` que era referenciado mas nunca existiu.
+
+O brasão da paróquia usado na interface **não** fica em `public/`: está em `src/assets/images/brasao-paroquia.png` (versão otimizada, 200px de largura), importado pelos componentes para ganhar hash de cache no build.
 
 Sem configuração própria (arquivos estáticos puros, sem variáveis de ambiente ou build step). Qualquer novo arquivo estático que precise ser servido a partir da raiz do domínio sem processamento do Vite (imagens, manifest PWA, `robots.txt` etc.) vai em `public/` — lembrando que ele será **público**.
 

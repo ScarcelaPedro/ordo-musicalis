@@ -7,6 +7,7 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Calendar from '@/components/Calendar.vue'
 import Badge from '@/components/Badge.vue'
 import Select from '@/components/Select.vue'
+import brasaoUrl from '@/assets/images/brasao-paroquia.png'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import { firstName, greetingFor } from '@/utils/greeting'
@@ -348,11 +349,16 @@ function formatFullDate(iso: string) {
            actions. On mobile the actions are hidden: "Nova escala" is the bottom-nav center button
            and Substituições/Relatórios live under "Mais" -- no need to repeat them here. -->
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <div class="min-w-0">
-          <h2 class="text-h2 text-gray-900 dark:text-gray-50">{{ greeting }}<template v-if="userFirstName">, {{ userFirstName }}</template>!</h2>
-          <p class="mt-0.5 text-body-sm text-gray-600 dark:text-gray-400">
-            {{ auth.isStaff ? 'Visão geral das escalas da paróquia.' : 'Suas escalas e o que precisa da sua atenção.' }}
-          </p>
+        <!-- Parish coat of arms (TASK-0113): also the only place it shows on mobile, where there
+             is no sidebar. -->
+        <div class="flex min-w-0 items-center gap-4">
+          <img :src="brasaoUrl" alt="Brasão da Paróquia São João Batista" class="h-16 w-auto shrink-0 sm:h-20" width="56" height="65" />
+          <div class="min-w-0">
+            <h2 class="text-h2 text-gray-900 dark:text-gray-50">{{ greeting }}<template v-if="userFirstName">, {{ userFirstName }}</template>!</h2>
+            <p class="mt-0.5 text-body-sm text-gray-600 dark:text-gray-400">
+              {{ auth.isStaff ? 'Visão geral das escalas da paróquia.' : 'Suas escalas e o que precisa da sua atenção.' }}
+            </p>
+          </div>
         </div>
         <div v-if="auth.isStaff" class="hidden flex-wrap gap-2 md:flex">
           <SecondaryButton to="/substituicoes">Substituições</SecondaryButton>
