@@ -11,6 +11,11 @@
 // Sem acoplamento a "escala": eventos/eventos importantes/cor de fundo por dia entram via
 // props de função + slots, para o componente continuar genérico (SPEC-004 §46/§47 -- Calendar
 // é componente base, não de domínio).
+//
+// SPEC-003.1 visual language (TASK-0101): desktop cells are separate white tiles; when
+// `cellMarker` is given, the day's meaning (e.g. liturgical season) is a small dot in the
+// corner instead of a full-cell tint, so the tile stays readable. The compact mobile grid keeps
+// its own logic (TASK-0008 §31): tinted cell (`cellBackground`) + event dot + list below.
 import { computed } from 'vue'
 import IconButton from './IconButton.vue'
 import Spinner from './Spinner.vue'
@@ -21,15 +26,21 @@ const props = withDefaults(
     month: number // 0-11
     year: number
     loading?: boolean
+    /** Heading shown before the month name, e.g. "Calendário Litúrgico". */
+    title?: string
     cellBackground?: (dateKey: string) => string
+    /** Classes of a corner dot for the desktop tile; when set, desktop tiles stay neutral. */
+    cellMarker?: (dateKey: string) => string | null
     hasEvents?: (dateKey: string) => boolean
-    // Optional accessible description of what the cell background means (e.g. the liturgical
+    // Optional accessible description of what the cell color means (e.g. the liturgical
     // season) -- color must never be the only carrier of information (SPEC-003.1 §25).
     cellLabel?: (dateKey: string) => string | null
   }>(),
   {
     loading: false,
+    title: '',
     cellBackground: () => 'bg-white dark:bg-gray-800',
+    cellMarker: undefined,
     hasEvents: () => false,
     cellLabel: () => null,
   },
@@ -59,13 +70,20 @@ function nextMonth() {
   }
 }
 
+const today = new Date()
+
+const isCurrentMonth = computed(() => props.month === today.getMonth() && props.year === today.getFullYear())
+
+function goToCurrentMonth() {
+  emit('update:month', today.getMonth())
+  emit('update:year', today.getFullYear())
+}
+
 const MONTH_NAMES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ]
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
-
-const today = new Date()
 
 const cells = computed<(number | null)[]>(() => {
   const firstDow = new Date(props.year, props.month, 1).getDay()
@@ -83,64 +101,80 @@ function dateKey(day: number) {
 function isToday(day: number) {
   return today.getFullYear() === props.year && today.getMonth() === props.month && today.getDate() === day
 }
+
 // The compact mobile cell only shows the number, so its label carries the rest.
 function compactDayLabel(day: number) {
   const key = dateKey(day)
-  return [`Dia ${day}`, props.hasEvents(key) ? 'com celebrações' : null, props.cellLabel(key)]
+  return [`Dia ${day}`, isToday(day) ? 'hoje' : null, props.hasEvents(key) ? 'com celebrações' : null, props.cellLabel(key)]
     .filter(Boolean)
     .join(', ')
 }
 
-function isSunday(day: number) { return new Date(props.year, props.month, day).getDay() === 0 }
-function isSaturday(day: number) { return new Date(props.year, props.month, day).getDay() === 6 }
+function desktopTileClass(day: number) {
+  if (isToday(day)) return 'border-primary-300 bg-primary-50/70 dark:border-primary-600 dark:bg-primary-900/30'
+  if (props.cellMarker) return 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+  return ['border-gray-200 dark:border-gray-700', props.cellBackground(dateKey(day))]
+}
 </script>
 
 <template>
   <div>
-    <div class="flex items-center justify-between border-b border-gray-100 bg-gray-50/60 px-6 py-4 dark:border-gray-700 dark:bg-gray-800/60">
-      <IconButton :ariaLabel="'Mês anterior'" @click="prevMonth">
-        <ChevronLeftIcon class="h-5 w-5" />
-      </IconButton>
-      <h3 class="text-h4 tracking-wide text-gray-700 dark:text-gray-200">{{ MONTH_NAMES[month] }} {{ year }}</h3>
-      <IconButton :ariaLabel="'Próximo mês'" @click="nextMonth">
-        <ChevronRightIcon class="h-5 w-5" />
-      </IconButton>
+    <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6">
+      <h3 class="text-h4 text-gray-800 dark:text-gray-100">
+        <template v-if="title">{{ title }} — </template>{{ MONTH_NAMES[month] }} {{ year }}
+      </h3>
+      <div class="flex items-center gap-1.5">
+        <IconButton :ariaLabel="'Mês anterior'" @click="prevMonth">
+          <ChevronLeftIcon class="h-5 w-5" />
+        </IconButton>
+        <button
+          type="button"
+          class="min-h-11 rounded-lg border border-gray-200 px-3 text-body-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+          :disabled="isCurrentMonth"
+          @click="goToCurrentMonth"
+        >
+          Mês atual
+        </button>
+        <IconButton :ariaLabel="'Próximo mês'" @click="nextMonth">
+          <ChevronRightIcon class="h-5 w-5" />
+        </IconButton>
+      </div>
     </div>
 
     <!-- Desktop: grade completa (§6.2 da SPEC-002 permite manter grid no desktop) -->
-    <div class="hidden md:block">
-      <div class="grid grid-cols-7 border-b border-gray-100 dark:border-gray-700">
+    <div class="hidden px-4 pb-4 md:block sm:px-6">
+      <div class="grid grid-cols-7 gap-1.5">
         <div
-          v-for="(name, i) in DAY_NAMES" :key="name"
-          class="py-2.5 text-center text-xs font-bold uppercase tracking-widest"
-          :class="i === 0 ? 'text-rose-600 dark:text-rose-400' : i === 6 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-600 dark:text-gray-400'"
+          v-for="name in DAY_NAMES" :key="name"
+          class="pb-1.5 text-center text-caption font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
         >
           {{ name }}
         </div>
       </div>
-      <div v-if="!loading" class="grid grid-cols-7 divide-x divide-y divide-gray-100 dark:divide-gray-700">
+      <div v-if="!loading" class="grid grid-cols-7 gap-1.5">
         <div
           v-for="(day, idx) in cells" :key="idx"
-          class="min-h-[90px] p-1.5 sm:min-h-[108px]"
-          :class="[
-            day ? cellBackground(dateKey(day)) : 'bg-gray-50/80 dark:bg-gray-900/40',
-            day && isToday(day) ? 'ring-2 ring-inset ring-primary-400' : '',
-          ]"
+          class="min-h-[84px] rounded-lg border p-1.5 lg:min-h-[92px]"
+          :class="day ? desktopTileClass(day) : 'border-transparent bg-gray-50 dark:bg-gray-900/40'"
           :title="day ? cellLabel(dateKey(day)) ?? undefined : undefined"
         >
-          <div v-if="day" class="mb-1">
-            <span
-              class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
-              :class="[
-                isToday(day) ? 'bg-primary-600 text-white shadow-sm' : '',
-                !isToday(day) && isSunday(day) ? 'text-rose-600 dark:text-rose-400' : '',
-                !isToday(day) && isSaturday(day) ? 'text-primary-600 dark:text-primary-400' : '',
-                !isToday(day) && !isSunday(day) && !isSaturday(day) ? 'text-gray-600 dark:text-gray-300' : '',
-              ]"
-            >{{ day }}</span>
+          <template v-if="day">
+            <div class="mb-1 flex items-start justify-between gap-1">
+              <span
+                class="flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-caption font-semibold"
+                :class="isToday(day) ? 'bg-primary-700 text-white' : 'text-gray-800 dark:text-gray-200'"
+              >{{ day }}</span>
+              <span
+                v-if="cellMarker && cellMarker(dateKey(day))"
+                class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full"
+                :class="cellMarker(dateKey(day))"
+                aria-hidden="true"
+              />
+            </div>
+            <p v-if="isToday(day)" class="mb-1 text-caption font-medium text-primary-700 dark:text-primary-300">Hoje</p>
             <span v-if="cellLabel(dateKey(day))" class="sr-only">{{ cellLabel(dateKey(day)) }}</span>
-          </div>
-          <slot v-if="day" name="day" :day="day" :date-key="dateKey(day)" :is-today="isToday(day)" />
+            <slot name="day" :day="day" :date-key="dateKey(day)" :is-today="isToday(day)" />
+          </template>
         </div>
       </div>
       <div v-else class="flex flex-col items-center justify-center py-24 text-gray-600 dark:text-gray-400">
@@ -151,24 +185,31 @@ function isSaturday(day: number) { return new Date(props.year, props.month, day)
 
     <!-- Mobile: grade compacta (sem texto em célula) + lista, decisão da TASK-0008 (§31) -->
     <div class="md:hidden">
-      <div class="grid grid-cols-7 gap-1 px-3 py-2">
+      <div class="grid grid-cols-7 gap-1 px-3 pb-2">
+        <div
+          v-for="name in DAY_NAMES" :key="name"
+          class="pb-1 text-center text-caption font-semibold uppercase text-gray-500 dark:text-gray-400"
+          aria-hidden="true"
+        >
+          {{ name.charAt(0) }}
+        </div>
         <button
           v-for="(day, idx) in cells" :key="idx"
           type="button"
           :disabled="!day"
-          class="flex h-9 flex-col items-center justify-center gap-0.5 rounded-md text-xs disabled:opacity-0"
+          class="flex h-10 flex-col items-center justify-center gap-0.5 rounded-md text-caption disabled:opacity-0"
           :class="[
             day ? cellBackground(dateKey(day)) : '',
-            day && isToday(day) ? 'font-bold ring-2 ring-inset ring-primary-400' : 'text-gray-600 dark:text-gray-300',
+            day && isToday(day) ? 'font-bold text-primary-800 ring-2 ring-inset ring-primary-600 dark:text-primary-200 dark:ring-primary-400' : 'text-gray-700 dark:text-gray-300',
           ]"
           :aria-label="day ? compactDayLabel(day) : undefined"
           @click="day && $emit('select-day', dateKey(day))"
         >
           <span>{{ day }}</span>
-          <span v-if="day && hasEvents(dateKey(day))" class="h-1 w-1 rounded-full bg-primary-500" aria-hidden="true" />
+          <span v-if="day && hasEvents(dateKey(day))" class="h-1 w-1 rounded-full bg-gray-800 dark:bg-gray-100" aria-hidden="true" />
         </button>
       </div>
-      <div class="divide-y divide-gray-100 dark:divide-gray-700">
+      <div class="divide-y divide-gray-100 border-t border-gray-100 dark:divide-gray-700 dark:border-gray-700">
         <template v-for="(day, idx) in cells" :key="idx">
           <div v-if="day && hasEvents(dateKey(day))" class="px-4 py-3">
             <slot name="list-item" :day="day" :date-key="dateKey(day)" :is-today="isToday(day)" />

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Calendar from '@/components/Calendar.vue'
 import Badge from '@/components/Badge.vue'
+import Select from '@/components/Select.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import ScaleCard from '@/components/scale/ScaleCard.vue'
 import { parseDateOnly } from '@/utils/date'
@@ -36,6 +37,7 @@ interface Scale {
 
 interface Liturgia {
   data: string
+  liturgia: string
   cor: string
 }
 
@@ -141,8 +143,19 @@ function cellBackground(dateKey: string) {
   return liturgicalColorStyle(liturgiaByDate.value[dateKey]?.cor).cell
 }
 
+// Desktop tiles show the liturgical color as a corner dot (TASK-0101); the mobile compact grid
+// keeps the tinted cell above. Unknown/missing color -> no dot rather than a guessed one.
+function cellMarker(dateKey: string) {
+  const cor = liturgiaByDate.value[dateKey]?.cor
+  return liturgicalColorLabel(cor) ? liturgicalColorStyle(cor).dot : null
+}
+
+// Tooltip/screen-reader text: liturgical season + the day's liturgy name, both from /liturgia.
 function cellLabel(dateKey: string) {
-  return liturgicalColorLabel(liturgiaByDate.value[dateKey]?.cor)
+  const l = liturgiaByDate.value[dateKey]
+  const label = liturgicalColorLabel(l?.cor)
+  if (!label) return null
+  return l?.liturgia ? `${label} · ${l.liturgia}` : label
 }
 
 function hasEvents(dateKey: string) {
@@ -406,15 +419,16 @@ function formatFullDate(iso: string) {
       </div>
 
       <!-- Calendário -->
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden dark:bg-gray-800 dark:border-gray-700">
+      <div class="overflow-hidden rounded-xl bg-white shadow-card dark:bg-gray-800 dark:shadow-none">
 
         <!-- Filtro por comunidade (fica fora do Calendar.vue -- componente genérico, sem
              conhecimento de "comunidade") -->
-        <div v-if="comunidades.length > 1" class="flex justify-end border-b border-gray-100 px-6 py-3 dark:border-gray-700">
-          <select v-model="filterComunidadeId" class="rounded-md border-gray-300 text-body-sm shadow-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+        <div v-if="comunidades.length > 1" class="flex justify-end border-b border-gray-100 px-4 py-3 sm:px-6 dark:border-gray-700">
+          <label for="calendar-community-filter" class="sr-only">Filtrar calendário por comunidade</label>
+          <Select id="calendar-community-filter" v-model="filterComunidadeId" class="text-body-sm sm:w-64">
             <option value="">Todas as comunidades</option>
             <option v-for="c in comunidades" :key="c.id" :value="c.id">{{ c.nome }}</option>
-          </select>
+          </Select>
         </div>
 
         <!-- Desktop: grade completa com chips (mantida igual). Mobile (TASK-0008 §31): grade
@@ -424,7 +438,9 @@ function formatFullDate(iso: string) {
           v-model:month="currentMonth"
           v-model:year="currentYear"
           :loading="loading"
+          title="Calendário Litúrgico"
           :cellBackground="cellBackground"
+          :cellMarker="cellMarker"
           :cellLabel="cellLabel"
           :hasEvents="hasEvents"
         >
@@ -439,8 +455,8 @@ function formatFullDate(iso: string) {
             >
               <CheckCircleIcon v-if="scale.status === 'confirmada'" class="h-3.5 w-3.5 shrink-0 text-gray-600 dark:text-gray-300" aria-hidden="true" />
               <span class="sr-only">{{ scale.status === 'confirmada' ? 'Escala confirmada:' : 'Rascunho:' }}</span>
-              <span class="shrink-0 font-mono text-[10px]">{{ scale.horario }}</span>
-              <span v-if="scale.celebrante" class="ml-0.5 hidden truncate text-[10px] opacity-75 lg:inline">
+              <span class="shrink-0 font-mono text-caption">{{ scale.horario }}</span>
+              <span v-if="scale.celebrante" class="ml-0.5 hidden truncate text-caption text-gray-600 dark:text-gray-300 xl:inline">
                 {{ scale.celebrante.nome }}
               </span>
             </RouterLink>
