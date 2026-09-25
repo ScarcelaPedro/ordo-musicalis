@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { RouterLink, useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import Drawer from '@/components/Drawer.vue'
 import IconButton from '@/components/IconButton.vue'
+import Avatar from '@/components/Avatar.vue'
 import {
   HomeIcon, CalendarDaysIcon, UsersIcon, ChartBarIcon, Cog6ToothIcon, ChevronDownIcon,
-  ClockIcon, PlusIcon, EllipsisHorizontalIcon, Bars3Icon, XMarkIcon,
+  ClockIcon, PlusIcon, EllipsisHorizontalIcon, Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon,
 } from '@heroicons/vue/24/outline'
 import {
   HomeIcon as HomeIconSolid,
@@ -22,6 +23,18 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const sidebarOpen = ref(false)
+const sidebarCloseButton = ref<HTMLButtonElement | null>(null)
+const sidebarOpenButton = ref<HTMLElement | null>(null)
+
+// Tablet drawer (below lg): move focus into it when opened and back to the trigger when closed,
+// so keyboard users are not left behind the overlay.
+watch(sidebarOpen, async (open) => {
+  await nextTick()
+  if (open) sidebarCloseButton.value?.focus()
+  else if (window.innerWidth < 1024 && (document.activeElement === document.body || document.activeElement?.closest('aside'))) {
+    sidebarOpenButton.value?.querySelector('button')?.focus()
+  }
+})
 const moreOpen = ref(false)
 
 interface NavChild { to: string; label: string; active: boolean }
@@ -32,6 +45,11 @@ interface NavGroup {
   iconActive: typeof HomeIcon
   active: boolean
   children: NavChild[]
+}
+
+// `/escalas-recorrentes` shares the `/escalas` prefix but is its own menu item (Recorrências).
+function isScalesRoute(path: string) {
+  return path === '/escalas' || path.startsWith('/escalas/')
 }
 
 // Hierarquia de domínios definida na Etapa 1 (docs/arquitetura-interface.md) -- antes uma
@@ -52,7 +70,7 @@ const navGroups = computed<NavGroup[]>(() => {
         iconActive: CalendarDaysIconSolid,
         active: path.startsWith('/escalas') || path.startsWith('/substituicoes') || path.startsWith('/disponibilidade/painel'),
         children: [
-          { to: '/escalas', label: 'Escalas', active: path.startsWith('/escalas') },
+          { to: '/escalas', label: 'Escalas', active: isScalesRoute(path) },
           { to: '/substituicoes', label: 'Substituições', active: path.startsWith('/substituicoes') },
           { to: '/escalas-recorrentes', label: 'Recorrências', active: path.startsWith('/escalas-recorrentes') },
           { to: '/disponibilidade/painel', label: 'Disponibilidade', active: path.startsWith('/disponibilidade/painel') },
@@ -121,6 +139,12 @@ watch(
   { immediate: true },
 )
 
+// Sidebar item states on the dark surface (TASK-0098). Active = filled pill (reference);
+// a group that only contains the active route gets a lighter tint so the pill stays unique.
+const navItemActive = 'bg-primary-700 font-semibold text-white'
+const navGroupActive = 'font-semibold text-white'
+const navItemIdle = 'text-primary-100 hover:bg-white/5 hover:text-white'
+
 function toggleGroup(key: string) {
   openGroup.value = openGroup.value === key ? null : key
 }
@@ -137,7 +161,7 @@ const bottomNavPrimary = computed<BottomNavItem[]>(() => {
   if (auth.isStaff) {
     return [
       inicio,
-      { to: '/escalas', label: 'Escalas', icon: CalendarDaysIcon, iconActive: CalendarDaysIconSolid, active: path.startsWith('/escalas') },
+      { to: '/escalas', label: 'Escalas', icon: CalendarDaysIcon, iconActive: CalendarDaysIconSolid, active: isScalesRoute(path) },
     ]
   }
   return [
@@ -165,115 +189,163 @@ async function logout() {
 
 <template>
   <div class="min-h-screen bg-canvas">
-    <nav class="bg-white border-b border-gray-100 dark:bg-gray-800 dark:border-gray-700">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <div class="hidden md:block mr-1">
-              <IconButton @click="sidebarOpen = true" :ariaLabel="'Abrir menu'">
-                <Bars3Icon class="h-6 w-6" aria-hidden="true" />
-              </IconButton>
-            </div>
-            <div class="flex-shrink-0 flex items-center">
-              <RouterLink to="/dashboard" class="text-h3 text-gray-800 dark:text-gray-100">
-                Ordo Musicalis
-              </RouterLink>
-            </div>
-          </div>
-
-          <div class="hidden md:flex md:items-center md:ml-4 gap-4">
-            <ThemeToggle />
-            <span class="text-body-sm text-gray-600 dark:text-gray-300 hidden lg:inline">{{ auth.user?.name }}</span>
-            <RouterLink to="/profile" class="text-body-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400">Perfil</RouterLink>
-            <button @click="logout" class="text-body-sm text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400">Sair</button>
-          </div>
-
-          <div class="flex items-center gap-2 md:hidden">
-            <ThemeToggle />
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Menu lateral (desktop): substitui o menu horizontal quando não cabe mais na tela -->
+    <!-- Sidebar (SPEC-003.1 §4, TASK-0098, ADR-0004): fixed from lg up, off-canvas drawer on
+         md (tablet), absent on mobile (bottom nav below). Same navGroups, same order -- only the
+         presentation changed. -->
     <div class="hidden md:block">
       <Transition enter-active-class="transition-opacity duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100"
         leave-active-class="transition-opacity duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
-        <div v-if="sidebarOpen" class="fixed inset-0 bg-black/30 z-40" @click="sidebarOpen = false"></div>
+        <div v-if="sidebarOpen" class="fixed inset-0 z-40 bg-black/30 lg:hidden" @click="sidebarOpen = false"></div>
       </Transition>
-      <Transition enter-active-class="transition-transform duration-200" enter-from-class="-translate-x-full" enter-to-class="translate-x-0"
-        leave-active-class="transition-transform duration-150" leave-from-class="translate-x-0" leave-to-class="-translate-x-full">
-        <aside v-if="sidebarOpen" class="fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 shadow-xl z-50 flex flex-col">
-          <div class="flex items-center justify-between h-16 px-4 border-b border-gray-100 dark:border-gray-700">
-            <span class="text-h4 text-gray-800 dark:text-gray-100">Menu</span>
-            <IconButton @click="sidebarOpen = false" :ariaLabel="'Fechar menu'">
-              <XMarkIcon class="h-5 w-5" aria-hidden="true" />
-            </IconButton>
-          </div>
-          <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-            <RouterLink
-              to="/dashboard"
-              @click="sidebarOpen = false"
-              class="flex items-center gap-2.5 rounded-md border-l-4 px-2.5 py-2 text-sm transition"
-              :class="$route.path.startsWith('/dashboard')
-                ? 'border-primary-500 bg-primary-50 font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
-                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100'"
-            >
-              <component :is="$route.path.startsWith('/dashboard') ? HomeIconSolid : HomeIcon" class="h-5 w-5 shrink-0" aria-hidden="true" />
-              Dashboard
-            </RouterLink>
+      <aside
+        class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-primary-900 text-primary-100 shadow-xl transition-transform duration-200 dark:bg-primary-950 lg:z-30 lg:translate-x-0 lg:shadow-none"
+        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full invisible lg:visible'"
+        aria-label="Menu lateral"
+        @keydown.esc="sidebarOpen = false"
+      >
+        <div class="flex h-20 items-center justify-between gap-2 border-b border-white/10 px-4">
+          <RouterLink
+            to="/dashboard"
+            @click="sidebarOpen = false"
+            class="flex min-w-0 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
+          >
+            <!-- Discreet liturgical mark (SPEC-003.1 §20): a simple cross in the accent color. -->
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-accent-300" aria-hidden="true">
+              <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <path d="M12 3v18M7 8h10" />
+              </svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block truncate text-body font-semibold text-white">Ordo Musicalis</span>
+              <span class="block truncate text-caption text-primary-300">Escalas da paróquia</span>
+            </span>
+          </RouterLink>
+          <button
+            ref="sidebarCloseButton"
+            type="button"
+            @click="sidebarOpen = false"
+            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-primary-200 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300 lg:hidden"
+            aria-label="Fechar menu"
+          >
+            <XMarkIcon class="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
 
-            <div v-for="group in navGroups" :key="group.key">
-              <button
-                type="button"
-                @click="toggleGroup(group.key)"
-                class="flex w-full items-center gap-2.5 rounded-md border-l-4 px-2.5 py-2 text-sm transition"
-                :class="group.active
-                  ? 'border-primary-500 bg-primary-50 font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
-                  : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100'"
-                :aria-expanded="openGroup === group.key"
+        <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-5">
+          <RouterLink
+            to="/dashboard"
+            @click="sidebarOpen = false"
+            class="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-body-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
+            :class="$route.path.startsWith('/dashboard') ? navItemActive : navItemIdle"
+            :aria-current="$route.path.startsWith('/dashboard') ? 'page' : undefined"
+          >
+            <component :is="$route.path.startsWith('/dashboard') ? HomeIconSolid : HomeIcon" class="h-5 w-5 shrink-0" aria-hidden="true" />
+            Dashboard
+          </RouterLink>
+
+          <div v-for="group in navGroups" :key="group.key">
+            <button
+              type="button"
+              @click="toggleGroup(group.key)"
+              class="flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-body-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
+              :class="group.active ? navGroupActive : navItemIdle"
+              :aria-expanded="openGroup === group.key"
+            >
+              <component :is="group.active ? group.iconActive : group.icon" class="h-5 w-5 shrink-0" aria-hidden="true" />
+              <span class="flex-1 text-left">{{ group.label }}</span>
+              <ChevronDownIcon
+                class="h-4 w-4 shrink-0 transition-transform"
+                :class="openGroup === group.key ? 'rotate-180' : ''"
+                aria-hidden="true"
+              />
+            </button>
+            <div v-show="openGroup === group.key" class="mt-1 space-y-0.5 border-l border-white/10 ml-5 pl-4">
+              <RouterLink
+                v-for="child in group.children"
+                :key="child.to"
+                :to="child.to"
+                @click="sidebarOpen = false"
+                class="flex min-h-10 items-center rounded-md px-3 py-1.5 text-body-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
+                :class="child.active ? navItemActive : navItemIdle"
+                :aria-current="child.active ? 'page' : undefined"
               >
-                <component :is="group.active ? group.iconActive : group.icon" class="h-5 w-5 shrink-0" aria-hidden="true" />
-                <span class="flex-1 text-left">{{ group.label }}</span>
-                <ChevronDownIcon
-                  class="h-4 w-4 shrink-0 transition-transform"
-                  :class="openGroup === group.key ? 'rotate-180' : ''"
-                  aria-hidden="true"
-                />
-              </button>
-              <div v-show="openGroup === group.key" class="mt-1 space-y-1 pl-9">
-                <RouterLink
-                  v-for="child in group.children"
-                  :key="child.to"
-                  :to="child.to"
-                  @click="sidebarOpen = false"
-                  class="block rounded-md border-l-4 px-2.5 py-1.5 text-sm transition"
-                  :class="child.active
-                    ? 'border-primary-500 bg-primary-50 font-semibold text-primary-700 dark:bg-primary-900/30 dark:text-primary-200'
-                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-gray-100'"
-                >
-                  {{ child.label }}
+                {{ child.label }}
+              </RouterLink>
+            </div>
+          </div>
+        </nav>
+
+        <!-- Signed-in user (reference footer), with the profile/logout actions that used to
+             live only in the topbar. -->
+        <div class="border-t border-white/10 p-3">
+          <RouterLink
+            to="/profile"
+            @click="sidebarOpen = false"
+            class="flex items-center gap-3 rounded-lg px-2 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
+            :class="$route.path === '/profile' ? 'bg-white/10' : 'hover:bg-white/5'"
+            :aria-current="$route.path === '/profile' ? 'page' : undefined"
+          >
+            <Avatar :name="auth.user?.name ?? '?'" size="md" />
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-body-sm font-semibold text-white">{{ auth.user?.name }}</span>
+              <span class="block truncate text-caption text-primary-300">{{ auth.user?.email }}</span>
+            </span>
+          </RouterLink>
+          <button
+            type="button"
+            @click="logout"
+            class="mt-1 flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-body-sm text-primary-200 transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
+          >
+            <ArrowRightOnRectangleIcon class="h-5 w-5 shrink-0" aria-hidden="true" />
+            Sair
+          </button>
+        </div>
+      </aside>
+    </div>
+
+    <div class="lg:pl-64">
+      <nav class="bg-white border-b border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div class="flex justify-between h-16">
+            <div class="flex items-center">
+              <div ref="sidebarOpenButton" class="hidden md:block lg:hidden mr-1">
+                <IconButton @click="sidebarOpen = true" :ariaLabel="'Abrir menu'">
+                  <Bars3Icon class="h-6 w-6" aria-hidden="true" />
+                </IconButton>
+              </div>
+              <!-- From lg up the brand lives in the fixed sidebar. -->
+              <div class="flex-shrink-0 flex items-center lg:hidden">
+                <RouterLink to="/dashboard" class="text-h3 text-gray-800 dark:text-gray-100">
+                  Ordo Musicalis
                 </RouterLink>
               </div>
             </div>
-          </nav>
-        </aside>
-      </Transition>
-    </div>
 
-    <header v-if="$slots.header" class="bg-white shadow dark:bg-gray-800 dark:shadow-gray-900/50">
-      <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <slot name="header" />
-      </div>
-    </header>
+            <div class="hidden md:flex md:items-center md:ml-4 gap-4">
+              <ThemeToggle />
+            </div>
 
-    <main>
-      <div class="py-12 pb-24 md:pb-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-          <slot />
+            <div class="flex items-center gap-2 md:hidden">
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
-      </div>
-    </main>
+      </nav>
+
+      <header v-if="$slots.header" class="bg-white shadow dark:bg-gray-800 dark:shadow-gray-900/50">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <slot name="header" />
+        </div>
+      </header>
+
+      <main>
+        <div class="py-12 pb-24 md:pb-12">
+          <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <slot />
+          </div>
+        </div>
+      </main>
+    </div>
 
     <!-- Bottom nav (mobile): substitui o dropdown mobile antigo -- itens principais por perfil
          já decididos na TASK-0004, "Mais" abre o Drawer com o restante (TASK-0031). Some a
