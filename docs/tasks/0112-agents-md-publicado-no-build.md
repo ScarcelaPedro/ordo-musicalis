@@ -1,7 +1,7 @@
 ---
-status: backlog
+status: em-andamento
 modulo: public
-owner:
+owner: Pedro Scarcela
 criado-em: 2026-09-25
 ---
 
