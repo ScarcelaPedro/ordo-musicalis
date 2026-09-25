@@ -46,7 +46,10 @@ Variáveis relevantes (ver `.env.example` na raiz — nenhum valor real está co
 
 > Regra 3 do [AGENTS.md raiz](../AGENTS.md).
 
-Não há framework de teste configurado para a API hoje. Antes de escrever testes de rota/integração, configure **Vitest** ou **Jest** (ambos compatíveis com `ts-node`/ESM do projeto) e registre a escolha em `docs/decisions/` se houver dúvida razoável entre os dois.
+A API usa o mesmo **Vitest** do frontend (configurado na `TASK-0096`; `vitest.config.mts` inclui `api/**/*.test.ts` desde a `TASK-0109`). Rode com `npm test`. Testes ficam ao lado do código (`api/_lib/*.test.ts`), em ambiente `node`, sem banco.
+
+- Hoje a suíte cobre lógica pura extraída das rotas, por exemplo o contrato de dados da rota pública anônima em [`_lib/publicScaleSelect.test.ts`](_lib/publicScaleSelect.test.ts): o que ela expõe e o que **nunca** pode expor (e-mail, telefone). Prefira extrair a lógica da rota para `_lib/` e testá-la ali.
+- Ainda não há testes de rota com banco (integração HTTP + Prisma). Se forem necessários, decida a estratégia (banco de teste descartável vs. mock do Prisma) e registre em `docs/decisions/`.
 
 ## Build/deploy
 

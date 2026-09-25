@@ -1,5 +1,6 @@
 import { Router, Response, Request } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { publicScaleSelect } from '../_lib/publicScaleSelect'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -20,22 +21,7 @@ router.get('/scales', async (req: Request, res: Response) => {
 
   const scales = await prisma.scale.findMany({
     where,
-    select: {
-      id: true,
-      dataCelebracao: true,
-      horario: true,
-      celebracao: true,
-      observacoes: true,
-      team: { select: { id: true, nome: true } },
-      comunidade: { select: { id: true, nome: true } },
-      servidores: {
-        select: {
-          status: true,
-          servidor: { select: { nome: true } },
-          instrument: { select: { nome: true } },
-        },
-      },
-    },
+    select: publicScaleSelect,
     orderBy: { dataCelebracao: 'asc' },
   })
   return res.json(scales)

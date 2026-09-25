@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import client from '@/api/client'
 import { parseDateOnly } from '@/utils/date'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
+import { assignmentRoleLabel } from '@/utils/scaleRole'
 import Badge from '@/components/Badge.vue'
 
 interface PublicScale {
@@ -13,7 +14,15 @@ interface PublicScale {
   observacoes: string | null
   team: { id: number; nome: string } | null
   comunidade: { id: number; nome: string } | null
-  servidores: { status: string; servidor: { nome: string }; instrument: { nome: string } | null }[]
+  // Ministry + liturgical function exposed by the public route since TASK-0109.
+  servidores: {
+    status: string
+    servidor: { nome: string }
+    instrument: { nome: string } | null
+    funcaoLiturgica?: string | null
+    categoria?: { nome: string } | null
+    team?: { categoria?: { nome: string } | null } | null
+  }[]
 }
 
 const today = new Date()
@@ -109,7 +118,7 @@ function imprimir() {
             <li v-for="(sv, idx) in s.servidores" :key="idx" class="flex items-center justify-between text-sm py-1 border-t border-gray-100 dark:border-gray-700 first:border-0">
               <span class="text-gray-700 dark:text-gray-300">
                 {{ sv.servidor.nome }}
-                <span v-if="sv.instrument" class="text-gray-400">· {{ sv.instrument.nome }}</span>
+                <span v-if="assignmentRoleLabel(sv)" class="text-gray-500 dark:text-gray-400">· {{ assignmentRoleLabel(sv) }}</span>
               </span>
               <Badge :color="STATUS_COLORS[sv.status]">{{ STATUS_LABELS[sv.status] ?? sv.status }}</Badge>
             </li>
