@@ -26,6 +26,33 @@ const route = useRoute()
 const sidebarOpen = ref(false)
 const sidebarCloseButton = ref<HTMLButtonElement | null>(null)
 const sidebarOpenButton = ref<HTMLElement | null>(null)
+const sidebarPanel = ref<HTMLElement | null>(null)
+
+// Tablet drawer keyboard handling (TASK-0110): Esc closes; Tab/Shift+Tab cycle inside the
+// drawer instead of escaping to the page behind the overlay (same approach as Drawer.vue).
+// Only while it is an overlay -- from lg up the sidebar is fixed and must not trap focus.
+function onSidebarKeydown(event: KeyboardEvent) {
+  if (!sidebarOpen.value || window.innerWidth >= 1024) return
+  if (event.key === 'Escape') {
+    sidebarOpen.value = false
+    return
+  }
+  if (event.key !== 'Tab' || !sidebarPanel.value) return
+  // Visible elements only: collapsed accordion groups are v-show (display: none).
+  const items = Array.from(
+    sidebarPanel.value.querySelectorAll<HTMLElement>('a[href], button:not([disabled])'),
+  ).filter((el) => el.offsetParent !== null)
+  if (!items.length) return
+  const first = items[0]
+  const last = items[items.length - 1]
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
 
 // Tablet drawer (below lg): move focus into it when opened and back to the trigger when closed,
 // so keyboard users are not left behind the overlay.
@@ -203,7 +230,8 @@ async function logout() {
         class="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-primary-900 text-primary-100 shadow-xl transition-transform duration-200 dark:bg-primary-950 lg:z-30 lg:translate-x-0 lg:shadow-none"
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full invisible lg:visible'"
         aria-label="Menu lateral"
-        @keydown.esc="sidebarOpen = false"
+        ref="sidebarPanel"
+        @keydown="onSidebarKeydown"
       >
         <div class="flex h-20 items-center justify-between gap-2 border-b border-white/10 px-4">
           <RouterLink
