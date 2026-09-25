@@ -17,12 +17,28 @@ O roadmap e as prioridades atuais ainda não estão consolidados em `docs/SCOPE.
 | `src/` | SPA (Vue 3 + Vite) | Frontend — todas as telas e stores da aplicação | [`src/AGENTS.md`](src/AGENTS.md) |
 | `api/` | API (Express + Prisma) | Backend serverless, lógica de negócio e persistência | [`api/AGENTS.md`](api/AGENTS.md) |
 | `evolution/` | Infra (Docker Compose) | Stack self-hosted da Evolution API (WhatsApp) + Postgres + Redis, consumida por `api/_lib/sendWhatsapp.ts` | [`evolution/AGENTS.md`](evolution/AGENTS.md) |
-| `public/` | Estático | Assets servidos como estão (`sw.js` — Service Worker de push) | [`public/AGENTS.md`](public/AGENTS.md) |
+| `public/` | Estático | Assets servidos como estão (`sw.js` — Service Worker de push) | Seção [Assets estáticos (`public/`)](#assets-estáticos-public) abaixo — **sem** `AGENTS.md` dentro da pasta (ver lá o porquê) |
 | `docs/` | Documentação | `arquitetura.md`, `SCOPE.md`, `decisions/`, `tasks/` | — |
 | `resources/` | ⚠️ Código morto | Scaffold Laravel Breeze/Inertia abandonado, não usado pelo build atual — ver [`src/AGENTS.md`](src/AGENTS.md) | — |
 | `dist/` | Build gerado | Saída de `npm run build`, não editar manualmente. ⚠️ Está versionada no Git (não consta em `.gitignore`), o que é atípico já que o deploy na Vercel gera o build automaticamente — provavelmente sobra de um fluxo anterior; não é necessário atualizá-la manualmente a cada commit | — |
 
 `README.md` e `docs/arquitetura.md` foram atualizados para refletir a arquitetura real (Vue 3 SPA + API Express + Prisma) — antes descreviam um plano Laravel/Inertia nunca concluído. Use-os normalmente como fonte de verdade.
+
+## Assets estáticos (`public/`)
+
+Assets servidos como estão pela raiz do domínio (`/`), sem passar pelo pipeline de build do Vite. **Tudo** que está em `public/` é copiado diretamente para `dist/` no `npm run build`, e a Vercel publica `dist/`.
+
+⚠️ **Não coloque documentação (`AGENTS.md`, `README.md`, notas) dentro de `public/`**: ela seria publicada no deploy (ex. `https://<domínio>/AGENTS.md`), porque arquivo estático tem precedência sobre o rewrite SPA do `vercel.json`. Por isso esta pasta é documentada aqui, e não num `public/AGENTS.md` como os demais módulos (`TASK-0112`).
+
+Conteúdo:
+
+- [`public/sw.js`](public/sw.js) — Service Worker de notificações push. Registrado pelo frontend em `src/utils/push.ts` (ver [`src/AGENTS.md`](src/AGENTS.md)) via `navigator.serviceWorker.register('/sw.js')`. Escuta dois eventos:
+  - `push` — recebe o payload (`title`, `body`, `url`) enviado pela API (`api/_lib/sendPush.ts`, ver [`api/AGENTS.md`](api/AGENTS.md)) e exibe a notificação do navegador.
+  - `notificationclick` — ao clicar na notificação, foca uma aba já aberta com a URL de destino ou abre uma nova.
+
+⚠️ **`favicon.svg` está referenciado mas não existe**: [`index.html`](index.html) aponta `<link rel="icon" type="image/svg+xml" href="/favicon.svg" />`, mas não há nenhum `favicon.svg` em `public/` (nem em outro lugar do repositório), então o ícone da aba não carrega. Corrigir é pequeno (adicionar `public/favicon.svg`), mas envolve escolher/gerar um ícone real, por isso fica registrado aqui em vez de corrigido silenciosamente.
+
+Sem configuração própria (arquivos estáticos puros, sem variáveis de ambiente ou build step). Qualquer novo arquivo estático que precise ser servido a partir da raiz do domínio sem processamento do Vite (imagens, manifest PWA, `robots.txt` etc.) vai em `public/` — lembrando que ele será **público**.
 
 ## Build
 
