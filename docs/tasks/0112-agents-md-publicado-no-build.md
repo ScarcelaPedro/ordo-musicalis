@@ -1,5 +1,5 @@
 ---
-status: em-andamento
+status: concluida
 modulo: public
 owner: Pedro Scarcela
 criado-em: 2026-09-25
@@ -44,13 +44,13 @@ Em qualquer opção, o critério é o mesmo: nenhum `.md` de documentação dent
 
 ## Critérios de conclusão
 
-- [ ] `npm run build` não gera `dist/AGENTS.md` (nem outro `.md` de documentação em `dist/`).
-- [ ] `public/sw.js` continua sendo copiado para `dist/sw.js` (push notifications não quebram).
-- [ ] O conteúdo da documentação sobre `public/` continua acessível para agentes (no novo
+- [x] `npm run build` não gera `dist/AGENTS.md` (nem outro `.md` de documentação em `dist/`).
+- [x] `public/sw.js` continua sendo copiado para `dist/sw.js` (push notifications não quebram).
+- [x] O conteúdo da documentação sobre `public/` continua acessível para agentes (no novo
       local, com o `AGENTS.md` raiz apontando para ele).
-- [ ] Se for a opção (b), uma verificação automatizada (teste ou script) falha caso o `.md`
+- [x] ~~Se for a opção (b)~~ (não se aplica: opção (a)), uma verificação automatizada (teste ou script) falha caso o `.md`
       volte a aparecer no `dist/`.
-- [ ] Decisão registrada (ADR se houver regra de build nova).
+- [x] Decisão registrada (ADR se houver regra de build nova).
 
 ## Referências
 
@@ -62,3 +62,17 @@ Em qualquer opção, o critério é o mesmo: nenhum `.md` de documentação dent
 - 2026-09-25 — Task criada a pedido do usuário, a partir do achado da `TASK-0096`.
   Conferido: a Vercel serve `dist/` e o arquivo estático tem precedência sobre o rewrite, então
   `/AGENTS.md` seria público; o `dist/` versionado no Git ainda não contém o arquivo.
+- 2026-09-25 — Executada com a **opção (a)**, escolhida pelo usuário. Commit: `ca980bc`.
+
+  O conteúdo de `public/AGENTS.md` (propósito, `sw.js` com os eventos `push` e
+  `notificationclick`, o aviso do `favicon.svg` inexistente e as convenções) foi movido para a
+  nova seção **"Assets estáticos (`public/`)"** do `AGENTS.md` raiz, com os links relativos
+  ajustados. Também foi acrescentada a regra explícita de não colocar documentação dentro de
+  `public/`, com o motivo (seria publicada no deploy). A tabela "Estrutura do repositório"
+  aponta para essa seção. `public/AGENTS.md` removido (`git rm`). Único outro link para o
+  arquivo: nota histórica da `TASK-0096`, mantida como está. Sem ADR: decisão do usuário entre
+  duas opções já descritas nesta task, sem regra de build nova.
+
+  **Verificação**: `npm run build` → `find dist -name "*.md"` vazio; `dist/sw.js` presente e
+  idêntico a `public/sw.js` (`cmp`), então push notifications seguem funcionando.
+  `dist/` revertido.
