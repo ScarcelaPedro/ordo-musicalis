@@ -1,5 +1,5 @@
 ---
-status: em-andamento
+status: concluida
 modulo: src
 owner: Pedro Scarcela
 criado-em: 2026-09-25
@@ -51,15 +51,15 @@ Problemas concretos encontrados no código atual:
 
 ## Critérios de conclusão
 
-- [ ] Mapeamento litúrgico centralizado; `Dashboard.vue`, `liturgia/Show.vue` e
+- [x] Mapeamento litúrgico centralizado; `Dashboard.vue`, `liturgia/Show.vue` e
       `LiturgicalInfo.vue` sem mapa próprio.
-- [ ] Legenda litúrgica com significado textual, separada visualmente de qualquer legenda de
+- [x] Legenda litúrgica com significado textual, separada visualmente de qualquer legenda de
       status.
-- [ ] Nenhuma cor verde de status adjacente/equivalente ao "Verde" litúrgico no calendário.
-- [ ] Indicadores com rótulo acessível.
-- [ ] Teste unitário do módulo (valores conhecidos + fallback para valor desconhecido).
-- [ ] Nenhuma alteração em API, banco ou em `fetchLiturgia.ts`.
-- [ ] `npm run build` e `npm test` passam.
+- [x] Nenhuma cor verde de status adjacente/equivalente ao "Verde" litúrgico no calendário.
+- [x] Indicadores com rótulo acessível.
+- [x] Teste unitário do módulo (valores conhecidos + fallback para valor desconhecido).
+- [x] Nenhuma alteração em API, banco ou em `fetchLiturgia.ts`.
+- [x] `npm run build` e `npm test` passam.
 
 ## Referências
 
@@ -69,3 +69,39 @@ Problemas concretos encontrados no código atual:
 ## Notas de progresso
 
 - 2026-09-25 — Task criada a partir da decomposição da SPEC-003.1.
+- 2026-09-25 — Task reivindicada e executada. Commit: `cc34d13`.
+
+  **Módulo único** `src/utils/liturgicalColors.ts`: `LITURGICAL_COLORS` (exatamente Verde, Roxo,
+  Branco, Vermelho, Rosa, os valores já gravados em `Liturgia.cor`), estilos `dot`/`cell`/`badge`
+  com variantes dark e `meaning` (texto de legenda), `liturgicalColorStyle()` com fallback
+  **neutro** para valor ausente ou desconhecido (antes cada tela assumia uma cor diferente:
+  Verde, Branco ou fundo branco) e `liturgicalColorLabel()` para rótulo acessível.
+  `Dashboard.vue`, `liturgia/Show.vue` (badge e `<select>` de correção, que agora mostra o
+  significado) e `LiturgicalInfo.vue` consomem o módulo; nenhum mapa local restou.
+  **"Especial" não foi adicionado**: discovery confirmou que o valor não existe no dado nem na
+  API (`fetchLiturgia.ts`/`routes/liturgia.ts` só gravam as 5 cores, default `Verde`).
+  Achado de brinde: as células do calendário usavam `bg-green-200` etc. sem variante dark (fundo
+  claro no tema escuro). Agora usam `-950/40` no escuro.
+
+  **Status × liturgia**: chips de escala no calendário (e cards da lista mobile) ficaram
+  **neutros**. "Confirmada" passou a ser um ícone `CheckCircle` + texto sr-only + `title`, e
+  rascunho não tem ícone; na lista mobile continua o `Badge` com texto. **Decisão registrada
+  aqui (não virou ADR, a task permitia)**: a distinção manhã/tarde por cor foi **removida**. O
+  horário já está escrito no chip, e as cores accent/primary sobre a célula colorida competiam
+  com a leitura litúrgica. Legendas separadas: "Cor do dia · Tempo litúrgico" (bolinha + nome +
+  significado) e "Escalas" (ícone = confirmada). O texto de ajuda "Passe o cursor... para ver os
+  servidores" estava errado (o tooltip mostra celebração/celebrante) e foi corrigido.
+
+  **A11y (§25)**: `Calendar.vue` ganhou a prop opcional `cellLabel` → `title` + `sr-only` na
+  célula desktop e `aria-label` completo no botão da grade compacta mobile (ex. "Dia 20, com
+  celebrações, Tempo litúrgico: Verde — Tempo Comum").
+
+  **Verificação**: 5 testes novos (12 no total) cobrindo valores conhecidos, fallback, rótulo e
+  ausência de tokens semânticos nas classes litúrgicas. `npm run build` passa; `dist/`
+  revertido. Visual com dado real (seed temporário): admin a 1100px claro e escuro (células com
+  as 5 cores, legendas, chip com ícone) e 375px (grade compacta + lista, sem scroll horizontal).
+  Nenhuma alteração em `api/`.
+
+  **Para a `TASK-0101`**: o número do domingo em `rose-600` sobre célula Vermelho/Rosa também é
+  cor que pode ser lida como litúrgica. Avaliar no redesenho do calendário (troca para
+  indicador em ponto).
