@@ -32,6 +32,7 @@ npm run dev           # SPA (Vite), porta 5173
 npm run api:dev       # API (Express via ts-node), porta 3001
 npm run dev:full       # os dois juntos (concurrently)
 npm run build         # type-check (vue-tsc) + build de produção em dist/
+npm test              # testes do frontend (Vitest)
 npm run db:migrate     # aplica migrations Prisma
 npm run db:seed        # popula dados de exemplo
 ```

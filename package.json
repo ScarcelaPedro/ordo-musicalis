@@ -7,6 +7,8 @@
     "build": "vue-tsc && vite build",
     "postinstall": "prisma generate --schema=api/prisma/schema.prisma",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "api:dev": "ts-node --project tsconfig.api.json api/server.ts",
     "dev:full": "concurrently \"npm run api:dev\" \"npm run dev\"",
     "db:generate": "prisma generate --schema=api/prisma/schema.prisma",
@@ -50,6 +52,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
     "vite": "^5.3.1",
+    "vitest": "^2.1.9",
     "vue-tsc": "^2.0.21"
   }
 }

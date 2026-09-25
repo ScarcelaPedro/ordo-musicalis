@@ -30,7 +30,13 @@ Diretórios:
 
 > Regra 3 do [AGENTS.md raiz](../AGENTS.md).
 
-Não há framework de teste configurado para o frontend hoje (sem Vitest/Jest, sem `test` script no `package.json`). Antes de escrever testes de componente/store, configure **Vitest** (nativo do ecossistema Vite) e registre a escolha em `docs/decisions/` caso haja alternativa relevante em avaliação.
+**Vitest** (v2, compatível com o Vite 5 do projeto) configurado na `TASK-0096`:
+
+- `npm test` — roda a suíte uma vez (`vitest run`); `npm run test:watch` — modo watch.
+- Config em [`vitest.config.mts`](../vitest.config.mts): reaproveita `vite.config.ts` via `mergeConfig` (plugin Vue + alias `@`), então os testes resolvem imports igual à aplicação.
+- Testes ficam ao lado do código testado, com sufixo `*.test.ts` dentro de `src/` (padrão `src/**/*.test.ts`) — ex. [`utils/date.test.ts`](utils/date.test.ts).
+- Ambiente `node` (sem DOM): hoje a suíte cobre só funções puras (`src/utils/`). Prefira extrair lógica de telas para funções puras testáveis. Se um teste de componente for realmente necessário, adicione `@vue/test-utils` + um ambiente DOM (`happy-dom`/`jsdom`) nesse momento, por arquivo (`// @vitest-environment happy-dom`) ou na config, e registre a escolha em `docs/decisions/`.
+- Arquivos de teste estão no `include` do `tsconfig.json`, portanto também passam pelo `vue-tsc` do `npm run build`.
 
 ## Build/deploy
 
