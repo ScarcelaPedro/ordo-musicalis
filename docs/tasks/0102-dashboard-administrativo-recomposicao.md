@@ -1,5 +1,5 @@
 ---
-status: em-andamento
+status: concluida
 modulo: src/pages/dashboard
 owner: Pedro Scarcela
 criado-em: 2026-09-25
@@ -48,14 +48,14 @@ Blocos da referência → decisão com base no que existe hoje:
 
 ## Critérios de conclusão
 
-- [ ] Card "Próxima celebração" com data, horário, celebração, local, celebrante e status via
+- [x] Card "Próxima celebração" com data, horário, celebração, local, celebrante e status via
       `Badge` (não cor litúrgica).
-- [ ] Lista de próximas celebrações com link para a escala.
-- [ ] Pendências e situação do mês preservadas.
-- [ ] Nenhum bloco sem dado real (sem avisos/comunicações fictícios, sem placeholders
+- [x] Lista de próximas celebrações com link para a escala.
+- [x] Pendências e situação do mês preservadas.
+- [x] Nenhum bloco sem dado real (sem avisos/comunicações fictícios, sem placeholders
       prometendo recurso inexistente).
-- [ ] Layout validado em mobile, tablet e desktop; claro e escuro.
-- [ ] `npm run build` passa sem erros.
+- [x] Layout validado em mobile, tablet e desktop; claro e escuro.
+- [x] `npm run build` passa sem erros.
 
 ## Referências
 
@@ -66,3 +66,38 @@ Blocos da referência → decisão com base no que existe hoje:
 ## Notas de progresso
 
 - 2026-09-25 — Task criada a partir da decomposição da SPEC-003.1.
+- 2026-09-25 — Task reivindicada e executada. Commit: `5d7b615`.
+
+  **Layout**: grid `lg:grid-cols-3`. À esquerda (`col-span-2`) ficam o card "Próxima celebração"
+  e, abaixo, o calendário litúrgico da `TASK-0101`. À direita (`row-span-2`) ficam Próximas
+  celebrações ("Ver todas" → `/escalas`), Pendências de confirmação (com contagem) e Situação das
+  escalas (Celebrações/Confirmadas/Rascunhos, rotulada com o mês exibido no calendário, porque é
+  desse mês que os números vêm). A ordem do DOM é a ordem de prioridade do mobile: próxima →
+  próximas → pendências → situação → calendário. Conferido no DOM a 375px.
+
+  **Card de destaque**: eyebrow `accent` "Próxima celebração", cruz discreta (§20), título
+  "Domingo, 27 de setembro · 10:00 — Missa Solene", local, celebrante, "N servidores · M
+  confirmados" (contado de `scale.servidores`, dado real, sem ícone musical) e status via
+  `Badge` ("Escala confirmada"/"Escala em rascunho"). O card inteiro leva à escala.
+
+  **Correções de dado (sem mudar API)**: (1) as próximas celebrações dependiam das escalas do
+  **mês navegado no calendário**, então avançar o calendário trocava a "próxima celebração".
+  Agora há uma fonte própria (`GET /scales?mes=` do mês corrente + seguinte, mesmo endpoint e
+  parâmetro já usados), mesmo raciocínio da `TASK-0088`. (2) "Hoje" era calculado com
+  `toISOString()` (UTC): depois das 21h no Brasil, as celebrações da noite sumiam. A função pura
+  `selectUpcoming` em `src/utils/upcoming.ts` usa data/hora locais (4 testes novos, 16 no total).
+  Os cards de estatística ganharam variante dark (achado da `TASK-0101`).
+
+  **Não implementado, por falta de dado real** (§5): avisos/comunicações, funções sem servidor e
+  conflitos (Riscos da `TASK-0039`). Cobertura por ministério fica com a `TASK-0103`. As ações de
+  staff do header (Substituições/Relatórios/Nova Escala) seguem como estavam; o reestilo é da
+  `TASK-0099`.
+
+  **Verificação** (seed temporário): admin a 1280px claro e escuro e a 375px (ordem por
+  prioridade, sem scroll horizontal). Servidora a 375px sem nenhum bloco de staff. `npm run
+  build` e `npm test` passam; `dist/` revertido.
+
+  **Pendente para outras tasks**: `myNextScales` (dashboard do servidor) também usa
+  `toISOString()` (UTC). Deve passar a usar `selectUpcoming` na `TASK-0104`. No mobile, os cards
+  do Dashboard encostam nas bordas da tela porque `main` não tem padding abaixo de `sm`
+  (pré-existente); registrar na validação `TASK-0107`.
