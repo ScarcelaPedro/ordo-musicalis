@@ -205,7 +205,7 @@ async function confirmarExclusao() {
             Editar
           </RouterLink>
           <RouterLink v-if="scale" :to="`/escalas/${scale.id}/liturgia`"
-            class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold uppercase rounded-md hover:bg-indigo-700">
+            class="px-4 py-2 bg-primary-600 text-white text-xs font-semibold uppercase rounded-md hover:bg-primary-700">
             Liturgia
           </RouterLink>
           <button v-if="auth.isStaff && scale" type="button" @click="confirmandoExclusao = true"
@@ -349,7 +349,7 @@ async function confirmarExclusao() {
       <div v-if="scale.repertoire" class="bg-white shadow-sm rounded-lg p-6">
         <div class="flex justify-between items-center mb-4">
           <h3 class="font-semibold text-gray-800">Repertório: {{ scale.repertoire.titulo }}</h3>
-          <RouterLink :to="`/escalas/${scale.id}/repertorio`" class="text-sm text-indigo-600 hover:underline">Ver completo</RouterLink>
+          <RouterLink :to="`/escalas/${scale.id}/repertorio`" class="text-sm text-primary-600 hover:underline">Ver completo</RouterLink>
         </div>
         <ol class="space-y-1">
           <li v-for="item in scale.repertoire.items" :key="item.id" class="flex items-center gap-3 text-sm py-1.5 border-b last:border-0">

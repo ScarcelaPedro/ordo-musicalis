@@ -270,6 +270,52 @@ parecer simples porque é bem organizado", não "o sistema parecer bonito".
 
 ---
 
+## 16. SPEC-003.1 — Adaptação à referência visual
+
+A [SPEC-003.1](specs/SPEC-003,1.md) trouxe uma imagem de referência
+([`specs/assets/SPEC-003.1-referencia-dashboard.webp`](specs/assets/SPEC-003.1-referencia-dashboard.webp))
+que deve ser lida como **linguagem visual**, não como layout (§29). Esta seção registra o que foi
+incorporado ao Design System (`TASK-0097`) e o que ficou de fora de propósito.
+
+### Incorporado como token
+
+| Token | Valor | Uso | Origem |
+|---|---|---|---|
+| `primary-*` | escala azul profundo customizada (`600 #2f5a98`, `800 #1e3d6b`, `900 #1a3259`) | marca, ações principais, item ativo, superfície escura da sidebar (`primary-900`/`950`) | [`ADR-0003`](decisions/0003-primary-azul-profundo-referencia.md) — substitui o `indigo` do `ADR-0001` |
+| `canvas` | `#f4f7fb` claro / `gray-900` escuro (variável CSS `--color-canvas`) | fundo de página (`bg-canvas`), sem precisar de `dark:` | `ADR-0003` |
+| `shadow-card` | sombra dupla leve, tom azulado | Elevation 1 (`Card.vue`); no dark mode o card fica sem sombra | `ADR-0003` |
+
+`Card.vue` passou a usar `rounded-xl` (12px) em vez de `rounded-lg`, que é o raio dos cards da
+referência. A regra de hierarquia da §5 continua valendo: superfície grande, raio maior.
+
+### Diretrizes de linguagem (aplicadas pelas próximas tasks)
+
+- **Sidebar** (`TASK-0098`): superfície escura `primary-900` com texto claro e item ativo em
+  `primary-800`/`700`. A **ordem e os grupos atuais não mudam** (SPEC-003.1 §4).
+- **Cards** (§21): superfície branca + `shadow-card` + `rounded-xl`, só para agrupar informação
+  relacionada. Nem tudo vira card.
+- **Hierarquia** (§22): saudação/título grande → eyebrow em `Label` na cor `accent` (como o
+  "PRÓXIMA MISSA" da referência) → título `H3`/`H2` → metadados em `Body Small` cinza com ícone
+  à esquerda.
+- **Accent dourado**: pontual (ícone litúrgico de destaque, eyebrow). Mesmo papel já definido
+  na Etapa 3.
+- **Ícones** (§23): Heroicons outline 24px, traço único; `h-5 w-5` em navegação e metadados,
+  sempre acompanhados de texto quando o significado não é óbvio.
+- **Elementos litúrgicos** (§20): cruz e silhueta de igreja só como apoio discreto (ex.
+  marca-d'água de baixa opacidade), nunca prejudicando o contraste do conteúdo.
+
+### Não incorporado (conteúdo da imagem, não linguagem)
+
+- Itens de menu, a ordem da sidebar e o badge "Comunicações 2" da imagem: a navegação real é a
+  fonte de verdade.
+- Blocos sem dado no sistema ("Avisos recentes", "Comunicação importante"), e as frações
+  "12/16 escalados" sem denominador real (ver `TASK-0102`/`TASK-0103`).
+- Nome/cidade da paróquia e pessoas fictícias ("Rafael", "Pe. Rafael").
+- Cores dos pontos do calendário: são **tempo litúrgico**, uma categoria separada da paleta
+  semântica (ver `TASK-0100`), e não passam a ser tokens de status.
+
+---
+
 ## Referências
 
 - [`docs/specs/SPEC-003.md`](specs/SPEC-003.md) — spec de origem.

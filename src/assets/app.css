@@ -4,6 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Theme-aware design tokens (SPEC-003.1, TASK-0097). Values are "R G B" so Tailwind can apply
+   opacity modifiers (e.g. `bg-canvas/80`). */
+:root {
+  --color-canvas: 244 247 251; /* #f4f7fb -- bluish page background from the reference */
+}
+.dark {
+  --color-canvas: 17 24 39; /* gray-900 -- same dark background already in use */
+}
+
 @media print {
   nav, .no-print {
     display: none !important;

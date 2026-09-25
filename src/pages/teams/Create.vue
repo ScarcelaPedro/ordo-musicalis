@@ -92,8 +92,8 @@ async function submit() {
               @click="toggleServidor(s.id)"
               class="px-3 py-1.5 rounded-full text-sm border transition"
               :class="form.servidores.some((fs) => fs.servidorId === s.id)
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-indigo-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:border-indigo-500'"
+                ? 'bg-primary-600 text-white border-primary-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:border-primary-400 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:border-primary-500'"
             >
               {{ s.nome }}
             </button>

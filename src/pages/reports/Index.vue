@@ -82,9 +82,9 @@ onMounted(load)
             class="mt-1 border-gray-300 rounded-md shadow-sm text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
         </div>
         <div class="flex flex-wrap items-center gap-1 ml-auto">
-          <RouterLink to="/servidores/intensidade" class="inline-flex min-h-11 items-center px-2 text-sm text-indigo-600 hover:underline dark:text-primary-400">Intensidade</RouterLink>
-          <RouterLink to="/disponibilidade/painel" class="inline-flex min-h-11 items-center px-2 text-sm text-indigo-600 hover:underline dark:text-primary-400">Disponibilidade</RouterLink>
-          <RouterLink to="/substituicoes" class="inline-flex min-h-11 items-center px-2 text-sm text-indigo-600 hover:underline dark:text-primary-400">Substituições</RouterLink>
+          <RouterLink to="/servidores/intensidade" class="inline-flex min-h-11 items-center px-2 text-sm text-primary-600 hover:underline dark:text-primary-400">Intensidade</RouterLink>
+          <RouterLink to="/disponibilidade/painel" class="inline-flex min-h-11 items-center px-2 text-sm text-primary-600 hover:underline dark:text-primary-400">Disponibilidade</RouterLink>
+          <RouterLink to="/substituicoes" class="inline-flex min-h-11 items-center px-2 text-sm text-primary-600 hover:underline dark:text-primary-400">Substituições</RouterLink>
         </div>
       </Card>
 

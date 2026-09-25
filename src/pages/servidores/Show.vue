@@ -96,7 +96,7 @@ const isMusica = computed(() => servidor.value?.categorias.some((c: any) => c.ca
         <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-4">Histórico de Escalas</h3>
         <div v-if="servidor.scales.length" class="space-y-2">
           <div v-for="s in servidor.scales" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b dark:border-gray-700">
-            <RouterLink :to="`/escalas/${s.scale.id}`" class="text-indigo-600 dark:text-primary-400 hover:underline">
+            <RouterLink :to="`/escalas/${s.scale.id}`" class="text-primary-600 dark:text-primary-400 hover:underline">
               {{ s.scale.celebracao }}
             </RouterLink>
             <div class="flex items-center gap-3">

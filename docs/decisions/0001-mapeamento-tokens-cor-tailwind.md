@@ -1,7 +1,7 @@
 # 0001 — Mapeamento dos tokens de cor semânticos para famílias do Tailwind
 
 - **Data**: 2026-08-24
-- **Status**: aceita
+- **Status**: aceita — linha `primary` substituída por `ADR-0003` (demais tokens seguem válidos)
 - **Validade**: permanente
 - **ADR ID**: `ADR-0001`
 - **Task relacionada**: `TASK-0029`

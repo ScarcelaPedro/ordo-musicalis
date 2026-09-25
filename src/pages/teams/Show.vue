@@ -67,7 +67,7 @@ onMounted(async () => {
         <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-4">Membros ({{ team.servidores.length }})</h3>
         <div v-if="team.servidores.length" class="space-y-2">
           <div v-for="s in team.servidores" :key="s.id" class="flex justify-between items-center text-sm py-2 border-b last:border-0 dark:border-gray-700">
-            <RouterLink :to="`/servidores/${s.servidor.id}`" class="text-indigo-600 dark:text-primary-400 hover:underline">{{ s.servidor.nome }}</RouterLink>
+            <RouterLink :to="`/servidores/${s.servidor.id}`" class="text-primary-600 dark:text-primary-400 hover:underline">{{ s.servidor.nome }}</RouterLink>
             <span v-if="s.funcao" class="text-gray-600 dark:text-gray-400">{{ s.funcao }}</span>
           </div>
         </div>

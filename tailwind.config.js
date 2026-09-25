@@ -14,7 +14,21 @@ export default {
       // As cinco cores litúrgicas do calendário (Dashboard.vue, CORES_LITURGICAS_CLASSES)
       // são uma categoria à parte e não entram aqui.
       colors: {
-        primary: colors.indigo,
+        // Azul profundo/mariano calibrado a partir da referência visual da SPEC-003.1 --
+        // substitui `colors.indigo` (ver docs/decisions/0003-*.md). Contraste AA validado.
+        primary: {
+          50: '#f1f5fb',
+          100: '#e2eaf6',
+          200: '#c5d5ec',
+          300: '#9bb6dc',
+          400: '#6f93c8',
+          500: '#4a73b0',
+          600: '#2f5a98',
+          700: '#244a80',
+          800: '#1e3d6b',
+          900: '#1a3259',
+          950: '#11213d',
+        },
         secondary: colors.stone,
         accent: colors.amber,
         neutral: colors.stone,
@@ -22,6 +36,12 @@ export default {
         warning: colors.yellow,
         danger: colors.red,
         info: colors.blue,
+        // Theme-aware page background (CSS variable in src/assets/app.css, switched by `.dark`).
+        canvas: 'rgb(var(--color-canvas) / <alpha-value>)',
+      },
+      boxShadow: {
+        // Elevation 1 for cards (SPEC-003.1 reference): soft, slightly blue-tinted shadow.
+        card: '0 1px 2px rgb(17 33 61 / 0.04), 0 4px 16px rgb(17 33 61 / 0.06)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

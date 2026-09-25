@@ -551,7 +551,7 @@ function detalheEntry(entry: ScaleServidor) {
               v-if="cat.id === musicaId && instrumentosDe(entry.servidorId).length"
               :value="entry.instrumentId"
               @change="setInstrument(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
-              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+              class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
             >
               <option v-for="i in instrumentosDe(entry.servidorId)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
             </select>
@@ -559,7 +559,7 @@ function detalheEntry(entry: ScaleServidor) {
               v-if="teamsDaCategoria(cat.id).length > 0"
               :value="entry.teamId"
               @change="setServidorTeam(entry.servidorId, ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
-              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+              class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
             >
               <option :value="null">Sem ministério</option>
               <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
@@ -568,7 +568,7 @@ function detalheEntry(entry: ScaleServidor) {
               v-if="cat.id === acolitosId"
               :value="entry.funcaoLiturgica"
               @change="setFuncaoLiturgica(entry.servidorId, ($event.target as HTMLSelectElement).value || null)"
-              class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md"
+              class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
             >
               <option value="">Sem função litúrgica</option>
               <option v-for="(label, value) in FUNCAO_LITURGICA_LABELS" :key="value" :value="value">{{ label }}</option>
@@ -659,7 +659,7 @@ function detalheEntry(entry: ScaleServidor) {
 
         <div v-if="teamsDaCategoria(cat.id).length > 1" class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
           <span class="text-xs text-gray-500">Adicionar equipe inteira:</span>
-          <select v-model="equipeParaAdicionar[cat.id]" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md">
+          <select v-model="equipeParaAdicionar[cat.id]" class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md">
             <option :value="null">Selecione o ministério</option>
             <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
           </select>
@@ -696,7 +696,7 @@ function detalheEntry(entry: ScaleServidor) {
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <select v-model="novoSemCategoria" class="text-sm border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md flex-1 min-w-[10rem]">
+          <select v-model="novoSemCategoria" class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md flex-1 min-w-[10rem]">
             <option :value="null">Adicionar servidor...</option>
             <option v-for="s in servidoresDisponiveis" :key="s.id" :value="s.id">{{ s.nome }}</option>
           </select>

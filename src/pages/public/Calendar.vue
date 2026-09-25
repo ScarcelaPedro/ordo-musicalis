@@ -99,7 +99,7 @@ function imprimir() {
         <div v-for="s in scales" :key="s.id" class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-5">
           <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
             <h3 class="font-semibold text-gray-800 dark:text-gray-100">{{ s.celebracao }}</h3>
-            <span v-if="s.team" class="text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200 px-2 py-0.5 rounded-full">{{ s.team.nome }}</span>
+            <span v-if="s.team" class="text-xs bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200 px-2 py-0.5 rounded-full">{{ s.team.nome }}</span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 capitalize">
             {{ formatDate(s.dataCelebracao) }} · {{ s.horario }}

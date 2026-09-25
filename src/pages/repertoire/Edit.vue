@@ -110,7 +110,7 @@ function onPdfChange(e: Event) {
           </div>
           <div>
             <InputLabel value="Observações" for="input-observacoes-repertorio" />
-            <textarea id="input-observacoes-repertorio" v-model="observacoes" rows="2" class="mt-1 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm w-full dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
+            <textarea id="input-observacoes-repertorio" v-model="observacoes" rows="2" class="mt-1 border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md shadow-sm w-full dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
           </div>
           <PrimaryButton :disabled="saving" @click="saveRepertoire">{{ saving ? 'Salvando...' : 'Salvar Repertório' }}</PrimaryButton>
         </div>
