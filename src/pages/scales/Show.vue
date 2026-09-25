@@ -17,7 +17,10 @@ import EmptyRole from '@/components/scale/EmptyRole.vue'
 import ConflictAlert from '@/components/scale/ConflictAlert.vue'
 import { parseDateOnly } from '@/utils/date'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
-import { FUNCAO_LITURGICA_LABELS } from '@/utils/scaleRole'
+import { FUNCAO_LITURGICA_LABELS, assignmentRoleLabel } from '@/utils/scaleRole'
+import { localDateKey } from '@/utils/upcoming'
+import Card from '@/components/Card.vue'
+import LiturgicalInfo from '@/components/scale/LiturgicalInfo.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -41,7 +44,22 @@ onMounted(async () => {
   ])
   scale.value = data
   categorias.value = categoriasRes.data
+  loadLiturgia(data.dataCelebracao.slice(0, 10))
 })
+
+// Liturgical info of the celebration day (SPEC-003.1 §18, TASK-0106) -- same endpoint the
+// Liturgia page uses. Loaded separately so a slow/missing liturgy never delays the scale itself;
+// when unavailable, the line is simply not shown.
+const liturgia = ref<{ liturgia: string; cor: string } | null>(null)
+
+async function loadLiturgia(date: string) {
+  try {
+    const { data } = await client.get('/liturgia', { params: { data: date } })
+    liturgia.value = data
+  } catch {
+    liturgia.value = null
+  }
+}
 
 function formatDate(d: string) {
   return parseDateOnly(d)!.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
@@ -81,7 +99,8 @@ async function recusar() {
   }
 }
 
-const isFuture = () => scale.value && scale.value.dataCelebracao.slice(0, 10) >= new Date().toISOString().slice(0, 10)
+// Local date, not UTC (after 21:00 in Brazil the ISO date is already tomorrow).
+const isFuture = () => scale.value && scale.value.dataCelebracao.slice(0, 10) >= localDateKey(new Date())
 
 const SEM_CATEGORIA = { id: -1, nome: 'Sem função definida', ordem: 999 }
 
@@ -181,35 +200,24 @@ async function confirmarExclusao() {
 <template>
   <AuthenticatedLayout>
     <template #header>
+      <!-- Actions (TASK-0106): one primary per profile -- staff edits the scale; for the server
+           the primary action (confirm) lives in "Minha participação" below, so here everything is
+           secondary. Repertoire is just one more piece of content, not the lead action (§18). -->
       <div class="flex justify-between items-center flex-wrap gap-2">
-        <h2 class="font-semibold text-xl text-gray-800">{{ scale?.celebracao ?? '...' }}</h2>
-        <div class="flex flex-wrap gap-2 no-print">
-          <button v-if="scale" @click="imprimir"
-            class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
-            Imprimir
-          </button>
-          <RouterLink v-if="auth.isStaff && scale" :to="`/escalas/${scale.id}/repertorio`"
-            class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
-            Repertório
-          </RouterLink>
-          <RouterLink v-if="auth.isStaff && scale" :to="`/escalas/${scale.id}/editar`"
-            class="px-4 py-2 bg-gray-200 text-gray-700 text-xs font-semibold uppercase rounded-md hover:bg-gray-300">
-            Editar
-          </RouterLink>
-          <RouterLink v-if="scale" :to="`/escalas/${scale.id}/liturgia`"
-            class="px-4 py-2 bg-primary-600 text-white text-xs font-semibold uppercase rounded-md hover:bg-primary-700">
-            Liturgia
-          </RouterLink>
-          <button v-if="auth.isStaff && scale" type="button" @click="confirmandoExclusao = true"
-            class="px-4 py-2 bg-danger-600 text-white text-xs font-semibold uppercase rounded-md hover:bg-danger-700">
-            Excluir
-          </button>
+        <h2 class="text-h3 text-gray-900 dark:text-gray-50">{{ scale?.celebracao ?? '...' }}</h2>
+        <div v-if="scale" class="flex flex-wrap gap-2 no-print">
+          <PrimaryButton v-if="auth.isStaff" :to="`/escalas/${scale.id}/editar`">Editar</PrimaryButton>
+          <SecondaryButton :to="`/escalas/${scale.id}/liturgia`">Liturgia</SecondaryButton>
+          <SecondaryButton v-if="auth.isStaff" :to="`/escalas/${scale.id}/repertorio`">Repertório</SecondaryButton>
+          <SecondaryButton @click="imprimir">Imprimir</SecondaryButton>
+          <DangerButton v-if="auth.isStaff" type="button" @click="confirmandoExclusao = true">Excluir</DangerButton>
         </div>
       </div>
     </template>
 
     <div v-if="scale" class="space-y-6">
-      <div class="bg-white shadow-sm rounded-lg p-6 space-y-4 dark:bg-gray-800">
+      <!-- 1) Contexto + informação principal: celebração, data, local, celebrante, liturgia -->
+      <Card class="space-y-4">
         <CelebrationHeader
           :celebracao="scale.celebracao"
           :dataFormatada="formatDate(scale.dataCelebracao)"
@@ -217,6 +225,11 @@ async function confirmarExclusao() {
           :comunidade="scale.comunidade?.nome"
           :celebrante="scale.celebrante?.nome"
         />
+
+        <div v-if="liturgia" class="-mt-1">
+          <p class="mb-1 text-caption text-gray-600 dark:text-gray-400">Liturgia do dia</p>
+          <LiturgicalInfo :liturgia="liturgia.liturgia" :cor="liturgia.cor" />
+        </div>
 
         <p v-if="alteradaRecentemente" class="-mt-2 inline-flex items-center gap-1.5 text-body-sm font-medium text-warning-700 dark:text-warning-300">
           <span class="h-1.5 w-1.5 rounded-full bg-warning-500" aria-hidden="true"></span>
@@ -230,7 +243,7 @@ async function confirmarExclusao() {
         <dl class="grid grid-cols-1 gap-3 border-t border-gray-100 pt-4 text-body-sm sm:grid-cols-3 dark:border-gray-700">
           <div>
             <dt class="text-gray-600 dark:text-gray-400">Status</dt>
-            <dd class="mt-1"><Badge :color="scale.status === 'confirmada' ? 'green' : 'yellow'">{{ scale.status }}</Badge></dd>
+            <dd class="mt-1"><Badge :color="scale.status === 'confirmada' ? 'green' : 'yellow'">{{ scale.status === 'confirmada' ? 'Confirmada' : 'Rascunho' }}</Badge></dd>
           </div>
           <div v-if="scale.team">
             <dt class="text-gray-600 dark:text-gray-400">Ministério responsável</dt>
@@ -241,7 +254,7 @@ async function confirmarExclusao() {
             <dd class="mt-1 text-gray-700 dark:text-gray-200">{{ scale.observacoes }}</dd>
           </div>
         </dl>
-      </div>
+      </Card>
 
       <!-- Conflitos (TASK-0042) -- só renderiza se `scale.conflitos` vier preenchido pela API;
            hoje esse campo não existe em nenhum endpoint (pendência registrada, ver notas de
@@ -250,9 +263,12 @@ async function confirmarExclusao() {
         <ConflictAlert v-for="(c, idx) in conflitos" :key="idx" :type="c.type" :detail="c.detail" />
       </div>
 
-      <!-- Confirmação para servidor -->
-      <div v-if="auth.isMusico && myPivot()" class="bg-white shadow-sm rounded-lg p-6">
-        <h3 class="font-semibold text-gray-800 mb-3">Minha confirmação</h3>
+      <!-- 2) Ação principal do servidor: sua participação (função real + confirmação) -->
+      <Card v-if="auth.isMusico && myPivot()">
+        <h3 class="mb-1 text-h4 text-gray-800 dark:text-gray-100">Minha participação</h3>
+        <p class="mb-3 text-body-sm text-gray-600 dark:text-gray-400">
+          Função: <span class="font-semibold text-gray-800 dark:text-gray-100">{{ assignmentRoleLabel(myPivot()) ?? 'não definida' }}</span>
+        </p>
         <div class="flex items-center gap-4 flex-wrap">
           <Badge :color="STATUS_COLORS[myPivot()?.status]">{{ STATUS_LABELS[myPivot()?.status] ?? myPivot()?.status }}</Badge>
           <template v-if="isFuture() && ['convidado'].includes(myPivot()?.status)">
@@ -270,11 +286,11 @@ async function confirmarExclusao() {
             <SecondaryButton @click="mostrarMotivo = false; motivo = ''">Cancelar</SecondaryButton>
           </div>
         </div>
-      </div>
+      </Card>
 
-      <!-- Servidores, agrupados por categoria de função -->
-      <div class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">
-        <h3 class="font-semibold text-gray-800 mb-4 dark:text-gray-100">Equipe da celebração ({{ activeServidores.length }})</h3>
+      <!-- 3) Equipe: ministérios → funções → servidores, nenhum ministério tratado como principal -->
+      <Card>
+        <h3 class="mb-4 text-h4 text-gray-800 dark:text-gray-100">Equipe da celebração ({{ activeServidores.length }})</h3>
 
         <!-- Faixa-resumo (TASK-0041) -- contagem calculada de scale.servidores[].status, sem
              nova consulta de API. -->
@@ -335,22 +351,22 @@ async function confirmarExclusao() {
           </ScaleRole>
         </div>
         <p v-else class="text-sm text-gray-600 dark:text-gray-400">Nenhuma categoria cadastrada nem servidor na escala.</p>
-      </div>
+      </Card>
 
-      <!-- Repertório -->
-      <div v-if="scale.repertoire" class="bg-white shadow-sm rounded-lg p-6">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="font-semibold text-gray-800">Repertório: {{ scale.repertoire.titulo }}</h3>
-          <RouterLink :to="`/escalas/${scale.id}/repertorio`" class="text-sm text-primary-600 hover:underline">Ver completo</RouterLink>
+      <!-- 4) Conteúdo secundário: repertório (música é um dos ministérios, não o eixo da tela) -->
+      <Card v-if="scale.repertoire">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <h3 class="text-h4 text-gray-800 dark:text-gray-100">Repertório: {{ scale.repertoire.titulo }}</h3>
+          <RouterLink :to="`/escalas/${scale.id}/repertorio`" class="inline-flex min-h-11 shrink-0 items-center text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-300">Ver completo</RouterLink>
         </div>
         <ol class="space-y-1">
-          <li v-for="item in scale.repertoire.items" :key="item.id" class="flex items-center gap-3 text-sm py-1.5 border-b last:border-0">
-            <span class="text-gray-400 w-5 text-right">{{ item.ordem }}.</span>
-            <span class="flex-1">{{ item.tituloMusica }}</span>
-            <span v-if="item.tom" class="text-xs bg-gray-100 px-2 py-0.5 rounded">{{ item.tom }}</span>
+          <li v-for="item in scale.repertoire.items" :key="item.id" class="flex items-center gap-3 border-b border-gray-100 py-1.5 text-body-sm last:border-0 dark:border-gray-700">
+            <span class="w-5 text-right text-gray-500 dark:text-gray-400">{{ item.ordem }}.</span>
+            <span class="flex-1 text-gray-800 dark:text-gray-100">{{ item.tituloMusica }}</span>
+            <span v-if="item.tom" class="rounded bg-gray-100 px-2 py-0.5 text-caption text-gray-700 dark:bg-gray-700 dark:text-gray-200">{{ item.tom }}</span>
           </li>
         </ol>
-      </div>
+      </Card>
     </div>
 
     <Modal v-model="confirmandoExclusao" title="Excluir escala" maxWidth="max-w-sm">
