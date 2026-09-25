@@ -23,11 +23,15 @@ const props = withDefaults(
     loading?: boolean
     cellBackground?: (dateKey: string) => string
     hasEvents?: (dateKey: string) => boolean
+    // Optional accessible description of what the cell background means (e.g. the liturgical
+    // season) -- color must never be the only carrier of information (SPEC-003.1 §25).
+    cellLabel?: (dateKey: string) => string | null
   }>(),
   {
     loading: false,
     cellBackground: () => 'bg-white dark:bg-gray-800',
     hasEvents: () => false,
+    cellLabel: () => null,
   },
 )
 
@@ -79,6 +83,14 @@ function dateKey(day: number) {
 function isToday(day: number) {
   return today.getFullYear() === props.year && today.getMonth() === props.month && today.getDate() === day
 }
+// The compact mobile cell only shows the number, so its label carries the rest.
+function compactDayLabel(day: number) {
+  const key = dateKey(day)
+  return [`Dia ${day}`, props.hasEvents(key) ? 'com celebrações' : null, props.cellLabel(key)]
+    .filter(Boolean)
+    .join(', ')
+}
+
 function isSunday(day: number) { return new Date(props.year, props.month, day).getDay() === 0 }
 function isSaturday(day: number) { return new Date(props.year, props.month, day).getDay() === 6 }
 </script>
@@ -114,6 +126,7 @@ function isSaturday(day: number) { return new Date(props.year, props.month, day)
             day ? cellBackground(dateKey(day)) : 'bg-gray-50/80 dark:bg-gray-900/40',
             day && isToday(day) ? 'ring-2 ring-inset ring-primary-400' : '',
           ]"
+          :title="day ? cellLabel(dateKey(day)) ?? undefined : undefined"
         >
           <div v-if="day" class="mb-1">
             <span
@@ -125,6 +138,7 @@ function isSaturday(day: number) { return new Date(props.year, props.month, day)
                 !isToday(day) && !isSunday(day) && !isSaturday(day) ? 'text-gray-600 dark:text-gray-300' : '',
               ]"
             >{{ day }}</span>
+            <span v-if="cellLabel(dateKey(day))" class="sr-only">{{ cellLabel(dateKey(day)) }}</span>
           </div>
           <slot v-if="day" name="day" :day="day" :date-key="dateKey(day)" :is-today="isToday(day)" />
         </div>
@@ -147,6 +161,7 @@ function isSaturday(day: number) { return new Date(props.year, props.month, day)
             day ? cellBackground(dateKey(day)) : '',
             day && isToday(day) ? 'font-bold ring-2 ring-inset ring-primary-400' : 'text-gray-600 dark:text-gray-300',
           ]"
+          :aria-label="day ? compactDayLabel(day) : undefined"
           @click="day && $emit('select-day', dateKey(day))"
         >
           <span>{{ day }}</span>

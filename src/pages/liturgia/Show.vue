@@ -10,6 +10,7 @@ import Breadcrumb from '@/components/Breadcrumb.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import { parseDateOnly } from '@/utils/date'
+import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 
 interface Leitura {
   referencia?: string
@@ -29,15 +30,6 @@ const editando = ref(false)
 const salvando = ref(false)
 const form = ref<Record<string, any>>({})
 
-const CORES = ['Verde', 'Roxo', 'Branco', 'Vermelho', 'Rosa']
-
-const CORES_CLASSES: Record<string, string> = {
-  Verde: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-  Roxo: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
-  Branco: 'bg-gray-100 text-gray-800 border border-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:border-gray-500',
-  Vermelho: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
-  Rosa: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
-}
 
 async function carregar() {
   carregando.value = true
@@ -145,7 +137,7 @@ function formatarTexto(texto: string | undefined): string {
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cor</label>
           <select v-model="form.cor" class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-            <option v-for="c in CORES" :key="c" :value="c">{{ c }}</option>
+            <option v-for="c in LITURGICAL_COLORS" :key="c" :value="c">{{ c }} — {{ liturgicalColorStyle(c).meaning }}</option>
           </select>
         </div>
         <label class="flex items-center gap-2 mt-6">
@@ -188,7 +180,7 @@ function formatarTexto(texto: string | undefined): string {
     <div v-else class="liturgia-serif space-y-6">
       <div class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">
         <div class="flex flex-wrap items-center gap-2 mb-3">
-          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans" :class="CORES_CLASSES[liturgia.cor] ?? CORES_CLASSES.Verde">{{ liturgia.cor }}</span>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans" :class="liturgicalColorStyle(liturgia.cor).badge" :title="liturgicalColorLabel(liturgia.cor) ?? undefined">{{ liturgia.cor }}<span v-if="liturgicalColorLabel(liturgia.cor)" class="sr-only"> — {{ liturgicalColorStyle(liturgia.cor).meaning }}</span></span>
           <span v-if="liturgia.temGloria" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">Tem Glória</span>
           <span v-if="liturgia.temCredo" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium font-sans bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200">Tem Credo</span>
           <Badge v-if="liturgia.editadoManualmente" color="yellow">Corrigido manualmente</Badge>

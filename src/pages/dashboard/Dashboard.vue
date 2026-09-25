@@ -8,6 +8,8 @@ import Badge from '@/components/Badge.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import ScaleCard from '@/components/scale/ScaleCard.vue'
 import { parseDateOnly } from '@/utils/date'
+import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
+import { CheckCircleIcon } from '@heroicons/vue/20/solid'
 
 const auth = useAuthStore()
 
@@ -65,14 +67,6 @@ const liturgias    = ref<Liturgia[]>([])
 // já usado com sucesso em MyScales.vue (`GET /scales?mine=true`, sem `mes`).
 const myScalesAll     = ref<Scale[]>([])
 const loadingMyScales = ref(false)
-
-const CORES_LITURGICAS_CLASSES: Record<string, string> = {
-  Verde: 'bg-green-200',
-  Roxo: 'bg-purple-200',
-  Branco: 'bg-amber-100',
-  Vermelho: 'bg-red-200',
-  Rosa: 'bg-pink-200',
-}
 
 async function load() {
   loading.value = true
@@ -140,24 +134,26 @@ const liturgiaByDate = computed(() => {
   return map
 })
 
-// Fundo da célula pela cor litúrgica do dia; sem liturgia sincronizada ainda, fica neutro.
-// `dateKey` já vem pronto do Calendar.vue no formato "YYYY-MM-DD" (mesmo formato usado por
-// scalesByDate/liturgiaByDate), sem precisar recalcular a partir de currentMonth/currentYear.
+// Cell background = liturgical color of the day (liturgical season, never status --
+// SPEC-003.1 §9/§24); neutral when the day's liturgy is not synced yet. `dateKey` comes ready
+// from Calendar.vue as "YYYY-MM-DD", the same format as scalesByDate/liturgiaByDate.
 function cellBackground(dateKey: string) {
-  const cor = liturgiaByDate.value[dateKey]?.cor
-  return CORES_LITURGICAS_CLASSES[cor] ?? 'bg-white dark:bg-gray-800'
+  return liturgicalColorStyle(liturgiaByDate.value[dateKey]?.cor).cell
+}
+
+function cellLabel(dateKey: string) {
+  return liturgicalColorLabel(liturgiaByDate.value[dateKey]?.cor)
 }
 
 function hasEvents(dateKey: string) {
   return (scalesByDate.value[dateKey]?.length ?? 0) > 0
 }
 
-function chipClass(horario: string, status: string) {
-  if (status === 'confirmada') return 'bg-success-50 text-success-700 border-success-200 hover:bg-success-100'
-  const h = parseInt(horario.slice(0, 2))
-  if (h < 12) return 'bg-accent-50 text-accent-700 border-accent-200 hover:bg-accent-100'
-  return 'bg-primary-50 text-primary-700 border-primary-200 hover:bg-primary-100'
-}
+// Scale chips/cards stay neutral: they sit on top of the liturgical cell color, and the old
+// colored chips (green "confirmada", amber morning, blue evening) read as liturgical
+// information (SPEC-003.1 §24). Status is shown by icon + text (chip) or Badge (list) instead;
+// the time of day is already written on the chip.
+const SCALE_CHIP_CLASS = 'border-gray-200 bg-white/90 text-gray-800 hover:border-primary-300 hover:bg-white dark:border-gray-600 dark:bg-gray-900/80 dark:text-gray-100 dark:hover:border-primary-500'
 
 const totalScales = computed(() => scales.value.length)
 const confirmed   = computed(() => scales.value.filter(s => s.status === 'confirmada').length)
@@ -429,6 +425,7 @@ function formatFullDate(iso: string) {
           v-model:year="currentYear"
           :loading="loading"
           :cellBackground="cellBackground"
+          :cellLabel="cellLabel"
           :hasEvents="hasEvents"
         >
           <template #day="{ dateKey }">
@@ -437,9 +434,11 @@ function formatFullDate(iso: string) {
               :key="scale.id"
               :to="`/escalas/${scale.id}`"
               class="mb-0.5 flex items-center gap-1 truncate rounded-md border px-1.5 py-0.5 text-xs font-medium transition"
-              :class="chipClass(scale.horario, scale.status)"
-              :title="`${scale.celebracao} · ${scale.celebrante?.nome ?? 'Sem celebrante'}`"
+              :class="SCALE_CHIP_CLASS"
+              :title="`${scale.celebracao} · ${scale.celebrante?.nome ?? 'Sem celebrante'} · ${scale.status === 'confirmada' ? 'Escala confirmada' : 'Rascunho'}`"
             >
+              <CheckCircleIcon v-if="scale.status === 'confirmada'" class="h-3.5 w-3.5 shrink-0 text-gray-600 dark:text-gray-300" aria-hidden="true" />
+              <span class="sr-only">{{ scale.status === 'confirmada' ? 'Escala confirmada:' : 'Rascunho:' }}</span>
               <span class="shrink-0 font-mono text-[10px]">{{ scale.horario }}</span>
               <span v-if="scale.celebrante" class="ml-0.5 hidden truncate text-[10px] opacity-75 lg:inline">
                 {{ scale.celebrante.nome }}
@@ -457,7 +456,7 @@ function formatFullDate(iso: string) {
                 :key="scale.id"
                 :to="`/escalas/${scale.id}`"
                 class="flex items-center justify-between gap-3 rounded-xl border p-3 transition"
-                :class="chipClass(scale.horario, scale.status)"
+                :class="SCALE_CHIP_CLASS"
               >
                 <div class="min-w-0">
                   <p class="truncate text-body-sm font-semibold">{{ scale.celebracao }}</p>
@@ -473,25 +472,25 @@ function formatFullDate(iso: string) {
           </template>
         </Calendar>
 
-        <!-- Legenda -->
-        <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400">
-          <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-accent-50 border border-accent-200 inline-block"></span> Manhã
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-primary-50 border border-primary-200 inline-block"></span> Tarde / Noite
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded bg-success-50 border border-success-200 inline-block"></span> Confirmada
-          </span>
-          <span class="ml-auto text-gray-600 dark:text-gray-400 italic hidden sm:inline">Passe o cursor sobre a celebração para ver os servidores</span>
+        <!-- Two separate legends on purpose (SPEC-003.1 §24): cell colors = liturgical season;
+             scale status = icon/text, no color. -->
+        <div class="border-t border-gray-100 bg-gray-50/60 px-5 py-3 dark:border-gray-700 dark:bg-gray-900/40">
+          <p class="mb-2 text-label uppercase text-gray-600 dark:text-gray-400">Cor do dia · Tempo litúrgico</p>
+          <ul class="flex flex-wrap gap-x-5 gap-y-2 text-caption text-gray-700 dark:text-gray-300">
+            <li v-for="cor in LITURGICAL_COLORS" :key="cor" class="flex items-center gap-1.5">
+              <span class="inline-block h-3 w-3 shrink-0 rounded-full" :class="liturgicalColorStyle(cor).dot" aria-hidden="true"></span>
+              <span><span class="font-semibold">{{ cor }}</span> — {{ liturgicalColorStyle(cor).meaning }}</span>
+            </li>
+          </ul>
         </div>
 
-        <!-- Legenda das cores litúrgicas -->
-        <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/60 flex flex-wrap items-center gap-4 text-xs text-gray-600 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400">
-          <span v-for="(classes, cor) in CORES_LITURGICAS_CLASSES" :key="cor" class="flex items-center gap-1.5">
-            <span class="w-3 h-3 rounded border border-gray-300 inline-block" :class="classes"></span> {{ cor }}
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-gray-100 bg-gray-50/60 px-5 py-3 text-caption text-gray-700 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
+          <p class="text-label uppercase text-gray-600 dark:text-gray-400">Escalas</p>
+          <span class="flex items-center gap-1.5">
+            <CheckCircleIcon class="h-4 w-4 text-gray-600 dark:text-gray-300" aria-hidden="true" /> Confirmada
           </span>
+          <span>Sem ícone: rascunho</span>
+          <span class="ml-auto hidden italic text-gray-600 dark:text-gray-400 sm:inline">Passe o cursor sobre a escala para ver celebração e celebrante</span>
         </div>
       </div>
 
