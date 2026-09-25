@@ -17,6 +17,7 @@ import EmptyRole from '@/components/scale/EmptyRole.vue'
 import ConflictAlert from '@/components/scale/ConflictAlert.vue'
 import { parseDateOnly } from '@/utils/date'
 import { STATUS_LABELS, STATUS_COLORS } from '@/utils/status'
+import { FUNCAO_LITURGICA_LABELS } from '@/utils/scaleRole'
 
 const route = useRoute()
 const router = useRouter()
@@ -84,15 +85,6 @@ const isFuture = () => scale.value && scale.value.dataCelebracao.slice(0, 10) >=
 
 const SEM_CATEGORIA = { id: -1, nome: 'Sem função definida', ordem: 999 }
 
-const FUNCAO_LITURGICA_LABELS: Record<string, string> = {
-  cerimoniario_1: 'Cerimoniário 1',
-  cerimoniario_2: 'Cerimoniário 2',
-  librifero: 'Librífero',
-  cruciferario: 'Cruciferário',
-  ceroferario: 'Ceroferário',
-  turiferario: 'Turiferário',
-  naveteiro: 'Naveteiro',
-}
 
 // Só a categoria Acólitos e Ancilas quebra em duas colunas (pode ter bastante gente:
 // Cerimoniários, Ceroferários...), e só quando tem 6+ servidores. As outras categorias

@@ -10,19 +10,8 @@ import Skeleton from '@/components/Skeleton.vue'
 import ErrorState from '@/components/ErrorState.vue'
 import ScaleCard from '@/components/scale/ScaleCard.vue'
 import { parseDateOnly } from '@/utils/date'
-
-// Mesmo mapa já usado em ScaleForm.vue/scales/Show.vue -- ainda não centralizado num util
-// compartilhado (não é escopo desta task criar esse util, só reaproveitar o dado já disponível
-// no pivot de GET /scales?mine=true).
-const FUNCAO_LITURGICA_LABELS: Record<string, string> = {
-  cerimoniario_1: 'Cerimoniário 1',
-  cerimoniario_2: 'Cerimoniário 2',
-  librifero: 'Librífero',
-  cruciferario: 'Cruciferário',
-  ceroferario: 'Ceroferário',
-  turiferario: 'Turiferário',
-  naveteiro: 'Naveteiro',
-}
+import { localDateKey } from '@/utils/upcoming'
+import { assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
 
 const auth = useAuthStore()
 const flash = useFlashStore()
@@ -36,12 +25,24 @@ const motivo = ref('')
 
 // TASK-0076 (correção): antes, uma falha de rede/API deixava a tela presa no Skeleton pra
 // sempre, sem nenhuma indicação de erro -- catch adicionado + ErrorState com "Tentar novamente".
+const roleLookups = ref<RoleLookups>({ categoriasById: new Map(), teamsById: new Map() })
+
 async function load() {
   loading.value = true
   error.value = false
   try {
-    const { data } = await client.get('/scales', { params: { mine: 'true' } })
-    scales.value = data
+    const [scalesRes, categoriasRes, teamsRes] = await Promise.all([
+      client.get('/scales', { params: { mine: 'true' } }),
+      // The list endpoint only returns categoriaId/teamId per assignment; the ministry names
+      // come from these existing endpoints (TASK-0105, no API change).
+      client.get<{ id: number; nome: string }[]>('/categorias').catch(() => ({ data: [] })),
+      client.get<{ id: number; nome: string; categoria?: { nome: string } | null }[]>('/teams').catch(() => ({ data: [] })),
+    ])
+    scales.value = scalesRes.data
+    roleLookups.value = {
+      categoriasById: new Map(categoriasRes.data.map((c) => [c.id, c])),
+      teamsById: new Map(teamsRes.data.map((t) => [t.id, t])),
+    }
   } catch {
     error.value = true
   } finally {
@@ -55,14 +56,12 @@ function myPivot(scale: any) {
   return scale.servidores.find((s: any) => s.servidorId === auth.user?.servidorId)
 }
 
-// Função/instrumento da pessoa (TASK-0048) -- confirmado que GET /scales?mine=true já retorna
-// esses campos no pivot (instrument via include; funcaoLiturgica é coluna escalar, sempre vem),
-// nenhum dado novo consultado.
+// Ministry first, then liturgical function/instrument (TASK-0105, SPEC-003.1 §14) -- before,
+// a Leitor or Ministro da Comunhão saw no function at all here, only musicians saw something.
 function detalheMinha(scale: any): string | null {
-  const pivot = myPivot(scale)
   const parts: string[] = []
-  if (pivot?.instrument) parts.push(pivot.instrument.nome)
-  if (pivot?.funcaoLiturgica) parts.push(FUNCAO_LITURGICA_LABELS[pivot.funcaoLiturgica] ?? pivot.funcaoLiturgica)
+  const role = assignmentRoleLabel(resolveAssignment(myPivot(scale), roleLookups.value))
+  if (role) parts.push(role)
   // Ministério da escala (legado, distinto do teamId do pivot) -- já aparecia na linha de
   // metadados antes; ScaleCard não tem um 4º campo pra isso na subtitle, então entra aqui.
   if (scale.team) parts.push(scale.team.nome)
@@ -73,7 +72,8 @@ function formatDate(d: string) {
   return parseDateOnly(d)!.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 }
 
-const todayStr = new Date().toISOString().slice(0, 10)
+// Local date, not UTC (after 21:00 in Brazil the ISO date is already tomorrow).
+const todayStr = localDateKey(new Date())
 const proximas = computed(() => scales.value.filter((s) => s.dataCelebracao.slice(0, 10) >= todayStr))
 const passadas = computed(() =>
   scales.value.filter((s) => s.dataCelebracao.slice(0, 10) < todayStr).slice().reverse()

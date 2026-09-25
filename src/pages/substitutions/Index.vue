@@ -11,6 +11,7 @@ import SecondaryButton from '@/components/SecondaryButton.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import DangerButton from '@/components/DangerButton.vue'
 import { parseDateOnly } from '@/utils/date'
+import { assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
 
 const flash = useFlashStore()
 const substituicoes = ref<any[]>([])
@@ -22,12 +23,28 @@ const loadingSugestoes = ref(false)
 
 // TASK-0076 (correção): antes, uma falha de rede/API deixava a tela presa em "Carregando..." pra
 // sempre, sem nenhuma indicação de erro -- catch adicionado + ErrorState com "Tentar novamente".
+const roleLookups = ref<RoleLookups>({ categoriasById: new Map(), teamsById: new Map() })
+
+function holderRole(scaleServidor: any) {
+  return assignmentRoleLabel(resolveAssignment(scaleServidor, roleLookups.value))
+}
+
 async function load() {
   loading.value = true
   error.value = false
   try {
-    const { data } = await client.get('/substituicoes')
-    substituicoes.value = data
+    const [subsRes, categoriasRes, teamsRes] = await Promise.all([
+      client.get('/substituicoes'),
+      // Ministry names for the holder's assignment (payload has only categoriaId/teamId) --
+      // TASK-0105, existing endpoints, no API change.
+      client.get<{ id: number; nome: string }[]>('/categorias').catch(() => ({ data: [] })),
+      client.get<{ id: number; nome: string; categoria?: { nome: string } | null }[]>('/teams').catch(() => ({ data: [] })),
+    ])
+    substituicoes.value = subsRes.data
+    roleLookups.value = {
+      categoriasById: new Map(categoriasRes.data.map((c) => [c.id, c])),
+      teamsById: new Map(teamsRes.data.map((t) => [t.id, t])),
+    }
   } catch {
     error.value = true
   } finally {
@@ -150,7 +167,7 @@ async function confirmarRejeitar() {
               <p class="text-sm mt-1 dark:text-gray-200">
                 <span class="text-gray-600 dark:text-gray-400">Titular:</span>
                 <span class="font-medium">{{ s.scaleServidor.servidor.nome }}</span>
-                <span v-if="s.scaleServidor.instrument" class="text-gray-600 dark:text-gray-400"> · {{ s.scaleServidor.instrument.nome }}</span>
+                <span v-if="holderRole(s.scaleServidor)" class="text-gray-600 dark:text-gray-400"> · {{ holderRole(s.scaleServidor) }}</span>
               </p>
               <p v-if="s.motivo" class="text-sm text-gray-500 mt-1 dark:text-gray-400">Motivo: {{ s.motivo }}</p>
             </div>
