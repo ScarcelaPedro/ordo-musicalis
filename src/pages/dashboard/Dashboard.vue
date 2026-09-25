@@ -9,6 +9,7 @@ import Select from '@/components/Select.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import { firstName, greetingFor } from '@/utils/greeting'
+import { computeCoverage, coveragePercent, type CoverageCategory } from '@/utils/coverage'
 import Skeleton from '@/components/Skeleton.vue'
 import { parseDateOnly } from '@/utils/date'
 import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
@@ -147,6 +148,23 @@ async function loadMyScales() {
 // alone -- the "Repertório" shortcut shows up only when that celebration really has one (§6).
 const myNextScaleDetail = ref<{ id: number; repertoire?: { items: unknown[] } | null } | null>(null)
 
+// Ministry coverage (TASK-0103, ADR-0005): categories + team→category map from existing
+// endpoints; the numbers come from `scales` (month and community shown in the calendar).
+const coverageCategorias = ref<CoverageCategory[]>([])
+const teamCategoryById = ref(new Map<number, number>())
+
+async function loadCoverageLookups() {
+  if (!auth.isStaff) return
+  const [categoriasRes, teamsRes] = await Promise.all([
+    client.get<CoverageCategory[]>('/categorias').catch(() => ({ data: [] as CoverageCategory[] })),
+    client.get<{ id: number; categoriaId: number }[]>('/teams').catch(() => ({ data: [] as { id: number; categoriaId: number }[] })),
+  ])
+  coverageCategorias.value = categoriasRes.data
+  teamCategoryById.value = new Map(teamsRes.data.map((t) => [t.id, t.categoriaId]))
+}
+
+const coverageRows = computed(() => computeCoverage(scales.value, coverageCategorias.value, teamCategoryById.value))
+
 async function loadComunidades() {
   const { data } = await client.get('/comunidades')
   comunidades.value = data
@@ -162,7 +180,7 @@ async function loadLiturgias() {
   }
 }
 
-onMounted(() => { load(); loadUpcoming(); loadPendencias(); loadComunidades(); loadLiturgias(); loadMyScales() })
+onMounted(() => { load(); loadUpcoming(); loadPendencias(); loadCoverageLookups(); loadComunidades(); loadLiturgias(); loadMyScales() })
 watch([currentMonth, currentYear, filterComunidadeId], load)
 watch([currentMonth, currentYear], loadLiturgias)
 
@@ -458,6 +476,34 @@ function formatFullDate(iso: string) {
             </ul>
           </section>
 
+          <!-- 5) Cobertura dos ministérios (TASK-0103, ADR-0005): real categories, any count;
+               scrolls inside the card when there are many, instead of stretching the dashboard. -->
+          <section v-if="coverageRows.length" class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="coverage-title">
+            <h3 id="coverage-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Cobertura dos ministérios</h3>
+            <p class="mb-4 text-caption text-gray-600 dark:text-gray-400">
+              Celebrações com ao menos um servidor escalado · {{ capitalizeFirst(shownMonthLabel) }}<template v-if="filterComunidadeId"> · comunidade filtrada</template>
+            </p>
+            <p v-if="!totalScales" class="text-body-sm text-gray-600 dark:text-gray-400">Nenhuma celebração neste mês.</p>
+            <ul v-else class="space-y-3.5" :class="coverageRows.length > 6 ? 'max-h-80 overflow-y-auto pr-1' : ''">
+              <li v-for="row in coverageRows" :key="row.categoriaId">
+                <div class="mb-1 flex items-baseline justify-between gap-3 text-body-sm">
+                  <span class="truncate font-medium text-gray-800 dark:text-gray-100">{{ row.nome }}</span>
+                  <span class="shrink-0 text-caption text-gray-600 dark:text-gray-400">{{ row.covered }}/{{ row.total }} celebrações</span>
+                </div>
+                <div
+                  class="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700"
+                  role="progressbar"
+                  :aria-valuenow="coveragePercent(row)"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  :aria-label="`${row.nome}: ${row.covered} de ${row.total} celebrações com servidor escalado`"
+                >
+                  <div class="h-full rounded-full bg-primary-600 dark:bg-primary-400" :style="{ width: `${coveragePercent(row)}%` }" />
+                </div>
+              </li>
+            </ul>
+          </section>
+
           <!-- 4) Situação das escalas (mês exibido no calendário) -->
           <section class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="month-status-title">
             <h3 id="month-status-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Situação das escalas</h3>
@@ -618,7 +664,7 @@ function formatFullDate(iso: string) {
       </div>
 
       <!-- Calendário -->
-      <div class="overflow-hidden rounded-xl bg-white shadow-card dark:bg-gray-800 dark:shadow-none" :class="auth.isStaff ? 'lg:col-span-2 lg:row-start-2' : 'lg:col-span-3'">
+      <div class="overflow-hidden rounded-xl bg-white shadow-card dark:bg-gray-800 dark:shadow-none" :class="auth.isStaff ? 'lg:col-span-2 lg:row-start-2 lg:self-start' : 'lg:col-span-3'">
 
         <!-- Filtro por comunidade (fica fora do Calendar.vue -- componente genérico, sem
              conhecimento de "comunidade") -->
