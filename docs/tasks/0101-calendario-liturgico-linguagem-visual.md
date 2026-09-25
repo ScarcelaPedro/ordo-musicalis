@@ -1,7 +1,7 @@
 ---
-status: backlog
+status: em-andamento
 modulo: src/components
-owner:
+owner: Pedro Scarcela
 criado-em: 2026-09-25
 ---
 
