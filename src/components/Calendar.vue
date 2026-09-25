@@ -32,6 +32,11 @@ const props = withDefaults(
     /** Classes of a corner dot for the desktop tile; when set, desktop tiles stay neutral. */
     cellMarker?: (dateKey: string) => string | null
     hasEvents?: (dateKey: string) => boolean
+    /**
+     * Mobile compact grid look: 'tint' = tinted cell + event dot (default); 'tiles' = simplified
+     * desktop tile with the `cellMarker` dot (used by the Dashboard in dark mode, TASK-0111).
+     */
+    compactVariant?: 'tint' | 'tiles'
     // Optional accessible description of what the cell color means (e.g. the liturgical
     // season) -- color must never be the only carrier of information (SPEC-003.1 §25).
     cellLabel?: (dateKey: string) => string | null
@@ -42,6 +47,7 @@ const props = withDefaults(
     cellBackground: () => 'bg-white dark:bg-gray-800',
     cellMarker: undefined,
     hasEvents: () => false,
+    compactVariant: 'tint',
     cellLabel: () => null,
   },
 )
@@ -193,21 +199,59 @@ function desktopTileClass(day: number) {
         >
           {{ name.charAt(0) }}
         </div>
-        <button
-          v-for="(day, idx) in cells" :key="idx"
-          type="button"
-          :disabled="!day"
-          class="flex h-10 flex-col items-center justify-center gap-0.5 rounded-md text-caption disabled:opacity-0"
-          :class="[
-            day ? cellBackground(dateKey(day)) : '',
-            day && isToday(day) ? 'font-bold text-primary-800 ring-2 ring-inset ring-primary-600 dark:text-primary-200 dark:ring-primary-400' : 'text-gray-700 dark:text-gray-300',
-          ]"
-          :aria-label="day ? compactDayLabel(day) : undefined"
-          @click="day && $emit('select-day', dateKey(day))"
-        >
-          <span>{{ day }}</span>
-          <span v-if="day && hasEvents(dateKey(day))" class="h-1 w-1 rounded-full bg-gray-800 dark:bg-gray-100" aria-hidden="true" />
-        </button>
+        <!-- "tiles": simplified version of the desktop tile (TASK-0111) -- neutral block, meaning
+             dot in the corner, a short bar (not a dot) for "has celebrations" so the two markers
+             are never confused, today like on desktop. -->
+        <template v-if="compactVariant === 'tiles' && cellMarker">
+          <button
+            v-for="(day, idx) in cells" :key="idx"
+            type="button"
+            :disabled="!day"
+            class="relative flex h-12 flex-col items-center justify-between rounded-md border pb-1.5 pt-1 text-caption"
+            :class="!day
+              ? 'border-transparent bg-gray-50 dark:bg-gray-900/40'
+              : isToday(day)
+                ? 'border-primary-600 bg-primary-900/40 dark:border-primary-400'
+                : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
+            :aria-label="day ? compactDayLabel(day) : undefined"
+            @click="day && $emit('select-day', dateKey(day))"
+          >
+            <template v-if="day">
+              <span
+                class="flex h-5 min-w-5 items-center justify-center rounded-full px-0.5 font-semibold"
+                :class="isToday(day) ? 'bg-primary-500 text-white dark:bg-primary-400 dark:text-gray-950' : 'text-gray-800 dark:text-gray-100'"
+              >{{ day }}</span>
+              <span
+                v-if="cellMarker(dateKey(day))"
+                class="absolute right-1 top-1 h-2 w-2 rounded-full"
+                :class="cellMarker(dateKey(day))"
+                aria-hidden="true"
+              />
+              <span
+                class="h-1 w-4 rounded-full"
+                :class="hasEvents(dateKey(day)) ? 'bg-gray-500 dark:bg-gray-300' : 'bg-transparent'"
+                aria-hidden="true"
+              />
+            </template>
+          </button>
+        </template>
+        <template v-else>
+          <button
+            v-for="(day, idx) in cells" :key="idx"
+            type="button"
+            :disabled="!day"
+            class="flex h-10 flex-col items-center justify-center gap-0.5 rounded-md text-caption disabled:opacity-0"
+            :class="[
+              day ? cellBackground(dateKey(day)) : '',
+              day && isToday(day) ? 'font-bold text-primary-800 ring-2 ring-inset ring-primary-600 dark:text-primary-200 dark:ring-primary-400' : 'text-gray-700 dark:text-gray-300',
+            ]"
+            :aria-label="day ? compactDayLabel(day) : undefined"
+            @click="day && $emit('select-day', dateKey(day))"
+          >
+            <span>{{ day }}</span>
+            <span v-if="day && hasEvents(dateKey(day))" class="h-1 w-1 rounded-full bg-gray-800 dark:bg-gray-100" aria-hidden="true" />
+          </button>
+        </template>
       </div>
       <div class="divide-y divide-gray-100 border-t border-gray-100 dark:divide-gray-700 dark:border-gray-700">
         <template v-for="(day, idx) in cells" :key="idx">

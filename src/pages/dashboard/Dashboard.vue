@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Calendar from '@/components/Calendar.vue'
 import Badge from '@/components/Badge.vue'
@@ -19,6 +20,9 @@ import { CheckCircleIcon } from '@heroicons/vue/20/solid'
 import { ChevronRightIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon } from '@heroicons/vue/24/outline'
 
 const auth = useAuthStore()
+// Dark mode: the tinted mobile calendar cells were hard to read, so the mobile grid switches to
+// the simplified desktop-tile look (TASK-0111, user request). Light mode keeps the tinted grid.
+const theme = useThemeStore()
 
 interface ScaleServidor {
   servidorId: number
@@ -686,6 +690,7 @@ function formatFullDate(iso: string) {
           title="Calendário Litúrgico"
           :cellBackground="cellBackground"
           :cellMarker="cellMarker"
+          :compactVariant="theme.isDark ? 'tiles' : 'tint'"
           :cellLabel="cellLabel"
           :hasEvents="hasEvents"
         >
@@ -751,6 +756,9 @@ function formatFullDate(iso: string) {
             <CheckCircleIcon class="h-4 w-4 text-gray-600 dark:text-gray-300" aria-hidden="true" /> Confirmada
           </span>
           <span>Sem ícone: rascunho</span>
+          <span class="hidden items-center gap-1.5 max-md:dark:flex">
+            <span class="inline-block h-1 w-4 rounded-full bg-gray-300" aria-hidden="true"></span> Dia com celebração
+          </span>
           <span class="ml-auto hidden italic text-gray-600 dark:text-gray-400 sm:inline">Passe o cursor sobre a escala para ver celebração e celebrante</span>
         </div>
       </div>
