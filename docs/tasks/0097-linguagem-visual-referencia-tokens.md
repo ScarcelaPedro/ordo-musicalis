@@ -1,5 +1,5 @@
 ---
-status: em-andamento
+status: concluida
 modulo: src
 owner: Pedro Scarcela
 criado-em: 2026-09-25
@@ -52,11 +52,11 @@ Elementos da referência a extrair e confrontar com o Design System atual:
 
 ## Critérios de conclusão
 
-- [ ] Tokens definidos (claro + escuro), sem hex literal em componentes.
-- [ ] ADR registrando a decisão sobre o tom de azul/superfície da sidebar.
-- [ ] `docs/design-system.md` atualizado com a seção da SPEC-003.1.
-- [ ] Contraste AA verificado para texto sobre a nova superfície escura e sobre o fundo de página.
-- [ ] `npm run build` passa sem erros.
+- [x] Tokens definidos (claro + escuro), sem hex literal em componentes.
+- [x] ADR registrando a decisão sobre o tom de azul/superfície da sidebar.
+- [x] `docs/design-system.md` atualizado com a seção da SPEC-003.1.
+- [x] Contraste AA verificado para texto sobre a nova superfície escura e sobre o fundo de página.
+- [x] `npm run build` passa sem erros.
 
 ## Referências
 
@@ -68,3 +68,26 @@ Elementos da referência a extrair e confrontar com o Design System atual:
 ## Notas de progresso
 
 - 2026-09-25 — Task criada a partir da decomposição da SPEC-003.1.
+- 2026-09-25 — Task reivindicada e executada.
+
+  **Decisão sobre o azul** ([`ADR-0003`](../decisions/0003-primary-azul-profundo-referencia.md)):
+  a opção (a) foi escolhida. `primary` deixou de ser `colors.indigo` e passou a ser uma escala
+  azul profundo customizada (50–950) calibrada na referência. A opção (b), de token navy só na
+  sidebar, foi descartada porque deixaria sidebar navy com botões violeta. Contraste calculado
+  pela fórmula WCAG 2.1: todos os pares de uso passam AA (branco/`600` 6.92,
+  `700`/`50` 8.11, `400`/`gray-800` 4.67, `slate-200`/`900` 10.36). `ADR-0001` marcado como
+  parcialmente substituído (só a linha `primary`).
+
+  **Tokens novos**: `canvas` (variável CSS `--color-canvas` em `app.css`, alternada por
+  `.dark`, sem precisar de `dark:`) e `shadow-card`. **Aplicação mínima para validar os tokens**:
+  `Card.vue` (`rounded-xl` + `shadow-card`, sem sombra no dark) e o fundo de
+  `AuthenticatedLayout.vue` (`bg-canvas`). As 36 classes literais `indigo-*` restantes em 10
+  telas foram trocadas por `primary-*` no mesmo tom, para não sobrar nada preso à cor antiga.
+  `docs/design-system.md` ganhou a §16 (incorporado × não incorporado).
+
+  **Verificação**: `npm run build` e `npm test` passam. No dev server (tela de login), os
+  estilos computados confirmaram: botão "Entrar" = `rgb(47, 90, 152)` (`primary-600`),
+  `bg-canvas` = `#f4f7fb` no claro e `gray-900` com `.dark`, `shadow-card` aplicada. As telas
+  autenticadas **não** foram inspecionadas visualmente: não há Docker/Postgres no ambiente desta
+  sessão e o screenshot do painel de navegador não renderizou. Como a troca é por token, o
+  risco é de tom e não de layout. A inspeção completa fica para a `TASK-0107`. Commit: `e23fee0`.
