@@ -65,3 +65,10 @@ no próprio brasão) pode aparecer.
   (nome em duas linhas). `GET /favicon.ico` → 200 `image/x-icon`. `npm run build` e
   `npm test` passam; `dist/` revertido. `AGENTS.md` raiz ("Assets estáticos") atualizado: a
   pendência do favicon foi resolvida e está documentado onde fica o brasão.
+- 2026-09-25 — Complemento a pedido do usuário: brasão também nas telas de autenticação.
+  Commit: `95b7a28`. `GuestLayout.vue` (usado por Login, Cadastro, Esqueci a senha e Redefinir
+  senha) mostra o brasão (112px no mobile, 128px a partir de `sm`, com `alt`), o eyebrow
+  "Paróquia São João Batista" em `accent` e "Ordo Musicalis". Aproveitando, o fundo passou para
+  `bg-canvas` e o card para `rounded-xl`/`shadow-card` (tokens da `TASK-0097`), com gutter
+  `px-4` no mobile. Verificado em `/login` a 1280px claro e 375px escuro (sem scroll
+  horizontal) e em `/forgot-password`. `npm run build` passa.
