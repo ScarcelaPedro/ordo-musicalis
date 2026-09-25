@@ -6,13 +6,16 @@ import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Calendar from '@/components/Calendar.vue'
 import Badge from '@/components/Badge.vue'
 import Select from '@/components/Select.vue'
+import PrimaryButton from '@/components/PrimaryButton.vue'
+import SecondaryButton from '@/components/SecondaryButton.vue'
+import { firstName, greetingFor } from '@/utils/greeting'
 import Skeleton from '@/components/Skeleton.vue'
 import { parseDateOnly } from '@/utils/date'
 import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
 import { assignmentRole, assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
-import { ChevronRightIcon, MapPinIcon, UserIcon, UsersIcon } from '@heroicons/vue/24/outline'
+import { ChevronRightIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon } from '@heroicons/vue/24/outline'
 
 const auth = useAuthStore()
 
@@ -62,6 +65,9 @@ interface Pendencia {
 }
 
 const today = new Date()
+
+const greeting = greetingFor(today)
+const userFirstName = computed(() => firstName(auth.user?.name))
 
 const currentMonth = ref(today.getMonth())
 const currentYear  = ref(today.getFullYear())
@@ -316,27 +322,23 @@ function formatFullDate(iso: string) {
 <template>
   <AuthenticatedLayout>
     <template #header>
+      <!-- Context (SPEC-003.1 §22, TASK-0099): greeting + one line of purpose, then the staff
+           actions. On mobile the actions are hidden: "Nova escala" is the bottom-nav center button
+           and Substituições/Relatórios live under "Mais" -- no need to repeat them here. -->
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div class="min-w-0">
-          <h2 class="font-bold text-xl text-gray-800">Dashboard</h2>
-          <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5 truncate">Bem-vindo, {{ auth.user?.name }}</p>
+          <h2 class="text-h2 text-gray-900 dark:text-gray-50">{{ greeting }}<template v-if="userFirstName">, {{ userFirstName }}</template>!</h2>
+          <p class="mt-0.5 text-body-sm text-gray-600 dark:text-gray-400">
+            {{ auth.isStaff ? 'Visão geral das escalas da paróquia.' : 'Suas escalas e o que precisa da sua atenção.' }}
+          </p>
         </div>
-        <div v-if="auth.isStaff" class="flex flex-wrap gap-2">
-          <RouterLink to="/substituicoes"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-transparent bg-gray-200 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 transition duration-150 ease-in-out hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-800">
-            Substituições
-          </RouterLink>
-          <RouterLink to="/relatorios"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-transparent bg-gray-200 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-gray-700 transition duration-150 ease-in-out hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-800">
-            Relatórios
-          </RouterLink>
-          <RouterLink to="/escalas/criar"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-transparent bg-primary-600 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-primary-700 focus:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 active:bg-primary-800 dark:focus:ring-offset-gray-800">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Nova Escala
-          </RouterLink>
+        <div v-if="auth.isStaff" class="hidden flex-wrap gap-2 md:flex">
+          <SecondaryButton to="/substituicoes">Substituições</SecondaryButton>
+          <SecondaryButton to="/relatorios">Relatórios</SecondaryButton>
+          <PrimaryButton to="/escalas/criar">
+            <PlusIcon class="h-4 w-4" aria-hidden="true" />
+            Nova escala
+          </PrimaryButton>
         </div>
       </div>
     </template>

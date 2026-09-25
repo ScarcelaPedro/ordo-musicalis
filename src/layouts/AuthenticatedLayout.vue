@@ -6,6 +6,7 @@ import ThemeToggle from '@/components/ThemeToggle.vue'
 import Drawer from '@/components/Drawer.vue'
 import IconButton from '@/components/IconButton.vue'
 import Avatar from '@/components/Avatar.vue'
+import { longDate } from '@/utils/greeting'
 import {
   HomeIcon, CalendarDaysIcon, UsersIcon, ChartBarIcon, Cog6ToothIcon, ChevronDownIcon,
   ClockIcon, PlusIcon, EllipsisHorizontalIcon, Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon,
@@ -36,6 +37,7 @@ watch(sidebarOpen, async (open) => {
   }
 })
 const moreOpen = ref(false)
+const todayLabel = longDate(new Date())
 
 interface NavChild { to: string; label: string; active: boolean }
 interface NavGroup {
@@ -322,6 +324,9 @@ async function logout() {
             </div>
 
             <div class="hidden md:flex md:items-center md:ml-4 gap-4">
+              <!-- Today's date as plain text (TASK-0099): the reference shows it as a dropdown,
+                   but there is nothing to pick, so it stays static. -->
+              <span class="text-body-sm text-gray-600 dark:text-gray-300">{{ todayLabel }}</span>
               <ThemeToggle />
             </div>
 
