@@ -1,5 +1,5 @@
 ---
-status: em-andamento
+status: concluida
 modulo: src/layouts
 owner: Pedro Scarcela
 criado-em: 2026-09-25
@@ -30,10 +30,10 @@ para **todas** as telas autenticadas, por isso não foi corrigido dentro da vali
 
 ## Critérios de conclusão
 
-- [ ] Nenhum card com `left = 0` a 360/375/414px nas telas principais (Dashboard dos dois
+- [x] Nenhum card com `left = 0` a 360/375/414px nas telas principais (Dashboard dos dois
       perfis, Escalas, Detalhes da escala, Minha Escala, Substituições, Servidores).
-- [ ] Sem gutter duplo e sem scroll horizontal novo.
-- [ ] `npm run build` passa.
+- [x] Sem gutter duplo e sem scroll horizontal novo.
+- [x] `npm run build` passa.
 
 ## Referências
 
@@ -43,3 +43,15 @@ para **todas** as telas autenticadas, por isso não foi corrigido dentro da vali
 ## Notas de progresso
 
 - 2026-09-25 — Task criada a partir da validação da SPEC-003.1 (`TASK-0107`).
+- 2026-09-25 — Executada. Commit: `2498785`.
+
+  O container do `<main>` em `AuthenticatedLayout.vue` passou de `max-w-7xl mx-auto sm:px-6
+  lg:px-8` para `... px-4 sm:px-6 lg:px-8`. Antes, nenhuma tela usava margem negativa ou
+  full-bleed intencional (grep por `-mx-` em `src/pages` vazio), então não há risco de
+  gutter duplo.
+
+  **Medição automática** (iframes; menor distância entre qualquer superfície com fundo ou sombra
+  dentro de `main` e as bordas; seed temporário): admin a 360/375/414px em Dashboard, Escalas,
+  Detalhes da escala, Substituições e Servidores → **16px dos dois lados**, sem scroll horizontal;
+  servidora a 375px em Dashboard, Minha Escala, Detalhes e Disponibilidade → 16px; a 640px
+  (`sm`) → 24px, igual a antes. `npm run build` passa; `dist/` revertido.
