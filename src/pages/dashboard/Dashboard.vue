@@ -7,9 +7,9 @@ import Calendar from '@/components/Calendar.vue'
 import Badge from '@/components/Badge.vue'
 import Select from '@/components/Select.vue'
 import Skeleton from '@/components/Skeleton.vue'
-import ScaleCard from '@/components/scale/ScaleCard.vue'
 import { parseDateOnly } from '@/utils/date'
 import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
+import { assignmentRole, assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
 import { ChevronRightIcon, MapPinIcon, UserIcon, UsersIcon } from '@heroicons/vue/24/outline'
@@ -23,6 +23,13 @@ interface ScaleServidor {
   // Já retornado pelo mesmo endpoint /scales hoje (confirmado em MyScales.vue, que consome o
   // mesmo campo) -- só não estava tipado aqui porque o Dashboard nunca tinha precisado dele.
   status: 'convidado' | 'confirmado' | 'recusado' | 'substituido'
+  // Ministry/function of the assignment (already in GET /scales -- see api/_routes/scales.ts
+  // `include`), used to show "Função" for any kind of server (TASK-0104).
+  categoria?: { nome: string } | null
+  team?: { nome: string; categoria?: { nome: string } | null } | null
+  categoriaId?: number | null
+  teamId?: number | null
+  funcaoLiturgica?: string | null
 }
 
 interface Scale {
@@ -107,16 +114,32 @@ async function loadPendencias() {
   pendencias.value = data.slice(0, 8)
 }
 
+// The list endpoint only returns categoriaId/teamId per assignment; names come from the
+// existing /categorias and /teams endpoints (TASK-0104 -- no API change, SPEC-003.1 §30).
+const roleLookups = ref<RoleLookups>({ categoriasById: new Map(), teamsById: new Map() })
+
 async function loadMyScales() {
   if (auth.isStaff) return
   loadingMyScales.value = true
   try {
-    const { data } = await client.get('/scales', { params: { mine: 'true' } })
-    myScalesAll.value = data
+    const [scalesRes, categoriasRes, teamsRes] = await Promise.all([
+      client.get('/scales', { params: { mine: 'true' } }),
+      client.get<{ id: number; nome: string }[]>('/categorias').catch(() => ({ data: [] })),
+      client.get<{ id: number; nome: string; categoria?: { nome: string } | null }[]>('/teams').catch(() => ({ data: [] })),
+    ])
+    myScalesAll.value = scalesRes.data
+    roleLookups.value = {
+      categoriasById: new Map(categoriasRes.data.map((c) => [c.id, c])),
+      teamsById: new Map(teamsRes.data.map((t) => [t.id, t])),
+    }
   } finally {
     loadingMyScales.value = false
   }
 }
+
+// Repertoire is only in the scale detail (GET /scales/:id), so it is fetched for the next scale
+// alone -- the "Repertório" shortcut shows up only when that celebration really has one (§6).
+const myNextScaleDetail = ref<{ id: number; repertoire?: { items: unknown[] } | null } | null>(null)
 
 async function loadComunidades() {
   const { data } = await client.get('/comunidades')
@@ -218,6 +241,10 @@ function weekdayShort(iso: string) {
   return parseDateOnly(iso)!.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()
 }
 
+function monthShort(iso: string) {
+  return parseDateOnly(iso)!.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+}
+
 function dayOfMonth(iso: string) {
   return parseDateOnly(iso)!.getDate()
 }
@@ -229,14 +256,24 @@ const shownMonthLabel = computed(() =>
 // TASK-0088 (correção): fonte própria (myScalesAll, `GET /scales?mine=true`, sem `mes`), não
 // mais `scales.value` (que só contém o mês em exibição no calendário do coordenador -- um
 // conceito visual que não tem relação nenhuma com "qual é a próxima escala do servidor").
-const myNextScales = computed(() => {
+//
+// TASK-0104: sorted by local date/time via selectUpcoming (the old `toISOString()` filter used
+// UTC, so after 21:00 in Brazil that evening's scale disappeared). Assignments the person
+// refused or was replaced in are not "their next scale" anymore, so they are left out here
+// (they remain visible in Minha Escala).
+const ACTIVE_ASSIGNMENT = new Set(['convidado', 'confirmado'])
+
+const myActiveUpcoming = computed(() => {
   const mid = auth.user?.servidorId
   if (!mid) return []
-  const todayStr = today.toISOString().slice(0, 10)
-  return myScalesAll.value
-    .filter(s => s.dataCelebracao.slice(0, 10) >= todayStr && s.servidores.some(sv => sv.servidorId === mid))
-    .slice(0, 3)
+  const mine = myScalesAll.value.filter(s => s.servidores.some(sv => sv.servidorId === mid && ACTIVE_ASSIGNMENT.has(sv.status)))
+  return selectUpcoming(mine, new Date(), Number.MAX_SAFE_INTEGER)
 })
+
+const myNextScales = computed(() => myActiveUpcoming.value.slice(0, 4))
+
+// "Pendências" block (SPEC-003.1 §6): upcoming scales still waiting for this person's answer.
+const myPendingCount = computed(() => myActiveUpcoming.value.filter(s => myPivot(s)?.status === 'convidado').length)
 
 // Prioridade do Dashboard-Servidor (docs/tasks/0008-*.md, §5.1): a próxima escala do PRÓPRIO
 // servidor é a informação principal, não as próximas celebrações do sistema inteiro
@@ -248,23 +285,26 @@ const myUpcomingScales = computed(() => myNextScales.value.slice(1))
 
 function myPivot(scale: Scale | null) {
   if (!scale) return null
-  return scale.servidores.find(sv => sv.servidorId === auth.user?.servidorId) ?? null
+  const pivot = scale.servidores.find(sv => sv.servidorId === auth.user?.servidorId) ?? null
+  return resolveAssignment(pivot, roleLookups.value)
 }
 
 const myNextScalePivot = computed(() => myPivot(myNextScale.value))
+const myNextScaleRole = computed(() => assignmentRole(myNextScalePivot.value))
 
-function scaleCardProps(s: Scale) {
-  const pivot = myPivot(s)
-  return {
-    celebracao: s.celebracao,
-    dataFormatada: formatFullDate(s.dataCelebracao),
-    horario: s.horario,
-    comunidade: s.comunidade?.nome ?? null,
-    status: s.status,
-    minhaConfirmacao: pivot?.status ?? null,
-    to: `/escalas/${s.id}`,
+// Repertoire is "when applicable" (§6): only offered when the celebration really has one.
+watch(myNextScale, async (scale) => {
+  myNextScaleDetail.value = null
+  if (!scale) return
+  try {
+    const { data } = await client.get(`/scales/${scale.id}`)
+    if (myNextScale.value?.id === scale.id) myNextScaleDetail.value = data
+  } catch {
+    // Shortcut simply stays hidden; the rest of the card does not depend on it.
   }
-}
+})
+
+const myNextScaleHasRepertoire = computed(() => (myNextScaleDetail.value?.repertoire?.items.length ?? 0) > 0)
 
 function formatFullDate(iso: string) {
   return parseDateOnly(iso)!.toLocaleDateString('pt-BR', {
@@ -438,85 +478,141 @@ function formatFullDate(iso: string) {
         </div>
       </template>
 
-      <!-- Servidor -- ordem de prioridade exata da TASK-0008 (§5.1). Bloco 3 "Alterações
-           importantes" foi deliberadamente omitido: depende do indicador de alteração ainda não
-           implementado (pendência de dado registrada na própria TASK-0008, a resolver na
-           TASK-0041) -- não inventamos o dado aqui. -->
-      <div v-if="!auth.isStaff" class="space-y-6 lg:col-span-3">
+      <!-- Servidor -- simplificado (SPEC-003.1 §6/§26): "o que eu preciso saber ou fazer agora?".
+           Ordem de prioridade (também a ordem do mobile): próxima escala → próximas escalas →
+           pendências → disponibilidade → conteúdo. Sem estatísticas, dados de outros servidores
+           nem comunicações (não há módulo). "Alterações importantes" segue omitido: depende de
+           um indicador de alteração que não existe (TASK-0008/TASK-0041). -->
+      <div v-if="!auth.isStaff" class="grid grid-cols-1 gap-6 lg:col-span-3 lg:grid-cols-3">
 
-        <!-- 1) Próxima escala em destaque + 2) confirmação pendente embutida -->
-        <div v-if="loadingMyScales" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-3 dark:bg-gray-800 dark:border-gray-700">
-          <Skeleton width="w-32" height="h-3" />
-          <Skeleton width="w-2/3" height="h-7" />
-          <Skeleton width="w-1/2" height="h-4" />
-        </div>
-        <div v-else-if="myNextScale"
-          class="relative overflow-hidden bg-gradient-to-br from-primary-700 via-primary-800 to-purple-900 rounded-2xl p-6 text-white shadow-lg">
-          <div class="absolute right-4 top-3 text-white/5 text-[8rem] font-serif select-none leading-none">♪</div>
-          <p class="text-primary-300 text-xs font-semibold uppercase tracking-widest">Sua próxima escala</p>
-          <p class="mt-1.5 text-2xl font-bold leading-snug">{{ myNextScale.celebracao }}</p>
-          <p class="mt-1 text-primary-200 text-body-sm">
-            {{ formatFullDate(myNextScale.dataCelebracao) }} · {{ myNextScale.horario }}
-            <template v-if="myNextScale.comunidade">
-              <span class="mx-1 text-primary-400">·</span>{{ myNextScale.comunidade.nome }}
-            </template>
-            <template v-if="myNextScalePivot?.instrument">
-              <span class="mx-1 text-primary-400">·</span>{{ myNextScalePivot.instrument.nome }}
-            </template>
-          </p>
-          <div class="mt-4 flex flex-wrap items-center gap-3">
-            <RouterLink
-              v-if="myNextScalePivot?.status === 'convidado'"
-              :to="`/escalas/${myNextScale.id}`"
-              class="inline-flex min-h-11 items-center gap-1.5 rounded-md bg-white px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary-700 shadow-sm transition hover:bg-primary-50"
-            >
-              Confirmar presença
+        <!-- 1) Sua próxima escala (informação + ação principal) -->
+        <section class="lg:col-span-2" aria-labelledby="my-next-title">
+          <div v-if="loadingMyScales" class="space-y-3 rounded-xl bg-white p-6 shadow-card dark:bg-gray-800 dark:shadow-none">
+            <Skeleton width="w-32" height="h-3" />
+            <Skeleton width="w-2/3" height="h-7" />
+            <Skeleton width="w-1/2" height="h-4" />
+          </div>
+          <div v-else-if="myNextScale" class="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-800 to-primary-950 p-6 text-white shadow-card">
+            <!-- Discreet liturgical mark (§20) instead of the old musical note -->
+            <svg class="pointer-events-none absolute -right-4 -top-4 h-40 w-40 text-white/5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">
+              <path d="M12 3v18M7 8h10" />
+            </svg>
+            <p class="text-label uppercase text-accent-300">Sua próxima escala</p>
+            <h3 id="my-next-title" class="mt-1.5 text-h2 leading-snug">
+              {{ capitalizeFirst(formatFullDate(myNextScale.dataCelebracao)) }} · {{ myNextScale.horario }}
+            </h3>
+            <p class="text-h4 font-medium text-primary-100">{{ myNextScale.celebracao }}</p>
+            <dl class="mt-4 grid gap-3 text-body-sm sm:grid-cols-2">
+              <div v-if="myNextScale.comunidade" class="flex items-start gap-2">
+                <MapPinIcon class="mt-0.5 h-4 w-4 shrink-0 text-primary-300" aria-hidden="true" />
+                <div>
+                  <dt class="text-caption text-primary-300">Local</dt>
+                  <dd>{{ myNextScale.comunidade.nome }}</dd>
+                </div>
+              </div>
+              <div class="flex items-start gap-2">
+                <UserIcon class="mt-0.5 h-4 w-4 shrink-0 text-primary-300" aria-hidden="true" />
+                <div>
+                  <dt class="text-caption text-primary-300">Função</dt>
+                  <dd class="font-semibold">
+                    {{ myNextScaleRole.ministry ?? 'Não definida' }}<span v-if="myNextScaleRole.details.length" class="font-normal text-primary-100"> · {{ myNextScaleRole.details.join(' · ') }}</span>
+                  </dd>
+                </div>
+              </div>
+            </dl>
+            <div class="mt-5 flex flex-wrap items-center gap-3">
+              <RouterLink
+                v-if="myNextScalePivot?.status === 'convidado'"
+                :to="`/escalas/${myNextScale.id}`"
+                class="inline-flex min-h-11 items-center rounded-lg bg-white px-4 py-2 text-body-sm font-semibold text-primary-800 shadow-sm transition hover:bg-primary-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-300"
+              >
+                Confirmar presença
+              </RouterLink>
+              <span v-else-if="myNextScalePivot?.status === 'confirmado'" class="inline-flex items-center gap-1.5 text-body-sm text-primary-100">
+                <CheckCircleIcon class="h-4 w-4" aria-hidden="true" /> Presença confirmada
+              </span>
+              <RouterLink :to="`/escalas/${myNextScale.id}`"
+                class="inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-body-sm font-semibold text-primary-100 transition hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-300">
+                Ver escala
+                <ChevronRightIcon class="h-4 w-4" aria-hidden="true" />
+              </RouterLink>
+            </div>
+          </div>
+          <div v-else class="rounded-xl bg-white p-6 text-center shadow-card dark:bg-gray-800 dark:shadow-none">
+            <p class="text-body-sm text-gray-600 dark:text-gray-400">Você não tem escalas futuras no momento.</p>
+          </div>
+        </section>
+
+        <!-- 2) Próximas escalas -->
+        <section v-if="myUpcomingScales.length" class="self-start rounded-xl bg-white p-5 shadow-card lg:col-span-2 lg:row-start-2 dark:bg-gray-800 dark:shadow-none" aria-labelledby="my-upcoming-title">
+          <div class="mb-2 flex items-center justify-between gap-2">
+            <h3 id="my-upcoming-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Próximas escalas</h3>
+            <RouterLink to="/minha-escala" class="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-300">Ver todas</RouterLink>
+          </div>
+          <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+            <li v-for="s in myUpcomingScales" :key="s.id">
+              <RouterLink :to="`/escalas/${s.id}`" class="flex items-center gap-4 rounded-lg py-3 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:bg-gray-700/50">
+                <span class="w-12 shrink-0 text-center">
+                  <span class="block text-h4 leading-tight text-gray-900 dark:text-gray-100">{{ dayOfMonth(s.dataCelebracao) }}</span>
+                  <span class="block text-caption font-semibold uppercase text-gray-500 dark:text-gray-400">{{ monthShort(s.dataCelebracao) }}</span>
+                </span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ s.horario }} — {{ s.celebracao }}</span>
+                  <span class="block truncate text-caption text-gray-600 dark:text-gray-400">
+                    {{ assignmentRoleLabel(myPivot(s)) ?? 'Função não definida' }}<template v-if="s.comunidade"> · {{ s.comunidade.nome }}</template>
+                  </span>
+                </span>
+                <Badge :color="myPivot(s)?.status === 'confirmado' ? 'green' : 'yellow'" class="shrink-0">
+                  {{ myPivot(s)?.status === 'confirmado' ? 'Confirmado' : 'Aguardando' }}
+                </Badge>
+              </RouterLink>
+            </li>
+          </ul>
+        </section>
+
+        <!-- Coluna lateral (desktop) -->
+        <div class="space-y-6 lg:col-start-3 lg:row-span-2 lg:row-start-1">
+
+          <!-- 3) Pendências -->
+          <section v-if="myPendingCount" class="rounded-xl border border-warning-200 bg-warning-50 p-5 dark:border-warning-800 dark:bg-warning-900/20" aria-labelledby="my-pending-title">
+            <h3 id="my-pending-title" class="text-body font-semibold text-gray-900 dark:text-gray-50">Pendências</h3>
+            <p class="mt-1 text-body-sm text-gray-700 dark:text-gray-300">
+              Você possui {{ myPendingCount }} {{ myPendingCount === 1 ? 'escala aguardando' : 'escalas aguardando' }} confirmação.
+            </p>
+            <RouterLink to="/minha-escala" class="mt-2 inline-flex min-h-11 items-center gap-1 text-body-sm font-semibold text-primary-700 hover:underline dark:text-primary-300">
+              Ver pendências <ChevronRightIcon class="h-4 w-4" aria-hidden="true" />
             </RouterLink>
-            <RouterLink :to="`/escalas/${myNextScale.id}`"
-              class="inline-flex items-center gap-1 text-xs font-semibold text-primary-200 hover:text-white transition">
-              Ver escala completa
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-              </svg>
-            </RouterLink>
-          </div>
-        </div>
-        <div v-else class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 text-center dark:bg-gray-800 dark:border-gray-700">
-          <p class="text-body-sm text-gray-600 dark:text-gray-400">Nenhuma escala sua neste período.</p>
-        </div>
+          </section>
 
-        <!-- 4) Próximas escalas (resto da lista, já carregada -- sem nova chamada) -->
-        <div v-if="myUpcomingScales.length" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 dark:bg-gray-800 dark:border-gray-700">
-          <p class="text-xs font-semibold text-gray-600 uppercase tracking-widest mb-3 dark:text-gray-400">Próximas escalas</p>
-          <div class="space-y-2">
-            <ScaleCard v-for="s in myUpcomingScales" :key="s.id" v-bind="scaleCardProps(s)" />
-          </div>
-        </div>
-
-        <!-- 5) Disponibilidade: atalho de navegação, sem novo endpoint (o indicador "preenchida/
-             pendente" exigiria consultar /availability, fora do escopo desta task). -->
-        <RouterLink to="/disponibilidade"
-          class="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700">
-          <div>
-            <p class="text-body-sm font-semibold text-gray-800 dark:text-gray-100">Disponibilidade</p>
-            <p class="text-body-sm text-gray-600 dark:text-gray-400">Informe os períodos em que você pode servir.</p>
-          </div>
-          <svg class="h-4 w-4 shrink-0 text-gray-300 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-          </svg>
-        </RouterLink>
-
-        <!-- 6) Repertório/liturgia contextual à próxima celebração -->
-        <div v-if="myNextScale" class="flex flex-wrap gap-3">
-          <RouterLink :to="`/escalas/${myNextScale.id}/repertorio`"
-            class="flex-1 rounded-2xl border border-gray-100 bg-white p-4 text-center text-body-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
-            Repertório da celebração
+          <!-- 4) Disponibilidade: atalho, sem novo endpoint -->
+          <RouterLink to="/disponibilidade"
+            class="flex items-center justify-between gap-3 rounded-xl bg-white p-5 shadow-card transition hover:ring-1 hover:ring-primary-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:bg-gray-800 dark:shadow-none dark:hover:ring-primary-700">
+            <span>
+              <span class="block text-body font-semibold text-gray-800 dark:text-gray-100">Disponibilidade</span>
+              <span class="block text-body-sm text-gray-600 dark:text-gray-400">Informe os períodos em que você pode servir.</span>
+            </span>
+            <ChevronRightIcon class="h-5 w-5 shrink-0 text-gray-400" aria-hidden="true" />
           </RouterLink>
-          <RouterLink :to="`/escalas/${myNextScale.id}/liturgia`"
-            class="flex-1 rounded-2xl border border-gray-100 bg-white p-4 text-center text-body-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
-            Liturgia do dia
-          </RouterLink>
+
+          <!-- 6) Conteúdo da próxima celebração: liturgia sempre (vale para todo ministério);
+               repertório só quando a celebração tem um. -->
+          <section v-if="myNextScale" class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="my-content-title">
+            <h3 id="my-content-title" class="mb-2 text-body font-semibold text-gray-800 dark:text-gray-100">Para a próxima celebração</h3>
+            <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+              <li>
+                <RouterLink :to="`/escalas/${myNextScale.id}/liturgia`" class="flex min-h-11 items-center justify-between gap-3 py-2 text-body-sm font-medium text-gray-700 hover:text-primary-700 dark:text-gray-200 dark:hover:text-primary-300">
+                  Liturgia do dia <ChevronRightIcon class="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                </RouterLink>
+              </li>
+              <li v-if="myNextScaleHasRepertoire">
+                <RouterLink :to="`/escalas/${myNextScale.id}/repertorio`" class="flex min-h-11 items-center justify-between gap-3 py-2 text-body-sm font-medium text-gray-700 hover:text-primary-700 dark:text-gray-200 dark:hover:text-primary-300">
+                  Repertório da celebração <ChevronRightIcon class="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                </RouterLink>
+              </li>
+            </ul>
+          </section>
         </div>
+
       </div>
 
       <!-- Calendário -->
