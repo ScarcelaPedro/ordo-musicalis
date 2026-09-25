@@ -1,5 +1,5 @@
 ---
-status: em-andamento
+status: concluida
 modulo: src/pages/dashboard
 owner: Pedro Scarcela
 criado-em: 2026-09-25
@@ -53,13 +53,13 @@ coluna única na ordem acima.
 
 ## Critérios de conclusão
 
-- [ ] Função real exibida para servidores de qualquer ministério (testar com Leitor, Acólito e
+- [x] Função real exibida para servidores de qualquer ministério (testar com Leitor, Acólito e
       Músico).
-- [ ] Bloco de pendências com contagem correta e link funcional; oculto quando zero.
-- [ ] Nenhum `♪`/elemento musical genérico no dashboard do servidor.
-- [ ] Repertório exibido só quando aplicável, critério registrado.
-- [ ] Nenhuma informação administrativa ou de terceiros exibida.
-- [ ] Nenhuma nova chamada de API; `npm run build` passa; verificado em mobile e desktop.
+- [x] Bloco de pendências com contagem correta e link funcional; oculto quando zero.
+- [x] Nenhum `♪`/elemento musical genérico no dashboard do servidor.
+- [x] Repertório exibido só quando aplicável, critério registrado.
+- [x] Nenhuma informação administrativa ou de terceiros exibida.
+- [x] Nenhuma nova chamada de API; `npm run build` passa; verificado em mobile e desktop.
 
 ## Referências
 
@@ -70,3 +70,43 @@ coluna única na ordem acima.
 ## Notas de progresso
 
 - 2026-09-25 — Task criada a partir da decomposição da SPEC-003.1.
+- 2026-09-25 — Task reivindicada e executada. Commit: `38bc5d1`.
+
+  **Estrutura** (ordem do DOM = ordem mobile, conferida a 375px): 1) Sua próxima escala →
+  2) Próximas escalas → 3) Pendências → 4) Disponibilidade → 6) "Para a próxima celebração"
+  (Liturgia do dia + Repertório quando houver) → calendário. No desktop: destaque e próximas à
+  esquerda (`col-span-2`), coluna lateral com pendências/disponibilidade/conteúdo. Comunicações
+  (item 5) não foram implementadas: não há módulo.
+
+  **Função real** (§13/§14): discovery mostrou que `GET /scales` (listagem) devolve só
+  `categoriaId`/`teamId` no pivot, sem nome da categoria. Para não alterar a API (§30), os nomes
+  vêm de `GET /categorias` e `GET /teams` (endpoints existentes, acessíveis ao servidor). Novo
+  util `src/utils/scaleRole.ts`: `assignmentRole`/`assignmentRoleLabel` (ministério primeiro;
+  função litúrgica e instrumento como complemento), `resolveAssignment` (preenche nomes a partir
+  dos ids) e `FUNCAO_LITURGICA_LABELS` (hoje duplicado em `MyScales.vue`/`scales/Show.vue`;
+  a `TASK-0105` pode adotar o util). 10 testes novos (22 no total), cobrindo Leitores, Ministros
+  da Comunhão, Acólitos com Turiferário, Música com Violão, fallback pela categoria do team,
+  ids desconhecidos e ausência de dado. Visualmente validado com a servidora de teste (Leitora):
+  "Função: Leitores" no destaque e "Leitores · Matriz" na lista. Acólito e Músico foram cobertos
+  pelos testes da mesma função de rótulo; o seed só tinha login para a Leitora.
+
+  **Critério do repertório "quando aplicável"** (registrado aqui, como a task pedia): o atalho só
+  aparece se a próxima celebração **tem repertório com itens**. Como `repertoire` só vem no
+  detalhe, o Dashboard busca `GET /scales/:id` apenas da próxima escala. Verificado: com
+  repertório no banco de teste o atalho aparece; sem repertório, fica oculto. "Liturgia do dia"
+  aparece sempre, porque vale para todo ministério (leitores, salmistas...).
+
+  **Pendências**: contagem das escalas futuras do próprio servidor com `status === 'convidado'`
+  ("Você possui 2 escalas aguardando confirmação." + "Ver pendências" → `/minha-escala`), oculta
+  quando zero. **Outros ajustes**: removidos `♪` e o gradiente `to-purple-900` (roxo é cor
+  litúrgica); destaque em `primary-800→950` com cruz discreta. "Próximas" usa `selectUpcoming`
+  (data local, corrige o UTC pendente da `TASK-0102`) e **deixa de fora** escalações
+  `recusado`/`substituido`, que não são mais "a próxima escala" da pessoa (continuam visíveis em
+  Minha Escala). Nenhuma estatística, dado de outros servidores ou bloco de staff. Removidos
+  `ScaleCard`/`scaleCardProps`, que ficaram sem uso.
+
+  **Verificação**: 1280px escuro, 375px claro e escuro; sem scroll horizontal; `♪` ausente.
+  `npm run build` e `npm test` passam; `dist/` revertido. Nenhuma alteração em `api/`.
+
+  **Achado para a `TASK-0099`**: o título "Dashboard" do header (`text-gray-800` sem `dark:`)
+  fica invisível no tema escuro. Pré-existente.
