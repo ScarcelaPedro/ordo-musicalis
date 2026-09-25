@@ -1,7 +1,7 @@
 ---
-status: backlog
+status: em-andamento
 modulo: api
-owner:
+owner: Pedro Scarcela
 criado-em: 2026-09-25
 ---
 
@@ -46,3 +46,6 @@ o responsável se o ministério deve aparecer publicamente antes de implementar.
 ## Notas de progresso
 
 - 2026-09-25 — Task criada a partir da validação da SPEC-003.1.
+- 2026-09-25 — **Decisão do usuário (human gate resolvido)**: aprovado mostrar o ministério no
+  calendário público ("Sim, mostrar ministério"), sabendo que isso expõe o nome do ministério a
+  visitantes anônimos. Task reivindicada.
