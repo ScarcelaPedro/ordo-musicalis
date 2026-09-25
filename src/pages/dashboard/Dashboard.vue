@@ -9,8 +9,10 @@ import Select from '@/components/Select.vue'
 import Skeleton from '@/components/Skeleton.vue'
 import ScaleCard from '@/components/scale/ScaleCard.vue'
 import { parseDateOnly } from '@/utils/date'
+import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
+import { ChevronRightIcon, MapPinIcon, UserIcon, UsersIcon } from '@heroicons/vue/24/outline'
 
 const auth = useAuthStore()
 
@@ -83,6 +85,22 @@ async function load() {
   }
 }
 
+const upcomingScales  = ref<Scale[]>([])
+const loadingUpcoming = ref(false)
+
+async function loadUpcoming() {
+  if (!auth.isStaff) return
+  loadingUpcoming.value = true
+  try {
+    const responses = await Promise.all(
+      currentAndNextMonthKeys(new Date()).map((mes) => client.get<Scale[]>('/scales', { params: { mes } })),
+    )
+    upcomingScales.value = responses.flatMap((r) => r.data)
+  } finally {
+    loadingUpcoming.value = false
+  }
+}
+
 async function loadPendencias() {
   if (!auth.isStaff) return
   const { data } = await client.get('/scales/pendentes')
@@ -115,7 +133,7 @@ async function loadLiturgias() {
   }
 }
 
-onMounted(() => { load(); loadPendencias(); loadComunidades(); loadLiturgias(); loadMyScales() })
+onMounted(() => { load(); loadUpcoming(); loadPendencias(); loadComunidades(); loadLiturgias(); loadMyScales() })
 watch([currentMonth, currentYear, filterComunidadeId], load)
 watch([currentMonth, currentYear], loadLiturgias)
 
@@ -177,28 +195,36 @@ const drafts      = computed(() => scales.value.filter(s => s.status === 'rascun
 // A "contagem de funções preenchidas" que o wireframe também descreve para este bloco NÃO é
 // implementada: a API de /scales não retorna as categorias esperadas por celebração, mesma
 // lacuna de dado já registrada para "Funções sem servidor" (ver Riscos da TASK-0039).
-const upcomingCelebrations = computed(() => {
-  const todayStr  = today.toISOString().slice(0, 10)
-  const nowTime   = today.toTimeString().slice(0, 5)
-  return [...scales.value]
-    .sort((a, b) => a.dataCelebracao.localeCompare(b.dataCelebracao) || a.horario.localeCompare(b.horario))
-    .filter(s => {
-      const d = s.dataCelebracao.slice(0, 10)
-      return d > todayStr || (d === todayStr && s.horario >= nowTime)
-    })
-    .slice(0, 3)
-})
+//
+// TASK-0102: own data source (`upcomingScales`, current + next month via the existing `mes`
+// param), no longer `scales.value` -- that one follows the month shown in the calendar, so
+// browsing the calendar used to change "the next celebration". Same reasoning as TASK-0088.
+const upcomingCelebrations = computed(() => selectUpcoming(upcomingScales.value, new Date(), 6))
+const nextCelebration = computed(() => upcomingCelebrations.value[0] ?? null)
+const laterCelebrations = computed(() => upcomingCelebrations.value.slice(1))
 
-function upcomingScaleCardProps(s: Scale) {
-  return {
-    celebracao: s.celebracao,
-    dataFormatada: formatFullDate(s.dataCelebracao),
-    horario: s.horario,
-    comunidade: s.comunidade?.nome ?? null,
-    status: s.status,
-    to: `/escalas/${s.id}`,
-  }
+function teamSummary(s: Scale) {
+  const total = s.servidores.length
+  if (!total) return 'Nenhum servidor escalado ainda'
+  const confirmedCount = s.servidores.filter((sv) => sv.status === 'confirmado').length
+  return `${total} ${total === 1 ? 'servidor' : 'servidores'} · ${confirmedCount} ${confirmedCount === 1 ? 'confirmado' : 'confirmados'}`
 }
+
+function capitalizeFirst(text: string) {
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+function weekdayShort(iso: string) {
+  return parseDateOnly(iso)!.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').toUpperCase()
+}
+
+function dayOfMonth(iso: string) {
+  return parseDateOnly(iso)!.getDate()
+}
+
+const shownMonthLabel = computed(() =>
+  new Date(currentYear.value, currentMonth.value, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }),
+)
 
 // TASK-0088 (correção): fonte própria (myScalesAll, `GET /scales?mine=true`, sem `mes`), não
 // mais `scales.value` (que só contém o mês em exibição no calendário do coordenador -- um
@@ -275,48 +301,140 @@ function formatFullDate(iso: string) {
       </div>
     </template>
 
-    <div class="space-y-6">
+    <!-- Desktop: 3-column grid (reference layout, SPEC-003.1 §5/§22) -- staff: highlight + calendar
+         on the left, short lists on the right. DOM order is the mobile priority order (§28):
+         next celebration → upcoming → pending → month status → calendar. -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-      <!-- Coordenador -- ordem de prioridade exata da TASK-0008 (§5.2): 1) próximas
-           celebrações, 2) situação das escalas, 3) pendências (mais abaixo, já no bloco
-           existente). Itens 4 "Funções sem servidor" e 5 "Conflitos" ficam FORA desta tela --
-           dependem de dado agregado que a API de /scales não retorna hoje e que não existe
-           detecção de conflito em lugar nenhum do sistema; simular esse dado no frontend violaria
-           SPEC-004 §43/§44, então o problema fica só registrado (ver Riscos da TASK-0039), sem
-           placeholder algum na tela -- um placeholder vazio ainda seria uma promessa de recurso
-           que não existe. -->
+      <!-- Coordenador -- prioridades da TASK-0008 (§5.2) na linguagem da SPEC-003.1. Itens
+           "Funções sem servidor" e "Conflitos" seguem FORA desta tela: dependem de dado que a API
+           não retorna e não há detecção de conflito no sistema (Riscos da TASK-0039). Avisos/
+           comunicações da referência também não entram: não existe esse módulo (SPEC-003.1 §5).
+           Cobertura por ministério entra na TASK-0103. -->
       <template v-if="auth.isStaff">
 
-        <!-- 1) Próximas celebrações (lista curta) -->
-        <div v-if="loading" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-3 dark:bg-gray-800 dark:border-gray-700">
-          <Skeleton width="w-40" height="h-3" />
-          <Skeleton height="h-16" rounded="rounded-xl" />
-          <Skeleton height="h-16" rounded="rounded-xl" />
-        </div>
-        <div v-else-if="upcomingCelebrations.length" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 dark:bg-gray-800 dark:border-gray-700">
-          <p class="text-xs font-semibold text-gray-600 uppercase tracking-widest mb-3 dark:text-gray-400">Próximas celebrações</p>
-          <div class="space-y-2">
-            <ScaleCard v-for="s in upcomingCelebrations" :key="s.id" v-bind="upcomingScaleCardProps(s)" />
+        <!-- 1) Próxima celebração (informação principal) -->
+        <section class="lg:col-span-2" aria-labelledby="next-celebration-title">
+          <div v-if="loadingUpcoming" class="space-y-3 rounded-xl bg-white p-6 shadow-card dark:bg-gray-800 dark:shadow-none">
+            <Skeleton width="w-32" height="h-3" />
+            <Skeleton width="w-2/3" height="h-7" />
+            <Skeleton width="w-1/2" height="h-4" />
           </div>
-        </div>
+          <RouterLink
+            v-else-if="nextCelebration"
+            :to="`/escalas/${nextCelebration.id}`"
+            class="group relative flex gap-5 overflow-hidden rounded-xl bg-white p-6 shadow-card transition hover:ring-1 hover:ring-primary-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:bg-gray-800 dark:shadow-none dark:hover:ring-primary-700"
+          >
+            <!-- Discreet liturgical mark (§20) -->
+            <span class="hidden h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent-50 text-accent-600 sm:flex dark:bg-accent-900/30 dark:text-accent-300" aria-hidden="true">
+              <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <path d="M12 3v18M7 8h10" />
+              </svg>
+            </span>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-start justify-between gap-2">
+                <p class="text-label uppercase text-accent-700 dark:text-accent-300">Próxima celebração</p>
+                <Badge :color="nextCelebration.status === 'confirmada' ? 'green' : 'yellow'">
+                  {{ nextCelebration.status === 'confirmada' ? 'Escala confirmada' : 'Escala em rascunho' }}
+                </Badge>
+              </div>
+              <h3 id="next-celebration-title" class="mt-1 text-h3 text-gray-900 dark:text-gray-50">
+                {{ capitalizeFirst(formatFullDate(nextCelebration.dataCelebracao)) }} · {{ nextCelebration.horario }} — {{ nextCelebration.celebracao }}
+              </h3>
+              <ul class="mt-3 flex flex-wrap gap-x-6 gap-y-1.5 text-body-sm text-gray-600 dark:text-gray-300">
+                <li v-if="nextCelebration.comunidade" class="flex items-center gap-1.5">
+                  <MapPinIcon class="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span class="sr-only">Local:</span>{{ nextCelebration.comunidade.nome }}
+                </li>
+                <li class="flex items-center gap-1.5">
+                  <UserIcon class="h-4 w-4 shrink-0" aria-hidden="true" />
+                  Celebrante: {{ nextCelebration.celebrante?.nome ?? 'não definido' }}
+                </li>
+                <li class="flex items-center gap-1.5">
+                  <UsersIcon class="h-4 w-4 shrink-0" aria-hidden="true" />
+                  {{ teamSummary(nextCelebration) }}
+                </li>
+              </ul>
+            </div>
+            <ChevronRightIcon class="hidden h-5 w-5 shrink-0 self-center text-gray-400 transition group-hover:text-primary-600 sm:block" aria-hidden="true" />
+          </RouterLink>
+          <div v-else class="rounded-xl bg-white p-6 text-center shadow-card dark:bg-gray-800 dark:shadow-none">
+            <p class="text-body-sm text-gray-600 dark:text-gray-400">Nenhuma celebração agendada neste mês nem no próximo.</p>
+          </div>
+        </section>
 
-        <!-- 2) Situação das escalas -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <p class="text-xs font-semibold text-gray-600 uppercase tracking-widest">Total</p>
-            <p class="mt-2 text-4xl font-extrabold text-gray-800">{{ totalScales }}</p>
-            <p class="mt-1 text-xs text-gray-600">celebrações no mês</p>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <p class="text-xs font-semibold text-success-700 uppercase tracking-widest">Confirmadas</p>
-            <p class="mt-2 text-4xl font-extrabold text-success-600">{{ confirmed }}</p>
-            <p class="mt-1 text-xs text-gray-600">escalas prontas</p>
-          </div>
-          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <p class="text-xs font-semibold text-accent-700 uppercase tracking-widest">Rascunhos</p>
-            <p class="mt-2 text-4xl font-extrabold text-accent-600">{{ drafts }}</p>
-            <p class="mt-1 text-xs text-gray-600">aguardando servidores</p>
-          </div>
+        <!-- Coluna lateral (desktop) -->
+        <div class="space-y-6 lg:col-start-3 lg:row-span-2 lg:row-start-1">
+
+          <!-- 2) Próximas celebrações -->
+          <section v-if="loadingUpcoming || laterCelebrations.length" class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="upcoming-title">
+            <div class="mb-3 flex items-center justify-between gap-2">
+              <h3 id="upcoming-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Próximas celebrações</h3>
+              <RouterLink to="/escalas" class="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-300">Ver todas</RouterLink>
+            </div>
+            <div v-if="loadingUpcoming" class="space-y-3">
+              <Skeleton height="h-12" rounded="rounded-lg" />
+              <Skeleton height="h-12" rounded="rounded-lg" />
+            </div>
+            <ul v-else class="divide-y divide-gray-100 dark:divide-gray-700">
+              <li v-for="s in laterCelebrations" :key="s.id">
+                <RouterLink :to="`/escalas/${s.id}`" class="flex items-center gap-3 rounded-lg py-3 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:bg-gray-700/50">
+                  <span class="w-10 shrink-0 text-center">
+                    <span class="block text-caption font-semibold text-gray-500 dark:text-gray-400">{{ weekdayShort(s.dataCelebracao) }}</span>
+                    <span class="block text-h4 leading-tight text-gray-900 dark:text-gray-100">{{ dayOfMonth(s.dataCelebracao) }}</span>
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ s.celebracao }}</span>
+                    <span class="block truncate text-caption text-gray-600 dark:text-gray-400">
+                      {{ s.horario }}<template v-if="s.comunidade"> · {{ s.comunidade.nome }}</template>
+                    </span>
+                    <span v-if="s.celebrante" class="block truncate text-caption text-gray-500 dark:text-gray-400">{{ s.celebrante.nome }}</span>
+                  </span>
+                  <Badge v-if="s.status === 'rascunho'" color="yellow" class="shrink-0">rascunho</Badge>
+                </RouterLink>
+              </li>
+            </ul>
+          </section>
+
+          <!-- 3) Pendências de confirmação -->
+          <section v-if="pendencias.length" class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="pending-title">
+            <h3 id="pending-title" class="mb-3 text-body font-semibold text-gray-800 dark:text-gray-100">
+              Pendências de confirmação
+              <span class="ml-1 whitespace-nowrap text-body-sm font-normal text-gray-500 dark:text-gray-400">({{ pendencias.length }})</span>
+            </h3>
+            <ul class="space-y-2">
+              <li v-for="p in pendencias" :key="p.scaleServidorId">
+                <RouterLink :to="`/escalas/${p.scaleId}`"
+                  class="flex items-center justify-between gap-3 rounded-lg border border-gray-100 p-3 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-gray-700 dark:hover:bg-gray-700/50">
+                  <span class="min-w-0">
+                    <span class="block truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ p.servidorNome }}</span>
+                    <span class="block truncate text-caption text-gray-600 dark:text-gray-400">{{ p.celebracao }} · {{ formatFullDate(p.dataCelebracao) }} · {{ p.horario }}</span>
+                  </span>
+                  <Badge color="yellow" class="shrink-0">{{ p.diasRestantes === 0 ? 'hoje' : `em ${p.diasRestantes}d` }}</Badge>
+                </RouterLink>
+              </li>
+            </ul>
+          </section>
+
+          <!-- 4) Situação das escalas (mês exibido no calendário) -->
+          <section class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="month-status-title">
+            <h3 id="month-status-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Situação das escalas</h3>
+            <p class="mb-4 text-caption text-gray-600 dark:text-gray-400">{{ capitalizeFirst(shownMonthLabel) }}</p>
+            <dl class="grid grid-cols-3 gap-3 text-center">
+              <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                <dt class="text-caption text-gray-600 dark:text-gray-400">Celebrações</dt>
+                <dd class="mt-1 text-h2 text-gray-900 dark:text-gray-50">{{ totalScales }}</dd>
+              </div>
+              <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                <dt class="text-caption text-gray-600 dark:text-gray-400">Confirmadas</dt>
+                <dd class="mt-1 text-h2 text-success-700 dark:text-success-400">{{ confirmed }}</dd>
+              </div>
+              <div class="rounded-lg bg-gray-50 p-3 dark:bg-gray-900/40">
+                <dt class="text-caption text-gray-600 dark:text-gray-400">Rascunhos</dt>
+                <dd class="mt-1 text-h2 text-warning-700 dark:text-warning-400">{{ drafts }}</dd>
+              </div>
+            </dl>
+          </section>
         </div>
       </template>
 
@@ -324,7 +442,7 @@ function formatFullDate(iso: string) {
            importantes" foi deliberadamente omitido: depende do indicador de alteração ainda não
            implementado (pendência de dado registrada na própria TASK-0008, a resolver na
            TASK-0041) -- não inventamos o dado aqui. -->
-      <template v-if="!auth.isStaff">
+      <div v-if="!auth.isStaff" class="space-y-6 lg:col-span-3">
 
         <!-- 1) Próxima escala em destaque + 2) confirmação pendente embutida -->
         <div v-if="loadingMyScales" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-3 dark:bg-gray-800 dark:border-gray-700">
@@ -399,27 +517,10 @@ function formatFullDate(iso: string) {
             Liturgia do dia
           </RouterLink>
         </div>
-      </template>
-
-      <!-- Pendências de confirmação (staff) -->
-      <div v-if="auth.isStaff && pendencias.length" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <p class="text-xs font-semibold text-gray-600 uppercase tracking-widest mb-3">Pendências de confirmação</p>
-        <div class="space-y-2">
-          <RouterLink v-for="p in pendencias" :key="p.scaleServidorId" :to="`/escalas/${p.scaleId}`"
-            class="flex items-center justify-between p-3 rounded-xl bg-accent-50 hover:bg-accent-100 transition group">
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-accent-800 truncate">{{ p.servidorNome }} — {{ p.celebracao }}</p>
-              <p class="text-xs text-accent-600">{{ formatFullDate(p.dataCelebracao) }} · {{ p.horario }}</p>
-            </div>
-            <span class="shrink-0 ml-3 text-xs font-semibold text-accent-700 bg-accent-100 px-2 py-1 rounded-full">
-              {{ p.diasRestantes === 0 ? 'hoje' : `${p.diasRestantes}d` }}
-            </span>
-          </RouterLink>
-        </div>
       </div>
 
       <!-- Calendário -->
-      <div class="overflow-hidden rounded-xl bg-white shadow-card dark:bg-gray-800 dark:shadow-none">
+      <div class="overflow-hidden rounded-xl bg-white shadow-card dark:bg-gray-800 dark:shadow-none" :class="auth.isStaff ? 'lg:col-span-2 lg:row-start-2' : 'lg:col-span-3'">
 
         <!-- Filtro por comunidade (fica fora do Calendar.vue -- componente genérico, sem
              conhecimento de "comunidade") -->
