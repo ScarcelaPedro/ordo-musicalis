@@ -1,5 +1,5 @@
 ---
-status: em-andamento
+status: concluida
 modulo: src/components
 owner: Pedro Scarcela
 criado-em: 2026-10-01
@@ -30,11 +30,11 @@ um dia, aparece um card com os horários das celebrações, e cada horário abre
 
 ## Critérios de conclusão
 
-- [ ] Todos os blocos do desktop com a mesma altura, com 0, 1 ou 3 celebrações no dia.
-- [ ] Clique no dia abre o card; clique no horário abre a escala; estados vazio/fechar/mês ok.
-- [ ] Um único card no DOM (sem `id` duplicado entre desktop e mobile).
-- [ ] Mobile sem regressão; claro e escuro; teclado.
-- [ ] `npm run build` e `npm test` passam.
+- [x] Todos os blocos do desktop com a mesma altura, com 0, 1 ou 3 celebrações no dia.
+- [x] Clique no dia abre o card; clique no horário abre a escala; estados vazio/fechar/mês ok.
+- [x] Um único card no DOM (sem `id` duplicado entre desktop e mobile).
+- [x] Mobile sem regressão; claro e escuro; teclado.
+- [x] `npm run build` e `npm test` passam.
 
 ## Referências
 
@@ -43,3 +43,31 @@ um dia, aparece um card com os horários das celebrações, e cada horário abre
 ## Notas de progresso
 
 - 2026-10-01 — Task criada e reivindicada a pedido do usuário.
+- 2026-10-01 — Executada. Commit: `6bb3672`.
+
+  **`Calendar.vue`**: cada dia do desktop virou `<button>` de **altura fixa** (`h-[84px]` /
+  `lg:h-[92px]`, antes `min-h`), com `aria-pressed`, contorno de seleção (o mesmo
+  `SELECTED_DAY_CLASS` da `TASK-0114`), hover e foco visível, emitindo `select-day`. Os dias
+  fora do mês continuam como `div` vazio da mesma altura. O conteúdo do slot `day` fica preso à
+  base do bloco (`mt-auto`). O slot `selected-day` saiu de dentro do bloco mobile: a ordem
+  agora é grade desktop | grade mobile | **card (único, serve os dois)** | lista mobile. Assim não
+  há `id`/`aria-live` duplicado, e o mobile mantém grade → card → lista (conferido pelos irmãos
+  no DOM).
+
+  **Dashboard**: o slot `day` deixou de renderizar um chip por escala (era o que esticava a
+  linha) e mostra um indicador compacto, ícone de relógio + quantidade, com "celebração(ões)" em
+  `sr-only`. O texto completo ("3 celebrações") truncava a 1280px, porque o bloco fica com cerca
+  de 44px úteis ao lado da sidebar e da coluna lateral. Ao abrir, o card rola para a área visível
+  (`scrollIntoView({ block: 'nearest' })`, sem salto se já estiver visível). Card com margens de
+  desktop (`md:mx-6`). Legenda "Escalas" refeita: no desktop "🕒N celebrações no dia"; no mobile
+  o ponto (claro) ou o traço (escuro); e "Clique/Toque no dia para ver os horários". A legenda do
+  ícone de confirmada saiu porque os chips deixaram de existir (o status agora está escrito no
+  card). `CheckCircleIcon` continua importado (usado em "Presença confirmada").
+
+  **Verificação** (banco temporário: 3 escalas em 04/10, 1 em 11/10, 2 em 18/10): a 1280px os 35
+  blocos têm **uma única altura (92px)** com 0, 1, 2 ou 3 celebrações. Clique no dia 4 abre o card
+  com 07:00/10:00/19:00, dentro da área visível, e um só card no DOM. Clique real (1100px,
+  escuro) em "10:00 Missa Solene" abriu `/escalas/2`. Segundo clique fecha, dia vazio (9),
+  botão fechar, dia 18 com 2 itens e troca de mês: todos ok. Mobile 375px: card abaixo da grade,
+  3 itens, lista abaixo do card, sem scroll horizontal. `npm run build` e `npm test` passam;
+  `dist/` revertido.
