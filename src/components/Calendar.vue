@@ -164,14 +164,21 @@ function desktopTileClass(day: number) {
         </div>
       </div>
       <div v-if="!loading" class="grid grid-cols-7 gap-1.5">
-        <div
-          v-for="(day, idx) in cells" :key="idx"
-          class="min-h-[84px] rounded-lg border p-1.5 lg:min-h-[92px]"
-          :class="day ? desktopTileClass(day) : 'border-transparent bg-gray-50 dark:bg-gray-900/40'"
-          :title="day ? cellLabel(dateKey(day)) ?? undefined : undefined"
-        >
-          <template v-if="day">
-            <div class="mb-1 flex items-start justify-between gap-1">
+        <!-- Fixed-height tiles (TASK-0115): the day's events are summarized by the parent in the
+             `day` slot and listed in the `selected-day` card on click, so a busy day never
+             stretches its row. -->
+        <template v-for="(day, idx) in cells" :key="idx">
+          <div v-if="!day" class="h-[84px] rounded-lg border border-transparent bg-gray-50 lg:h-[92px] dark:bg-gray-900/40" />
+          <button
+            v-else
+            type="button"
+            class="flex h-[84px] flex-col rounded-lg border p-1.5 text-left transition hover:border-primary-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 lg:h-[92px] dark:hover:border-primary-500"
+            :class="[desktopTileClass(day), selectedKey === dateKey(day) ? SELECTED_DAY_CLASS : '']"
+            :title="cellLabel(dateKey(day)) ?? undefined"
+            :aria-pressed="selectedKey === dateKey(day)"
+            @click="$emit('select-day', dateKey(day))"
+          >
+            <div class="mb-1 flex w-full items-start justify-between gap-1">
               <span
                 class="flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-caption font-semibold"
                 :class="isToday(day) ? 'bg-primary-700 text-white' : 'text-gray-800 dark:text-gray-200'"
@@ -185,9 +192,11 @@ function desktopTileClass(day: number) {
             </div>
             <p v-if="isToday(day)" class="mb-1 text-caption font-medium text-primary-700 dark:text-primary-300">Hoje</p>
             <span v-if="cellLabel(dateKey(day))" class="sr-only">{{ cellLabel(dateKey(day)) }}</span>
-            <slot name="day" :day="day" :date-key="dateKey(day)" :is-today="isToday(day)" />
-          </template>
-        </div>
+            <span class="mt-auto w-full min-w-0">
+              <slot name="day" :day="day" :date-key="dateKey(day)" :is-today="isToday(day)" />
+            </span>
+          </button>
+        </template>
       </div>
       <div v-else class="flex flex-col items-center justify-center py-24 text-gray-600 dark:text-gray-400">
         <Spinner size="mb-3 h-8 w-8 text-primary-400" />
@@ -265,8 +274,13 @@ function desktopTileClass(day: number) {
           </button>
         </template>
       </div>
-      <!-- Detail of the day picked above (TASK-0114) -- content owned by the parent. -->
-      <slot name="selected-day" />
+    </div>
+
+    <!-- Detail of the picked day, shared by desktop and mobile so there is a single card in the
+         DOM (TASK-0114/0115) -- content owned by the parent. -->
+    <slot name="selected-day" />
+
+    <div class="md:hidden">
       <div class="divide-y divide-gray-100 border-t border-gray-100 dark:divide-gray-700 dark:border-gray-700">
         <template v-for="(day, idx) in cells" :key="idx">
           <div v-if="day && hasEvents(dateKey(day))" class="px-4 py-3">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
@@ -18,7 +18,7 @@ import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
 import { assignmentRole, assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
-import { ChevronRightIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { ChevronRightIcon, ClockIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import LiturgicalInfo from '@/components/scale/LiturgicalInfo.vue'
 
 const auth = useAuthStore()
@@ -229,12 +229,16 @@ function cellLabel(dateKey: string) {
   return l?.liturgia ? `${label} · ${l.liturgia}` : label
 }
 
-// Mobile day card (TASK-0114): tapping a day in the compact grid shows that day's celebrations;
-// tapping the same day again closes it. Desktop never emits select-day, so it is unaffected.
+// Day card (TASK-0114 mobile, TASK-0115 desktop): picking a day shows that day's celebrations;
+// picking the same day again closes it.
 const selectedDayKey = ref<string | null>(null)
 
-function toggleSelectedDay(dateKey: string) {
+async function toggleSelectedDay(dateKey: string) {
   selectedDayKey.value = selectedDayKey.value === dateKey ? null : dateKey
+  if (!selectedDayKey.value) return
+  // On desktop the card sits below a tall grid -- bring it into view (no jump if already visible).
+  await nextTick()
+  document.getElementById('selected-day-title')?.closest('section')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 }
 
 watch([currentMonth, currentYear], () => { selectedDayKey.value = null })
@@ -719,7 +723,7 @@ function formatFullDate(iso: string) {
           <template #selected-day>
             <section
               v-if="selectedDayKey"
-              class="mx-3 mb-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card dark:border-gray-700 dark:bg-gray-900/60 dark:shadow-none"
+              class="mx-3 mb-3 scroll-mt-24 rounded-xl border border-gray-200 bg-white p-4 shadow-card md:mx-6 md:mb-5 dark:border-gray-700 dark:bg-gray-900/60 dark:shadow-none"
               aria-live="polite"
               aria-labelledby="selected-day-title"
             >
@@ -761,22 +765,17 @@ function formatFullDate(iso: string) {
               <p v-else class="mt-3 text-body-sm text-gray-600 dark:text-gray-400">Nenhuma celebração criada neste dia.</p>
             </section>
           </template>
+          <!-- Desktop tile summary (TASK-0115): just how many celebrations the day has; the times
+               open in the day card on click, so busy days no longer stretch their row. -->
           <template #day="{ dateKey }">
-            <RouterLink
-              v-for="scale in scalesByDate[dateKey] ?? []"
-              :key="scale.id"
-              :to="`/escalas/${scale.id}`"
-              class="mb-0.5 flex items-center gap-1 truncate rounded-md border px-1.5 py-0.5 text-xs font-medium transition"
-              :class="SCALE_CHIP_CLASS"
-              :title="`${scale.celebracao} · ${scale.celebrante?.nome ?? 'Sem celebrante'} · ${scale.status === 'confirmada' ? 'Escala confirmada' : 'Rascunho'}`"
+            <span
+              v-if="scalesByDate[dateKey]?.length"
+              class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-1.5 py-0.5 text-caption font-semibold text-gray-700 dark:bg-gray-700/60 dark:text-gray-200"
             >
-              <CheckCircleIcon v-if="scale.status === 'confirmada'" class="h-3.5 w-3.5 shrink-0 text-gray-600 dark:text-gray-300" aria-hidden="true" />
-              <span class="sr-only">{{ scale.status === 'confirmada' ? 'Escala confirmada:' : 'Rascunho:' }}</span>
-              <span class="shrink-0 font-mono text-caption">{{ scale.horario }}</span>
-              <span v-if="scale.celebrante" class="ml-0.5 hidden truncate text-caption text-gray-600 dark:text-gray-300 xl:inline">
-                {{ scale.celebrante.nome }}
-              </span>
-            </RouterLink>
+              <ClockIcon class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              {{ scalesByDate[dateKey].length }}
+              <span class="sr-only">{{ scalesByDate[dateKey].length === 1 ? 'celebração' : 'celebrações' }}</span>
+            </span>
           </template>
 
           <template #list-item="{ day, dateKey, isToday: dayIsToday }">
@@ -819,14 +818,19 @@ function formatFullDate(iso: string) {
 
         <div class="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-gray-100 bg-gray-50/60 px-5 py-3 text-caption text-gray-700 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-300">
           <p class="text-label uppercase text-gray-600 dark:text-gray-400">Escalas</p>
-          <span class="flex items-center gap-1.5">
-            <CheckCircleIcon class="h-4 w-4 text-gray-600 dark:text-gray-300" aria-hidden="true" /> Confirmada
+          <!-- How a day with celebrations is marked in each layout (TASK-0111/0114/0115). -->
+          <span class="hidden items-center gap-1.5 md:flex">
+            <span class="inline-flex items-center gap-1 rounded-md bg-gray-100 px-1.5 py-0.5 font-semibold dark:bg-gray-700/60" aria-hidden="true"><ClockIcon class="h-3.5 w-3.5" />N</span> celebrações no dia
           </span>
-          <span>Sem ícone: rascunho</span>
+          <span class="flex items-center gap-1.5 md:hidden dark:hidden">
+            <span class="inline-block h-1 w-1 rounded-full bg-gray-800" aria-hidden="true"></span> Dia com celebração
+          </span>
           <span class="hidden items-center gap-1.5 max-md:dark:flex">
             <span class="inline-block h-1 w-4 rounded-full bg-gray-300" aria-hidden="true"></span> Dia com celebração
           </span>
-          <span class="ml-auto hidden italic text-gray-600 dark:text-gray-400 sm:inline">Passe o cursor sobre a escala para ver celebração e celebrante</span>
+          <span class="ml-auto italic text-gray-600 dark:text-gray-400">
+            <span class="hidden md:inline">Clique</span><span class="md:hidden">Toque</span> no dia para ver os horários
+          </span>
         </div>
       </div>
 
