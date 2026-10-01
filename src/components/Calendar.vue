@@ -37,6 +37,8 @@ const props = withDefaults(
      * desktop tile with the `cellMarker` dot (used by the Dashboard in dark mode, TASK-0111).
      */
     compactVariant?: 'tint' | 'tiles'
+    /** Day picked in the mobile compact grid ("YYYY-MM-DD"), highlighted with aria-pressed. */
+    selectedKey?: string | null
     // Optional accessible description of what the cell color means (e.g. the liturgical
     // season) -- color must never be the only carrier of information (SPEC-003.1 §25).
     cellLabel?: (dateKey: string) => string | null
@@ -48,6 +50,7 @@ const props = withDefaults(
     cellMarker: undefined,
     hasEvents: () => false,
     compactVariant: 'tint',
+    selectedKey: null,
     cellLabel: () => null,
   },
 )
@@ -115,6 +118,9 @@ function compactDayLabel(day: number) {
     .filter(Boolean)
     .join(', ')
 }
+
+// Outline (not ring) so it never collides with the "today" ring of the compact grid.
+const SELECTED_DAY_CLASS = 'outline outline-2 outline-offset-1 outline-gray-900 dark:outline-gray-100'
 
 function desktopTileClass(day: number) {
   if (isToday(day)) return 'border-primary-300 bg-primary-50/70 dark:border-primary-600 dark:bg-primary-900/30'
@@ -208,12 +214,16 @@ function desktopTileClass(day: number) {
             type="button"
             :disabled="!day"
             class="relative flex h-12 flex-col items-center justify-between rounded-md border pb-1.5 pt-1 text-caption"
-            :class="!day
-              ? 'border-transparent bg-gray-50 dark:bg-gray-900/40'
-              : isToday(day)
-                ? 'border-primary-600 bg-primary-900/40 dark:border-primary-400'
-                : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'"
+            :class="[
+              !day
+                ? 'border-transparent bg-gray-50 dark:bg-gray-900/40'
+                : isToday(day)
+                  ? 'border-primary-600 bg-primary-900/40 dark:border-primary-400'
+                  : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800',
+              day && selectedKey === dateKey(day) ? SELECTED_DAY_CLASS : '',
+            ]"
             :aria-label="day ? compactDayLabel(day) : undefined"
+            :aria-pressed="day ? selectedKey === dateKey(day) : undefined"
             @click="day && $emit('select-day', dateKey(day))"
           >
             <template v-if="day">
@@ -244,8 +254,10 @@ function desktopTileClass(day: number) {
             :class="[
               day ? cellBackground(dateKey(day)) : '',
               day && isToday(day) ? 'font-bold text-primary-800 ring-2 ring-inset ring-primary-600 dark:text-primary-200 dark:ring-primary-400' : 'text-gray-700 dark:text-gray-300',
+              day && selectedKey === dateKey(day) ? SELECTED_DAY_CLASS : '',
             ]"
             :aria-label="day ? compactDayLabel(day) : undefined"
+            :aria-pressed="day ? selectedKey === dateKey(day) : undefined"
             @click="day && $emit('select-day', dateKey(day))"
           >
             <span>{{ day }}</span>
@@ -253,6 +265,8 @@ function desktopTileClass(day: number) {
           </button>
         </template>
       </div>
+      <!-- Detail of the day picked above (TASK-0114) -- content owned by the parent. -->
+      <slot name="selected-day" />
       <div class="divide-y divide-gray-100 border-t border-gray-100 dark:divide-gray-700 dark:border-gray-700">
         <template v-for="(day, idx) in cells" :key="idx">
           <div v-if="day && hasEvents(dateKey(day))" class="px-4 py-3">

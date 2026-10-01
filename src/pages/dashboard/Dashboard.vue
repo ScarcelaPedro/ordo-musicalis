@@ -18,7 +18,8 @@ import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
 import { assignmentRole, assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
-import { ChevronRightIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon } from '@heroicons/vue/24/outline'
+import { ChevronRightIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import LiturgicalInfo from '@/components/scale/LiturgicalInfo.vue'
 
 const auth = useAuthStore()
 // Dark mode: the tinted mobile calendar cells were hard to read, so the mobile grid switches to
@@ -227,6 +228,19 @@ function cellLabel(dateKey: string) {
   if (!label) return null
   return l?.liturgia ? `${label} · ${l.liturgia}` : label
 }
+
+// Mobile day card (TASK-0114): tapping a day in the compact grid shows that day's celebrations;
+// tapping the same day again closes it. Desktop never emits select-day, so it is unaffected.
+const selectedDayKey = ref<string | null>(null)
+
+function toggleSelectedDay(dateKey: string) {
+  selectedDayKey.value = selectedDayKey.value === dateKey ? null : dateKey
+}
+
+watch([currentMonth, currentYear], () => { selectedDayKey.value = null })
+
+const selectedDayScales = computed(() => (selectedDayKey.value ? scalesByDate.value[selectedDayKey.value] ?? [] : []))
+const selectedDayLiturgy = computed(() => (selectedDayKey.value ? liturgiaByDate.value[selectedDayKey.value] ?? null : null))
 
 function hasEvents(dateKey: string) {
   return (scalesByDate.value[dateKey]?.length ?? 0) > 0
@@ -699,7 +713,54 @@ function formatFullDate(iso: string) {
           :compactVariant="theme.isDark ? 'tiles' : 'tint'"
           :cellLabel="cellLabel"
           :hasEvents="hasEvents"
+          :selectedKey="selectedDayKey"
+          @select-day="toggleSelectedDay"
         >
+          <template #selected-day>
+            <section
+              v-if="selectedDayKey"
+              class="mx-3 mb-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card dark:border-gray-700 dark:bg-gray-900/60 dark:shadow-none"
+              aria-live="polite"
+              aria-labelledby="selected-day-title"
+            >
+              <div class="flex items-start justify-between gap-2">
+                <h4 id="selected-day-title" class="text-body font-semibold text-gray-900 dark:text-gray-50">
+                  {{ capitalizeFirst(formatFullDate(selectedDayKey)) }}
+                </h4>
+                <button
+                  type="button"
+                  class="-mr-2 -mt-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400 dark:hover:bg-gray-800"
+                  aria-label="Fechar celebrações do dia"
+                  @click="selectedDayKey = null"
+                >
+                  <XMarkIcon class="h-5 w-5" aria-hidden="true" />
+                </button>
+              </div>
+              <LiturgicalInfo v-if="selectedDayLiturgy" class="mt-1" :liturgia="selectedDayLiturgy.liturgia" :cor="selectedDayLiturgy.cor" />
+
+              <ul v-if="selectedDayScales.length" class="mt-3 space-y-2">
+                <li v-for="scale in selectedDayScales" :key="scale.id">
+                  <RouterLink
+                    :to="`/escalas/${scale.id}`"
+                    class="flex min-h-14 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-primary-300 hover:bg-primary-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-gray-700 dark:hover:border-primary-500 dark:hover:bg-gray-800"
+                  >
+                    <span class="w-14 shrink-0 text-h4 font-semibold tabular-nums text-primary-700 dark:text-primary-300">{{ scale.horario }}</span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ scale.celebracao }}</span>
+                      <span class="mt-0.5 flex min-w-0 items-center gap-2">
+                        <Badge :color="scale.status === 'confirmada' ? 'green' : 'yellow'" class="shrink-0">{{ scale.status === 'confirmada' ? 'Confirmada' : 'Rascunho' }}</Badge>
+                        <span v-if="scale.comunidade || scale.celebrante" class="truncate text-caption text-gray-600 dark:text-gray-400">
+                          {{ [scale.comunidade?.nome, scale.celebrante?.nome].filter(Boolean).join(' · ') }}
+                        </span>
+                      </span>
+                    </span>
+                    <ChevronRightIcon class="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
+                  </RouterLink>
+                </li>
+              </ul>
+              <p v-else class="mt-3 text-body-sm text-gray-600 dark:text-gray-400">Nenhuma celebração criada neste dia.</p>
+            </section>
+          </template>
           <template #day="{ dateKey }">
             <RouterLink
               v-for="scale in scalesByDate[dateKey] ?? []"
