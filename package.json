@@ -54,5 +54,12 @@
     "vite": "^5.3.1",
     "vitest": "^2.1.9",
     "vue-tsc": "^2.0.21"
+  },
+  "allowScripts": {
+    "@prisma/client": true,
+    "@prisma/engines": true,
+    "prisma": true,
+    "esbuild": true,
+    "vue-demi": true
   }
 }
