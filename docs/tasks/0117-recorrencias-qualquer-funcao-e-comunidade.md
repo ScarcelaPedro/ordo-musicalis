@@ -83,3 +83,12 @@ a celebração recorrente pode acontecer em **qualquer comunidade** da paróquia
   `<option :value="null">` nunca fica selecionada (ex. "Nenhum" do celebrante em
   `ScaleForm.vue` e as opções de `teams/Create.vue`/`Edit.vue` aparecem em branco). Aqui
   contornado com `value=""`; a correção geral fica para outra task.
+- 2026-10-02 — Deploy do preview. O código novo chegou ao preview antes da migration, e a rota
+  de recorrências quebrou com `P2022` (`scale_templates.comunidade_id does not exist`): o
+  deploy da Vercel não aplica migrations. A migration foi aplicada no Supabase (`migrate
+  deploy`, com aprovação do usuário). Depois do preenchimento: 5 recorrências, todas com
+  comunidade; 3 vínculos, todos com função. No caminho, as credenciais do banco foram trocadas
+  na Vercel, e a `DATABASE_URL` nova ficou sem `?pgbouncer=true` (`prepared statement "s1"
+  already exists`). O usuário corrigiu e o preview voltou a funcionar. Os dois pontos ficaram
+  documentados em `api/AGENTS.md`, e o `.env.example` foi corrigido (pooler na porta 6543,
+  usuário `postgres.<projeto>`).

@@ -33,7 +33,7 @@ Todas as rotas são montadas sob `/api/` em `api/index.ts` — ver esse arquivo 
 
 Variáveis relevantes (ver `.env.example` na raiz — nenhum valor real está commitado):
 
-- `DATABASE_URL` / `DIRECT_URL` — conexão Postgres (Supabase, pooled vs. direta).
+- `DATABASE_URL` / `DIRECT_URL` — conexão Postgres (Supabase, pooled vs. direta). `DATABASE_URL` usa o pooler em modo transação (porta **6543**) e **precisa** terminar em `?pgbouncer=true`: sem isso o Prisma falha em runtime com `prepared statement "s1" already exists`. A connection string copiada do painel do Supabase não traz esse parâmetro. `DIRECT_URL` usa a porta 5432, sem o parâmetro. No pooler, o usuário é `postgres.<id-do-projeto>`. Na Vercel, mudar uma variável só vale após um redeploy.
 - `JWT_SECRET`, `JWT_EXPIRES_IN` — autenticação.
 - `BLOB_READ_WRITE_TOKEN` — Vercel Blob (upload de PDFs).
 - `RESEND_API_KEY`, `RESEND_FROM_EMAIL` — envio de e-mail.
@@ -58,6 +58,7 @@ A API usa o mesmo **Vitest** do frontend (configurado na `TASK-0096`; `vitest.co
 - `npm run db:generate` / `db:migrate` / `db:seed` / `db:studio` — comandos Prisma, todos com `--schema=api/prisma/schema.prisma`.
 - `postinstall` já roda `prisma generate` automaticamente após `npm install`.
 - Deploy: Vercel serve `api/index.ts` como função serverless (rewrites em `vercel.json`); os crons do Vercel chamam as rotas `/api/cron/*` diretamente, não há scheduler separado rodando em produção.
+- ⚠️ **O deploy não aplica migrations.** O build da Vercel só roda `npm run build` (e o `postinstall` gera o client). Uma migration nova precisa ser aplicada à mão no banco (Supabase) com `npx prisma migrate deploy --schema=api/prisma/schema.prisma`, com `DIRECT_URL`/`DATABASE_URL` desse banco no ambiente, **antes** de o código que depende dela chegar ao preview/produção. Sem isso, as rotas que leem as colunas novas quebram com `P2022` (`column ... does not exist`), como aconteceu na `TASK-0117`. Migrations aditivas (colunas opcionais, sem remoção) podem ser aplicadas antes do merge sem afetar o código em produção.
 
 ## Convenções
 
