@@ -69,8 +69,8 @@ async function submit(data: object) {
 
 <template>
   <AuthenticatedLayout>
-    <template #header><h2 class="font-semibold text-xl text-gray-800">Editar Escala</h2></template>
-    <div class="bg-white shadow-sm rounded-lg p-6 dark:bg-gray-800">
+    <template #header><h2 class="font-semibold text-xl text-gray-800 dark:text-gray-100">Editar Escala</h2></template>
+    <div class="bg-white shadow-sm rounded-lg p-4 sm:p-6 dark:bg-gray-800">
       <ScaleForm v-if="scale" :initial-data="initialData" :servidores="servidores" :teams="teams" :comunidades="comunidades" :celebrantes="celebrantes" :categorias="categorias" :loading="loading" @submit="submit" />
     </div>
   </AuthenticatedLayout>

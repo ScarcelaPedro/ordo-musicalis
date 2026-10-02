@@ -12,6 +12,8 @@ import EmptyRole from '@/components/scale/EmptyRole.vue'
 import ScaleRole from '@/components/scale/ScaleRole.vue'
 import ScaleMember from '@/components/scale/ScaleMember.vue'
 import Badge from '@/components/Badge.vue'
+import Avatar from '@/components/Avatar.vue'
+import { MagnifyingGlassIcon, SparklesIcon, TrashIcon, UserGroupIcon } from '@heroicons/vue/24/outline'
 import client from '@/api/client'
 import { parseDateOnly } from '@/utils/date'
 
@@ -156,6 +158,11 @@ async function irPara(etapa: number, anchorId?: string) {
   await nextTick()
   document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
+
+// Inline selects of step 2 (instrument/ministry/liturgical role): compact, but with the same
+// dark-mode surface as the shared Select/TextInput components.
+const COMPACT_SELECT_CLASS = 'min-h-9 rounded-md border-gray-300 py-1.5 text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100'
+const QUIET_BUTTON_CLASS = 'inline-flex min-h-9 items-center rounded-md px-3 text-caption font-semibold text-gray-600 transition hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
 
 const categoriasOrdenadas = computed(() => [...props.categorias].sort((a, b) => a.ordem - b.ordem))
 
@@ -507,94 +514,121 @@ function detalheEntry(entry: ScaleServidor) {
       </div>
     </template>
 
-    <!-- Etapa 2 — Equipe: conteúdo real de hoje, preservado sem alteração funcional. A busca
-         inline por categoria (TASK-0009) é escopo da TASK-0044, não desta. -->
+    <!-- Etapa 2 — Equipe (TASK-0116): same card language as the dashboard (rounded-xl, soft
+         shadow in light mode, layered gray surfaces in dark mode). Behavior unchanged. -->
     <template v-if="etapaAtual === 2">
-    <div>
-      <div class="flex items-center justify-between">
-        <InputLabel value="Equipe da celebração" />
-        <SecondaryButton type="button" :disabled="loadingSuggestions" @click="buscarSugestoes" class="!py-1.5 !px-3 text-xs">
+    <section class="space-y-4" aria-labelledby="team-step-title">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0 flex-1">
+          <h3 id="team-step-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Equipe da celebração</h3>
+          <p class="mt-1 max-w-prose text-caption text-gray-600 dark:text-gray-400">
+            Organizada por função. Nem toda celebração precisa de todas — adicione só o que se aplica.
+            Sugestões, quando buscadas, aparecem dentro da função certa.
+          </p>
+        </div>
+        <SecondaryButton type="button" :loading="loadingSuggestions" @click="buscarSugestoes" class="shrink-0 self-start">
+          <SparklesIcon v-if="!loadingSuggestions" class="h-4 w-4" aria-hidden="true" />
           {{ loadingSuggestions ? 'Buscando...' : 'Buscar sugestões' }}
         </SecondaryButton>
       </div>
-      <p v-if="suggestionsError" class="mt-2 text-sm text-red-600">{{ suggestionsError }}</p>
-      <p class="mt-1 mb-3 text-xs text-gray-500">
-        Organizada por categoria de função, já que numa celebração normalmente todas as funções
-        servem ao mesmo tempo. Nem toda celebração precisa de todas as categorias -- adicione só o
-        que se aplica. Sugestões, quando buscadas, aparecem dentro do bloco da categoria certa.
-      </p>
+      <p v-if="suggestionsError" class="text-body-sm text-danger-600 dark:text-danger-400">{{ suggestionsError }}</p>
 
       <div
         v-for="cat in categoriasOrdenadas"
         :key="cat.id"
         :id="`categoria-${cat.id}`"
-        class="border rounded-md p-4 mb-3"
-        :class="entriesDaCategoria(cat.id).length === 0 ? 'border-amber-200 bg-amber-50/40' : 'border-gray-200'"
+        class="rounded-xl border bg-white p-4 shadow-card sm:p-5 dark:bg-gray-900/40 dark:shadow-none"
+        :class="entriesDaCategoria(cat.id).length === 0
+          ? 'border-dashed border-warning-300 dark:border-warning-700/70'
+          : 'border-gray-200 dark:border-gray-700'"
       >
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-medium text-sm text-gray-800">{{ cat.nome }}</h4>
-          <span class="text-xs font-semibold" :class="entriesDaCategoria(cat.id).length === 0 ? 'text-amber-600' : 'text-gray-400'">
-            {{ entriesDaCategoria(cat.id).length === 0 ? 'Ninguém escalado' : `${entriesDaCategoria(cat.id).length} escalado(s)` }}
-          </span>
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h4 class="truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ cat.nome }}</h4>
+          <Badge v-if="entriesDaCategoria(cat.id).length === 0" color="yellow" class="shrink-0">Ninguém escalado</Badge>
+          <Badge v-else color="gray" class="shrink-0">{{ entriesDaCategoria(cat.id).length }} escalado(s)</Badge>
         </div>
 
-        <div v-if="entriesDaCategoria(cat.id).length" class="space-y-2 mb-3">
-          <div v-for="entry in entriesDaCategoria(cat.id)" :key="entry.servidorId" class="space-y-1.5">
-          <!-- Conflito (TASK-0045, SPEC-004 §22): só renderiza se `entry.conflito` vier
-               preenchido -- hoje esse campo nunca existe (detecção de horário/indisponibilidade
-               não existe em nenhum endpoint, ver docs/tasks/0009-*.md), então este bloco fica
-               sempre invisível na prática, pronto pra quando o dado existir. -->
-          <ConflictAlert v-if="entry.conflito" :type="entry.conflito.type" :detail="entry.conflito.detail" />
-          <div class="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-100 rounded">
-            <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ servidorNome(entry.servidorId) }}</span>
-            <select
-              v-if="cat.id === musicaId && instrumentosDe(entry.servidorId).length"
-              :value="entry.instrumentId"
-              @change="setInstrument(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
-              class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
-            >
-              <option v-for="i in instrumentosDe(entry.servidorId)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
-            </select>
-            <select
-              v-if="teamsDaCategoria(cat.id).length > 0"
-              :value="entry.teamId"
-              @change="setServidorTeam(entry.servidorId, ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
-              class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
-            >
-              <option :value="null">Sem ministério</option>
-              <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
-            </select>
-            <select
-              v-if="cat.id === acolitosId"
-              :value="entry.funcaoLiturgica"
-              @change="setFuncaoLiturgica(entry.servidorId, ($event.target as HTMLSelectElement).value || null)"
-              class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
-            >
-              <option value="">Sem função litúrgica</option>
-              <option v-for="(label, value) in FUNCAO_LITURGICA_LABELS" :key="value" :value="value">{{ label }}</option>
-            </select>
-            <button type="button" @click="removerServidor(entry.servidorId)" class="text-red-600 hover:text-red-800 text-xs">Remover</button>
-          </div>
-          </div>
-        </div>
+        <ul v-if="entriesDaCategoria(cat.id).length" class="mb-4 space-y-2">
+          <li v-for="entry in entriesDaCategoria(cat.id)" :key="entry.servidorId" class="space-y-1.5">
+            <!-- Conflito (TASK-0045, SPEC-004 §22): só renderiza se `entry.conflito` vier
+                 preenchido -- hoje esse campo nunca existe (detecção de horário/indisponibilidade
+                 não existe em nenhum endpoint, ver docs/tasks/0009-*.md), então este bloco fica
+                 sempre invisível na prática, pronto pra quando o dado existir. -->
+            <ConflictAlert v-if="entry.conflito" :type="entry.conflito.type" :detail="entry.conflito.detail" />
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-gray-700 dark:bg-gray-800">
+              <div class="flex min-w-[10rem] flex-1 items-center gap-2.5">
+                <Avatar :name="servidorNome(entry.servidorId)" size="sm" />
+                <span class="truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ servidorNome(entry.servidorId) }}</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <select
+                  v-if="cat.id === musicaId && instrumentosDe(entry.servidorId).length"
+                  :value="entry.instrumentId"
+                  @change="setInstrument(entry.servidorId, Number(($event.target as HTMLSelectElement).value))"
+                  :class="COMPACT_SELECT_CLASS"
+                  aria-label="Instrumento"
+                >
+                  <option v-for="i in instrumentosDe(entry.servidorId)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
+                </select>
+                <select
+                  v-if="teamsDaCategoria(cat.id).length > 0"
+                  :value="entry.teamId ?? ''"
+                  @change="setServidorTeam(entry.servidorId, ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
+                  :class="COMPACT_SELECT_CLASS"
+                  aria-label="Ministério"
+                >
+                  <option value="">Sem ministério</option>
+                  <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
+                </select>
+                <select
+                  v-if="cat.id === acolitosId"
+                  :value="entry.funcaoLiturgica"
+                  @change="setFuncaoLiturgica(entry.servidorId, ($event.target as HTMLSelectElement).value || null)"
+                  :class="COMPACT_SELECT_CLASS"
+                  aria-label="Função litúrgica"
+                >
+                  <option value="">Sem função litúrgica</option>
+                  <option v-for="(label, value) in FUNCAO_LITURGICA_LABELS" :key="value" :value="value">{{ label }}</option>
+                </select>
+                <button
+                  type="button"
+                  @click="removerServidor(entry.servidorId)"
+                  :aria-label="`Remover ${servidorNome(entry.servidorId)}`"
+                  title="Remover"
+                  class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition hover:bg-danger-50 hover:text-danger-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400 dark:hover:bg-danger-900/30 dark:hover:text-danger-300"
+                >
+                  <TrashIcon class="h-4 w-4" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </li>
+        </ul>
 
         <!-- Sugestões desta categoria (TASK-0044) -- primeiro, antes da busca manual, sempre
              visível abaixo (nunca oculta), conforme docs/tasks/0009-*.md. -->
-        <div v-if="sugestoesDaCategoria(cat.id).length" class="mb-3 space-y-2">
-          <p class="text-xs font-semibold text-gray-600 dark:text-gray-400">Sugeridos para {{ cat.nome }}</p>
-          <div v-for="s in sugestoesDaCategoria(cat.id)" :key="s.servidorId" class="flex items-center justify-between gap-3 rounded-md border border-gray-200 p-2 dark:border-gray-600">
-            <div class="min-w-0">
-              <span class="text-sm font-medium">{{ s.nome }}</span>
-              <p class="truncate text-xs text-gray-500">{{ s.motivo }}</p>
-            </div>
-            <div class="flex shrink-0 items-center gap-3">
-              <button type="button" @click="ignorarSugestao(s)" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Ignorar</button>
-              <SecondaryButton type="button" @click="adicionarSugerido(s, cat.id)" class="!py-1.5 !px-3 text-xs">Adicionar</SecondaryButton>
-            </div>
-          </div>
+        <div v-if="sugestoesDaCategoria(cat.id).length" class="mb-4 rounded-lg border border-primary-100 bg-primary-50/50 p-3 dark:border-primary-900/60 dark:bg-primary-950/30">
+          <p class="mb-1 flex items-center gap-1.5 text-caption font-semibold text-primary-700 dark:text-primary-300">
+            <SparklesIcon class="h-4 w-4" aria-hidden="true" />
+            Sugeridos para {{ cat.nome }}
+          </p>
+          <ul class="divide-y divide-primary-100 dark:divide-primary-900/60">
+            <li v-for="s in sugestoesDaCategoria(cat.id)" :key="s.servidorId" class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 py-2">
+              <div class="flex min-w-[12rem] flex-1 items-center gap-2.5">
+                <Avatar :name="s.nome" size="sm" />
+                <div class="min-w-0">
+                  <p class="truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ s.nome }}</p>
+                  <p class="truncate text-caption text-gray-600 dark:text-gray-400">{{ s.motivo }}</p>
+                </div>
+              </div>
+              <div class="flex shrink-0 items-center gap-1">
+                <button type="button" @click="ignorarSugestao(s)" :class="QUIET_BUTTON_CLASS">Ignorar</button>
+                <SecondaryButton type="button" @click="adicionarSugerido(s, cat.id)">Adicionar</SecondaryButton>
+              </div>
+            </li>
+          </ul>
         </div>
 
-        <p v-if="servidoresDaCategoria(cat.id).length === 0" class="text-xs text-gray-400">
+        <p v-if="servidoresDaCategoria(cat.id).length === 0" class="text-caption text-gray-500 dark:text-gray-400">
           Nenhum servidor com a função "{{ cat.nome }}" cadastrado ainda.
         </p>
         <template v-else>
@@ -602,41 +636,52 @@ function detalheEntry(entry: ScaleServidor) {
                "Adicionar servidor..." + botão separado por "buscar → escolher pessoa →
                preencher o que for aplicável → um único Adicionar". -->
           <div v-if="!getNovoState(cat.id).servidorId">
-            <TextInput
-              :model-value="getBusca(cat.id)"
-              @update:model-value="(v) => setBusca(cat.id, String(v))"
-              placeholder="Buscar servidor por nome..."
-              class="text-sm"
-            />
-            <div v-if="resultadosBusca(cat.id).length" class="mt-2 space-y-1">
-              <button
-                v-for="s in resultadosBusca(cat.id)" :key="s.id"
-                type="button"
-                @click="escolherCandidato(cat.id, s.id)"
-                class="block w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                {{ s.nome }}
-              </button>
+            <div class="relative">
+              <MagnifyingGlassIcon class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" aria-hidden="true" />
+              <TextInput
+                :model-value="getBusca(cat.id)"
+                @update:model-value="(v) => setBusca(cat.id, String(v))"
+                placeholder="Buscar servidor por nome..."
+                :aria-label="`Buscar servidor para ${cat.nome}`"
+                class="pl-9 text-sm"
+              />
             </div>
-            <p v-else-if="getBusca(cat.id).trim()" class="mt-2 text-xs text-gray-400">
+            <ul v-if="resultadosBusca(cat.id).length" class="mt-2 divide-y divide-gray-100 overflow-hidden rounded-lg border border-gray-200 dark:divide-gray-700 dark:border-gray-700">
+              <li v-for="s in resultadosBusca(cat.id)" :key="s.id">
+                <button
+                  type="button"
+                  @click="escolherCandidato(cat.id, s.id)"
+                  class="flex w-full items-center gap-2.5 px-3 py-2 text-left text-body-sm text-gray-800 transition hover:bg-gray-50 focus:outline-none focus-visible:bg-gray-50 dark:text-gray-100 dark:hover:bg-gray-700/50 dark:focus-visible:bg-gray-700/50"
+                >
+                  <Avatar :name="s.nome" size="sm" />
+                  <span class="truncate">{{ s.nome }}</span>
+                </button>
+              </li>
+            </ul>
+            <p v-else-if="getBusca(cat.id).trim()" class="mt-2 text-caption text-gray-500 dark:text-gray-400">
               Nenhum servidor encontrado com esse nome.
             </p>
           </div>
 
-          <div v-else class="space-y-2 rounded-md border border-primary-100 bg-primary-50/40 p-3 dark:border-primary-800 dark:bg-primary-900/10">
-            <p class="text-sm font-medium">{{ servidorNome(getNovoState(cat.id).servidorId!) }}</p>
+          <div v-else class="space-y-3 rounded-lg border border-primary-200 bg-primary-50/50 p-3 dark:border-primary-800 dark:bg-primary-950/30">
+            <div class="flex items-center gap-2.5">
+              <Avatar :name="servidorNome(getNovoState(cat.id).servidorId!)" size="sm" />
+              <p class="truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ servidorNome(getNovoState(cat.id).servidorId!) }}</p>
+            </div>
             <div class="flex flex-wrap items-center gap-2">
               <select
                 v-if="cat.id === musicaId && instrumentosDe(getNovoState(cat.id).servidorId!).length"
                 v-model="getNovoState(cat.id).instrumentId"
-                class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
+                :class="COMPACT_SELECT_CLASS"
+                aria-label="Instrumento"
               >
                 <option v-for="i in instrumentosDe(getNovoState(cat.id).servidorId!)" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
               </select>
               <select
                 v-if="teamsDaCategoria(cat.id).length > 0"
                 v-model="getNovoState(cat.id).teamId"
-                class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
+                :class="COMPACT_SELECT_CLASS"
+                aria-label="Ministério"
               >
                 <option :value="null">Sem ministério</option>
                 <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
@@ -644,70 +689,89 @@ function detalheEntry(entry: ScaleServidor) {
               <select
                 v-if="cat.id === acolitosId"
                 v-model="getNovoState(cat.id).funcaoLiturgica"
-                class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md"
+                :class="COMPACT_SELECT_CLASS"
+                aria-label="Função litúrgica"
               >
                 <option :value="null">Sem função litúrgica</option>
                 <option v-for="(label, value) in FUNCAO_LITURGICA_LABELS" :key="value" :value="value">{{ label }}</option>
               </select>
-              <SecondaryButton type="button" @click="adicionarNaCategoria(cat.id)" class="!py-1.5 !px-3 text-xs">
-                Adicionar
-              </SecondaryButton>
-              <button type="button" @click="cancelarCandidato(cat.id)" class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Cancelar</button>
+              <div class="flex items-center gap-1">
+                <SecondaryButton type="button" @click="adicionarNaCategoria(cat.id)">Adicionar</SecondaryButton>
+                <button type="button" @click="cancelarCandidato(cat.id)" :class="QUIET_BUTTON_CLASS">Cancelar</button>
+              </div>
             </div>
           </div>
         </template>
 
-        <div v-if="teamsDaCategoria(cat.id).length > 1" class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap items-center gap-2">
-          <span class="text-xs text-gray-500">Adicionar equipe inteira:</span>
-          <select v-model="equipeParaAdicionar[cat.id]" class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md">
-            <option :value="null">Selecione o ministério</option>
+        <div v-if="teamsDaCategoria(cat.id).length > 1" class="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4 dark:border-gray-700">
+          <UserGroupIcon class="h-4 w-4 shrink-0 text-gray-500 dark:text-gray-400" aria-hidden="true" />
+          <span class="text-caption text-gray-600 dark:text-gray-400">Adicionar equipe inteira:</span>
+          <select
+            :value="equipeParaAdicionar[cat.id] ?? ''"
+            @change="equipeParaAdicionar[cat.id] = ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null"
+            :class="COMPACT_SELECT_CLASS"
+            aria-label="Ministério a adicionar"
+          >
+            <option value="">Selecione o ministério</option>
             <option v-for="t in teamsDaCategoria(cat.id)" :key="t.id" :value="t.id">{{ t.nome }}</option>
           </select>
           <SecondaryButton
             type="button"
-            :disabled="!equipeParaAdicionar[cat.id] || addingEquipe === cat.id"
+            :disabled="!equipeParaAdicionar[cat.id]"
+            :loading="addingEquipe === cat.id"
             @click="adicionarEquipeInteira(cat.id)"
-            class="!py-1.5 !px-3 text-xs"
           >
             {{ addingEquipe === cat.id ? 'Adicionando...' : 'Adicionar todos' }}
           </SecondaryButton>
         </div>
-        <div v-else-if="teamsDaCategoria(cat.id).length === 1" class="mt-3 pt-3 border-t border-gray-100">
+        <div v-else-if="teamsDaCategoria(cat.id).length === 1" class="mt-4 border-t border-gray-100 pt-4 dark:border-gray-700">
           <SecondaryButton
             type="button"
-            :disabled="addingEquipe === cat.id"
+            :loading="addingEquipe === cat.id"
             @click="adicionarEquipeInteira(cat.id, teamsDaCategoria(cat.id)[0].id)"
-            class="!py-1.5 !px-3 text-xs"
           >
+            <UserGroupIcon v-if="addingEquipe !== cat.id" class="h-4 w-4" aria-hidden="true" />
             {{ addingEquipe === cat.id ? 'Adicionando...' : `Adicionar toda a equipe de ${teamsDaCategoria(cat.id)[0].nome}` }}
           </SecondaryButton>
         </div>
-        <p v-else class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400">
+        <p v-else class="mt-4 border-t border-gray-100 pt-4 text-caption text-gray-500 dark:border-gray-700 dark:text-gray-400">
           Nenhum ministério cadastrado nesta categoria ainda -- dá pra escalar servidores mesmo assim.
         </p>
       </div>
 
-      <div class="border border-gray-200 rounded-md p-4">
-        <h4 class="font-medium text-sm text-gray-800 mb-3">Outras pessoas (sem função definida)</h4>
-        <div v-if="entriesSemCategoria.length" class="space-y-2 mb-3">
-          <div v-for="entry in entriesSemCategoria" :key="entry.servidorId" class="flex flex-wrap items-center gap-2 p-2 bg-white border border-gray-100 rounded">
-            <span class="flex-1 min-w-[8rem] text-sm font-medium">{{ servidorNome(entry.servidorId) }}</span>
-            <button type="button" @click="removerServidor(entry.servidorId)" class="text-red-600 hover:text-red-800 text-xs">Remover</button>
-          </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-card sm:p-5 dark:border-gray-700 dark:bg-gray-900/40 dark:shadow-none">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <h4 class="text-body-sm font-semibold text-gray-800 dark:text-gray-100">Outras pessoas (sem função definida)</h4>
+          <Badge v-if="entriesSemCategoria.length" color="gray" class="shrink-0">{{ entriesSemCategoria.length }} escalado(s)</Badge>
         </div>
+        <ul v-if="entriesSemCategoria.length" class="mb-4 space-y-2">
+          <li v-for="entry in entriesSemCategoria" :key="entry.servidorId" class="flex items-center gap-2.5 rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-gray-700 dark:bg-gray-800">
+            <Avatar :name="servidorNome(entry.servidorId)" size="sm" />
+            <span class="min-w-0 flex-1 truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ servidorNome(entry.servidorId) }}</span>
+            <button
+              type="button"
+              @click="removerServidor(entry.servidorId)"
+              :aria-label="`Remover ${servidorNome(entry.servidorId)}`"
+              title="Remover"
+              class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-gray-500 transition hover:bg-danger-50 hover:text-danger-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-gray-400 dark:hover:bg-danger-900/30 dark:hover:text-danger-300"
+            >
+              <TrashIcon class="h-4 w-4" aria-hidden="true" />
+            </button>
+          </li>
+        </ul>
         <div class="flex flex-wrap items-center gap-2">
-          <select v-model="novoSemCategoria" class="text-sm border-gray-300 focus:border-primary-500 focus:ring-primary-500 rounded-md flex-1 min-w-[10rem]">
+          <select v-model="novoSemCategoria" :class="COMPACT_SELECT_CLASS" class="min-w-[10rem] flex-1" aria-label="Adicionar servidor sem função definida">
             <option :value="null">Adicionar servidor...</option>
             <option v-for="s in servidoresDisponiveis" :key="s.id" :value="s.id">{{ s.nome }}</option>
           </select>
-          <SecondaryButton type="button" :disabled="!novoSemCategoria" @click="adicionarSemCategoria" class="!py-1.5 !px-3 text-xs">
+          <SecondaryButton type="button" :disabled="!novoSemCategoria" @click="adicionarSemCategoria">
             Adicionar
           </SecondaryButton>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="flex items-center gap-4">
+    <div class="flex flex-wrap items-center gap-3 sm:gap-4">
       <TertiaryButton type="button" @click="voltar">Voltar</TertiaryButton>
       <PrimaryButton type="button" @click="avancar">Avançar</PrimaryButton>
       <RouterLink to="/escalas"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
