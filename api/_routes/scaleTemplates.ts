@@ -2,12 +2,13 @@ import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
-import { requireTeamOwnership } from '../_middleware/teamScope'
+import { requireAnyTeamOwnership } from '../_middleware/teamScope'
+import { buildFixedAssignments, occurrenceDays } from '../_lib/recurrence'
 
 const router = Router()
 const prisma = new PrismaClient()
 
-const include = { team: true }
+const include = { team: true, comunidade: { select: { id: true, nome: true } } }
 
 router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
   const templates = await prisma.scaleTemplate.findMany({
@@ -17,10 +18,20 @@ router.get('/', authenticate, async (_req: AuthRequest, res: Response) => {
   return res.json(templates)
 })
 
-router.post('/', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(async (req) => req.body.teamId ? Number(req.body.teamId) : null), async (req: AuthRequest, res: Response) => {
-  const { celebracao, horario, diaSemana, tipoRecorrencia, ordinal, teamId, observacoes, ativo } = req.body
+async function comunidadeExists(id: unknown) {
+  if (id === null || id === undefined || id === '') return false
+  return !!(await prisma.comunidade.findUnique({ where: { id: Number(id) }, select: { id: true } }))
+}
+
+// Same rule as manual scales (TASK-0117, ADR-0006): any coordenador may create a recurrence;
+// there is no single "ministry of the recurrence" anymore.
+router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+  const { celebracao, horario, diaSemana, tipoRecorrencia, ordinal, comunidadeId, observacoes, ativo } = req.body
   if (!celebracao || !horario || diaSemana === undefined || diaSemana === null) {
     return res.status(422).json({ message: 'Celebração, horário e dia da semana são obrigatórios' })
+  }
+  if (!(await comunidadeExists(comunidadeId))) {
+    return res.status(422).json({ message: 'Selecione a comunidade da celebração' })
   }
   if (tipoRecorrencia === 'mensal_ordinal' && !ordinal) {
     return res.status(422).json({ message: 'Informe qual semana do mês (1ª a 5ª) para recorrência mensal' })
@@ -33,7 +44,7 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), requireTeamO
       diaSemana: Number(diaSemana),
       tipoRecorrencia: tipoRecorrencia ?? 'semanal',
       ordinal: tipoRecorrencia === 'mensal_ordinal' ? Number(ordinal) : null,
-      teamId: teamId ?? null,
+      comunidadeId: Number(comunidadeId),
       observacoes: observacoes ?? null,
       ativo: ativo ?? true,
     },
@@ -48,14 +59,26 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response) => {
   return res.json(template)
 })
 
-async function resolveScaleTemplateTeamId(req: AuthRequest) {
-  const tpl = await prisma.scaleTemplate.findUnique({ where: { id: Number(req.params.id) }, select: { teamId: true } })
-  return tpl?.teamId ?? null
+// Ownership for coordenadores: the legacy template ministry plus the ministry of every fixed
+// link -- mirrors resolveScaleTeamIds in scales.ts.
+export async function resolveTemplateTeamIds(templateId: number) {
+  const tpl = await prisma.scaleTemplate.findUnique({
+    where: { id: templateId },
+    select: { teamId: true, vinculosFixos: { select: { teamId: true } } },
+  })
+  if (!tpl) return []
+  const ids = [tpl.teamId, ...tpl.vinculosFixos.map((v) => v.teamId)].filter((id): id is number => id != null)
+  return [...new Set(ids)]
 }
 
-router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveScaleTemplateTeamId), async (req: AuthRequest, res: Response) => {
+const requireTemplateOwnership = requireAnyTeamOwnership((req) => resolveTemplateTeamIds(Number(req.params.id)))
+
+router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireTemplateOwnership, async (req: AuthRequest, res: Response) => {
   const id = Number(req.params.id)
-  const { celebracao, horario, diaSemana, tipoRecorrencia, ordinal, teamId, observacoes, ativo } = req.body
+  const { celebracao, horario, diaSemana, tipoRecorrencia, ordinal, comunidadeId, observacoes, ativo } = req.body
+  if (comunidadeId !== undefined && !(await comunidadeExists(comunidadeId))) {
+    return res.status(422).json({ message: 'Selecione a comunidade da celebração' })
+  }
 
   const template = await prisma.scaleTemplate.update({
     where: { id },
@@ -65,7 +88,7 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
       ...(diaSemana !== undefined ? { diaSemana: Number(diaSemana) } : {}),
       ...(tipoRecorrencia !== undefined ? { tipoRecorrencia } : {}),
       ordinal: tipoRecorrencia === 'mensal_ordinal' ? Number(ordinal) : null,
-      ...(teamId !== undefined ? { teamId: teamId ?? null } : {}),
+      ...(comunidadeId !== undefined ? { comunidadeId: Number(comunidadeId) } : {}),
       ...(observacoes !== undefined ? { observacoes } : {}),
       ...(ativo !== undefined ? { ativo } : {}),
     },
@@ -74,17 +97,10 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireT
   return res.json(template)
 })
 
-router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), requireTeamOwnership(resolveScaleTemplateTeamId), async (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), requireTemplateOwnership, async (req: AuthRequest, res: Response) => {
   await prisma.scaleTemplate.delete({ where: { id: Number(req.params.id) } })
   return res.status(204).send()
 })
-
-function nthWeekdayOfMonth(year: number, month: number, dayOfWeek: number, n: number): number | null {
-  const firstDow = new Date(year, month, 1).getDay()
-  const day = 1 + ((dayOfWeek - firstDow + 7) % 7) + (n - 1) * 7
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  return day <= daysInMonth ? day : null
-}
 
 router.post('/generate', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
   const { mes } = req.body as { mes?: string }
@@ -94,40 +110,35 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
   const [year, month] = mes.split('-').map(Number)
   const monthIndex = month - 1
 
-  const templates = await prisma.scaleTemplate.findMany({ where: { ativo: true } })
+  const templates = await prisma.scaleTemplate.findMany({
+    where: { ativo: true },
+    include: { vinculosFixos: { where: { ativo: true } } },
+  })
 
-  // TODO(Fase 2): ScaleTemplate ainda não tem comunidade própria -- toda escala gerada
-  // automaticamente cai na Matriz até o seletor de comunidade chegar nos templates.
-  const matriz = await prisma.comunidade.findFirst({ where: { nome: 'Matriz' } })
-  if (!matriz) {
-    return res.status(500).json({ message: 'Comunidade padrão "Matriz" não encontrada' })
+  // Only for legacy recurrences whose community could not be backfilled (ADR-0006): same
+  // default the generator always used.
+  const fallbackComunidade =
+    (await prisma.comunidade.findFirst({ where: { nome: 'Matriz' }, orderBy: { id: 'asc' } })) ??
+    (await prisma.comunidade.findFirst({ orderBy: { id: 'asc' } }))
+  if (!fallbackComunidade) {
+    return res.status(422).json({ message: 'Cadastre ao menos uma comunidade antes de gerar escalas' })
   }
 
   let criadas = 0
   let puladas = 0
 
   for (const tpl of templates) {
-    const days: number[] = []
-    if (tpl.tipoRecorrencia === 'semanal') {
-      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate()
-      for (let d = 1; d <= daysInMonth; d++) {
-        if (new Date(year, monthIndex, d).getDay() === tpl.diaSemana) days.push(d)
-      }
-    } else if (tpl.ordinal) {
-      const day = nthWeekdayOfMonth(year, monthIndex, tpl.diaSemana, tpl.ordinal)
-      if (day) days.push(day)
-    }
+    const comunidadeId = tpl.comunidadeId ?? fallbackComunidade.id
+    const servidores = buildFixedAssignments(tpl.vinculosFixos, tpl.teamId)
 
-    for (const day of days) {
+    for (const day of occurrenceDays(year, monthIndex, tpl)) {
       const dataCelebracao = new Date(year, monthIndex, day)
+      // Two communities may have a celebration at the same time, so the community is part of
+      // what makes a generated scale a duplicate.
       const exists = await prisma.scale.findFirst({
-        where: { dataCelebracao, horario: tpl.horario },
+        where: { dataCelebracao, horario: tpl.horario, comunidadeId },
       })
       if (exists) { puladas++; continue }
-
-      const vinculos = await prisma.vinculoFixo.findMany({
-        where: { scaleTemplateId: tpl.id, ativo: true },
-      })
 
       await prisma.scale.create({
         data: {
@@ -135,18 +146,9 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
           horario: tpl.horario,
           celebracao: tpl.celebracao,
           teamId: tpl.teamId,
-          comunidadeId: matriz.id,
+          comunidadeId,
           observacoes: tpl.observacoes,
-          servidores: vinculos.length
-            ? {
-                create: vinculos.map((v) => ({
-                  servidorId: v.servidorId,
-                  instrumentId: v.instrumentId,
-                  teamId: tpl.teamId,
-                  origem: 'fixo',
-                })),
-              }
-            : undefined,
+          servidores: servidores.length ? { create: servidores } : undefined,
         },
       })
       criadas++

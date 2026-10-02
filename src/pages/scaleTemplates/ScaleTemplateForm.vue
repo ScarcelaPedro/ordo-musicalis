@@ -9,7 +9,7 @@ import InputError from '@/components/InputError.vue'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 
-interface Team { id: number; nome: string }
+interface Comunidade { id: number; nome: string }
 
 interface FormData {
   celebracao: string
@@ -17,14 +17,14 @@ interface FormData {
   diaSemana: number
   tipoRecorrencia: 'semanal' | 'mensal_ordinal'
   ordinal: number | null
-  teamId: number | null
+  comunidadeId: number | null
   observacoes: string
   ativo: boolean
 }
 
 const props = defineProps<{
   initialData?: Partial<FormData>
-  teams: Team[]
+  comunidades: Comunidade[]
   errors?: Record<string, string>
   loading?: boolean
 }>()
@@ -40,7 +40,7 @@ const form = ref<FormData>({
   diaSemana: props.initialData?.diaSemana ?? 0,
   tipoRecorrencia: props.initialData?.tipoRecorrencia ?? 'semanal',
   ordinal: props.initialData?.ordinal ?? 1,
-  teamId: props.initialData?.teamId ?? null,
+  comunidadeId: props.initialData?.comunidadeId ?? null,
   observacoes: props.initialData?.observacoes ?? '',
   ativo: props.initialData?.ativo ?? true,
 })
@@ -48,6 +48,12 @@ const form = ref<FormData>({
 watch(() => props.initialData, (val) => {
   if (val) Object.assign(form.value, val)
 })
+
+// Comunidades arrive asynchronously; default to the first one (same as the scale form), never
+// overriding a value that is already set.
+watch(() => props.comunidades, (lista) => {
+  if (lista.length && form.value.comunidadeId == null) form.value.comunidadeId = lista[0].id
+}, { immediate: true })
 </script>
 
 <template>
@@ -82,11 +88,11 @@ watch(() => props.initialData, (val) => {
         </Select>
       </div>
       <div>
-        <InputLabel value="Ministério esperado" for="input-team" />
-        <Select id="input-team" v-model="form.teamId" class="mt-1">
-          <option :value="null">Nenhum</option>
-          <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
+        <InputLabel value="Comunidade" :required="true" for="input-comunidade" />
+        <Select id="input-comunidade" v-model="form.comunidadeId" class="mt-1" :error="!!errors?.comunidadeId">
+          <option v-for="c in comunidades" :key="c.id" :value="c.id">{{ c.nome }}</option>
         </Select>
+        <InputError :message="errors?.comunidadeId" />
       </div>
       <div class="mt-6">
         <Checkbox v-model="form.ativo" label="Ativa (gera escalas automaticamente)" />

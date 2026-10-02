@@ -181,6 +181,7 @@ model Comunidade {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   scales Scale[]
+  scaleTemplates ScaleTemplate[]
 
   @@map("comunidades")
 }
@@ -196,6 +197,7 @@ model CategoriaFuncao {
   teams      Team[]
   servidores ServidorCategoria[]
   escalacoes ScaleServidor[]
+  vinculosFixos VinculoFixo[]
 
   @@map("categorias_funcao")
 }
@@ -229,6 +231,7 @@ model Team {
   scales      Scale[]
   scaleTemplates ScaleTemplate[]
   escalacoes  ScaleServidor[]
+  vinculosFixos VinculoFixo[]
 
   @@map("teams")
 }
@@ -366,12 +369,14 @@ model ScaleTemplate {
   tipoRecorrencia RecurrenceType @default(semanal) @map("tipo_recorrencia")
   ordinal         Int?           @db.SmallInt
   teamId          Int?           @map("team_id")
+  comunidadeId    Int?           @map("comunidade_id")
   observacoes     String?
   ativo           Boolean        @default(true)
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
 
-  team Team? @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  team       Team?       @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  comunidade Comunidade? @relation(fields: [comunidadeId], references: [id], onDelete: SetNull)
   vinculosFixos VinculoFixo[]
 
   @@map("scale_templates")
@@ -382,6 +387,9 @@ model VinculoFixo {
   servidorId      Int      @map("servidor_id")
   instrumentId    Int?     @map("instrument_id")
   scaleTemplateId Int      @map("scale_template_id")
+  categoriaId     Int?     @map("categoria_id")
+  teamId          Int?     @map("team_id")
+  funcaoLiturgica FuncaoLiturgica? @map("funcao_liturgica")
   ativo           Boolean  @default(true)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -389,6 +397,8 @@ model VinculoFixo {
   servidor      Servidor      @relation(fields: [servidorId], references: [id], onDelete: Cascade)
   instrument    Instrument?   @relation(fields: [instrumentId], references: [id], onDelete: SetNull)
   scaleTemplate ScaleTemplate @relation(fields: [scaleTemplateId], references: [id], onDelete: Cascade)
+  categoria     CategoriaFuncao? @relation(fields: [categoriaId], references: [id], onDelete: SetNull)
+  team          Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
 
   @@unique([servidorId, scaleTemplateId])
   @@map("vinculos_fixos")

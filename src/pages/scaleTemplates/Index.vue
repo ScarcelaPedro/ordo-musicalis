@@ -96,7 +96,7 @@ async function gerar() {
           {{ generating ? 'Gerando...' : 'Gerar escalas' }}
         </PrimaryButton>
         <p class="text-sm text-gray-500 w-full dark:text-gray-400">
-          Cria as celebrações do mês escolhido a partir das recorrências ativas abaixo. Não duplica escalas que já existirem na mesma data/horário.
+          Cria as celebrações do mês escolhido a partir das recorrências ativas abaixo. Não duplica escalas que já existirem na mesma data, horário e comunidade.
         </p>
       </div>
 
@@ -118,7 +118,7 @@ async function gerar() {
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Celebração</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Recorrência</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Horário</th>
-                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Ministério</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Comunidade</th>
                   <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Status</th>
                   <th v-if="auth.isStaff" class="px-6 py-3"></th>
                 </tr>
@@ -128,7 +128,7 @@ async function gerar() {
                   <td class="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">{{ t.celebracao }}</td>
                   <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ recorrenciaLabel(t) }}</td>
                   <td class="px-6 py-4 text-sm text-gray-500 font-mono dark:text-gray-400">{{ t.horario }}</td>
-                  <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ t.team?.nome ?? '—' }}</td>
+                  <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ t.comunidade?.nome ?? '—' }}</td>
                   <td class="px-6 py-4"><Badge :color="t.ativo ? 'green' : 'gray'">{{ t.ativo ? 'Ativa' : 'Inativa' }}</Badge></td>
                   <td v-if="auth.isStaff" class="px-6 py-4 text-right space-x-3 whitespace-nowrap">
                     <RouterLink :to="`/escalas-recorrentes/${t.id}/editar`" class="text-primary-600 hover:text-primary-900 text-sm dark:text-primary-400 dark:hover:text-primary-300">Editar</RouterLink>
@@ -148,7 +148,7 @@ async function gerar() {
                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t.celebracao }}</p>
                 <p class="text-xs text-gray-600 dark:text-gray-400">
                   {{ recorrenciaLabel(t) }} · {{ t.horario }}
-                  <span v-if="t.team"> · {{ t.team.nome }}</span>
+                  <span v-if="t.comunidade"> · {{ t.comunidade.nome }}</span>
                 </p>
               </div>
               <div class="flex flex-wrap gap-1">
