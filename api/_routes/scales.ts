@@ -7,6 +7,7 @@ import { suggestServidores } from '../_lib/suggestServidores'
 import { sendPushToServidores, sendPushToStaff, formatDataCurta } from '../_lib/sendPush'
 import { sendWhatsappToServidores, sendWhatsappToStaff } from '../_lib/sendWhatsapp'
 import { hojeBrasilia } from '../_lib/date'
+import { celebrationNameFor } from '../_lib/deaconCelebration'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -33,6 +34,12 @@ async function defaultComunidadeId(): Promise<number> {
   const matriz = await prisma.comunidade.findFirst({ where: { nome: 'Matriz' } })
   if (!matriz) throw new Error('Comunidade padrão "Matriz" não encontrada')
   return matriz.id
+}
+
+async function enforceDeaconCelebration(celebracao: string | undefined, celebranteId: number | null | undefined): Promise<string | undefined> {
+  if (!celebranteId) return celebracao
+  const celebrante = await prisma.celebrante.findUnique({ where: { id: Number(celebranteId) }, select: { nome: true } })
+  return celebrationNameFor(celebracao, celebrante?.nome)
 }
 
 const include = {
@@ -80,7 +87,7 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
     data: {
       dataCelebracao: new Date(dataCelebracao),
       horario,
-      celebracao,
+      celebracao: (await enforceDeaconCelebration(celebracao, celebranteId)) ?? celebracao,
       teamId: teamId ?? null,
       comunidadeId: comunidadeId ? Number(comunidadeId) : await defaultComunidadeId(),
       celebranteId: celebranteId ?? null,
@@ -212,12 +219,24 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireA
     }
   }
 
+  // Deacons cannot celebrate Masses (ADR-0008): re-check whenever the celebrant or the name changes,
+  // falling back to the stored value of whichever one was not sent.
+  let finalCelebracao: string | undefined = celebracao
+  if (celebranteId !== undefined || celebracao !== undefined) {
+    const current = await prisma.scale.findUnique({ where: { id }, select: { celebracao: true, celebranteId: true } })
+    finalCelebracao = await enforceDeaconCelebration(
+      celebracao ?? current?.celebracao,
+      celebranteId !== undefined ? celebranteId : current?.celebranteId,
+    )
+    if (finalCelebracao === current?.celebracao && celebracao === undefined) finalCelebracao = undefined
+  }
+
   const scale = await prisma.scale.update({
     where: { id },
     data: {
       ...(dataCelebracao ? { dataCelebracao: new Date(dataCelebracao) } : {}),
       ...(horario !== undefined ? { horario } : {}),
-      ...(celebracao !== undefined ? { celebracao } : {}),
+      ...(finalCelebracao !== undefined ? { celebracao: finalCelebracao } : {}),
       ...(teamId !== undefined ? { teamId: teamId ?? null } : {}),
       ...(comunidadeId !== undefined ? { comunidadeId: Number(comunidadeId) } : {}),
       ...(celebranteId !== undefined ? { celebranteId: celebranteId ?? null } : {}),

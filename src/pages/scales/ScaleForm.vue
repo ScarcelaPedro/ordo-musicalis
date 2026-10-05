@@ -4,6 +4,7 @@ import InputLabel from '@/components/InputLabel.vue'
 import InputError from '@/components/InputError.vue'
 import TextInput from '@/components/TextInput.vue'
 import Select from '@/components/Select.vue'
+import { celebrationNameFor, isDeacon } from '@/utils/celebrante'
 import PrimaryButton from '@/components/PrimaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import TertiaryButton from '@/components/TertiaryButton.vue'
@@ -91,6 +92,16 @@ const form = ref<FormData>({
 })
 
 watch(() => props.initialData, (val) => { if (val) Object.assign(form.value, val) })
+
+// Deacons cannot celebrate Masses (ADR-0008): picking a deacon switches the name to
+// "Celebração da Palavra" and locks it. The API enforces the same rule.
+const celebranteIsDeacon = computed(() => isDeacon(props.celebrantes.find((c) => c.id === form.value.celebranteId)?.nome))
+watch([celebranteIsDeacon, () => form.value.celebracao], ([deacon]) => {
+  if (!deacon) return
+  const nome = props.celebrantes.find((c) => c.id === form.value.celebranteId)?.nome
+  const name = celebrationNameFor(form.value.celebracao, nome)
+  if (name !== form.value.celebracao) form.value.celebracao = name
+}, { immediate: true })
 
 // TASK-0073 (correção): `comunidades` chega de forma assíncrona em Create.vue -- calcular o
 // padrão só na inicialização do `form` (acima) deixava o campo permanentemente vazio, porque o
@@ -471,8 +482,9 @@ function detalheEntry(entry: ScaleServidor) {
         </div>
         <div id="campo-celebracao" class="sm:col-span-2">
           <InputLabel for="input-celebracao" value="Celebração" :required="true" />
-          <TextInput id="input-celebracao" v-model="form.celebracao" class="mt-1" :error="etapa1Erros.celebracao" />
+          <TextInput id="input-celebracao" v-model="form.celebracao" class="mt-1 read-only:bg-gray-100 dark:read-only:bg-gray-800" :error="etapa1Erros.celebracao" :readonly="celebranteIsDeacon" />
           <InputError message="Informe o nome da celebração." v-if="etapa1Erros.celebracao" />
+          <p v-if="celebranteIsDeacon" class="mt-1 text-xs text-gray-600 dark:text-gray-400">Com diácono como celebrante, a celebração é sempre uma Celebração da Palavra.</p>
         </div>
         <div id="campo-comunidadeId" class="sm:col-span-2">
           <InputLabel for="input-comunidade" value="Comunidade" :required="true" />

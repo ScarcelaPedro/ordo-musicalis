@@ -62,13 +62,16 @@ const savingCelebrante = ref<number | null>(null)
 
 async function setCelebrante(s: any, value: string) {
   const celebranteId = value ? Number(value) : null
-  const previous = { celebranteId: s.celebranteId, celebrante: s.celebrante }
+  const previous = { celebranteId: s.celebranteId, celebrante: s.celebrante, celebracao: s.celebracao }
   s.celebranteId = celebranteId
   s.celebrante = celebrantes.value.find((c) => c.id === celebranteId) ?? null
   savingCelebrante.value = s.id
   try {
-    await client.patch(`/scales/${s.id}`, { celebranteId })
-    flash.set('success', celebranteId ? 'Celebrante definido.' : 'Celebrante removido.')
+    const { data } = await client.patch(`/scales/${s.id}`, { celebranteId })
+    // The API may rename the celebration (deacon → "Celebração da Palavra", ADR-0008).
+    s.celebracao = data.celebracao
+    if (data.celebracao !== previous.celebracao) flash.set('success', `Celebrante definido. A celebração passou a ser "${data.celebracao}".`)
+    else flash.set('success', celebranteId ? 'Celebrante definido.' : 'Celebrante removido.')
   } catch (e: any) {
     Object.assign(s, previous)
     flash.set('error', e.response?.data?.message ?? 'Erro ao salvar celebrante')
