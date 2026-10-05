@@ -264,6 +264,12 @@ const router = createRouter({
       component: () => import('@/pages/reports/Index.vue'),
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
+    {
+      path: '/relatorios/missas',
+      name: 'reports.masses',
+      component: () => import('@/pages/reports/Masses.vue'),
+      meta: { auth: true, roles: ['admin', 'coordenador'] },
+    },
 
     // Público
     {

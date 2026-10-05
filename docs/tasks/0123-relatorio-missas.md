@@ -24,9 +24,11 @@ Celebrações da Palavra.
   e agrega por comunidade e por celebrante. Testes em `api/_lib/massReport.test.ts`.
 - `GET /api/reports/missas?inicio=&fim=` (admin/coordenador), mesmo período padrão de
   `/reports/resumo` (mês atual). Conta todas as escalas do período, como o resumo.
-- `src/pages/reports/Index.vue`: novo card "Missas e Celebrações da Palavra" com totais e abas
-  "Por Comunidade" / "Por Celebrante", usando o mesmo filtro de datas da página.
+- `src/pages/reports/Masses.vue` (rota `/relatorios/missas`, item "Relatório de Missas" no grupo
+  "Análises" da sidebar): filtro de datas, totais e abas "Por Comunidade" / "Por Celebrante".
 
 ## Progresso
 
 - 2026-10-05: implementado, testes e build ok. Concluída.
+- 2026-10-05: a pedido do usuário, o relatório saiu da página de Relatórios e virou página própria
+  no grupo "Análises".

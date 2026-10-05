@@ -124,7 +124,8 @@ const navGroups = computed<NavGroup[]>(() => {
         iconActive: ChartBarIconSolid,
         active: path.startsWith('/relatorios'),
         children: [
-          { to: '/relatorios', label: 'Relatórios', active: path.startsWith('/relatorios') },
+          { to: '/relatorios', label: 'Relatórios', active: path === '/relatorios' },
+          { to: '/relatorios/missas', label: 'Relatório de Missas', active: path.startsWith('/relatorios/missas') },
         ],
       },
       {
