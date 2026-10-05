@@ -13,6 +13,16 @@
   --color-canvas: 17 24 39; /* gray-900 -- same dark background already in use */
 }
 
+/* The root scrollbar's transparent track shows the <html> background, which defaulted to white;
+   paint it with the page canvas so the track blends in (also avoids white overscroll areas). */
+html {
+  background-color: rgb(var(--color-canvas));
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
 /* Delicate scrollbars: thin rounded thumb on a transparent track, theme-aware. */
 :root {
   --scrollbar-thumb: rgb(148 163 184 / 0.45); /* slate-400 */
