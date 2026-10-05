@@ -59,3 +59,13 @@
   admin), como já acontece com escalas.
 - `ScaleTemplate.teamId` vira dado legado. Pode ser removido numa limpeza futura, junto com a
   seção de recorrências em `teams/Show.vue`.
+
+## Revisão (2026-10-05, `TASK-0120`)
+
+Na tela de vínculos fixos, escolher um ministério deixou de ser só um rótulo opcional do vínculo
+individual: agora adiciona de uma vez todos os membros do ministério que têm a função (cada um
+com aquele `teamId`). Um vínculo individual passa a não ter ministério. O modelo e a API não
+mudaram: o lote é feito no front com várias chamadas a `POST /vinculos-fixos`, e as regras de
+validação e permissão continuam valendo para cada vínculo. Descartado criar um endpoint de lote
+por enquanto: o volume é pequeno (um ministério) e falhas parciais já são tratadas na tela.
+O instrumento do vínculo passa a ser opcional também na tela (a API já aceitava `null`).

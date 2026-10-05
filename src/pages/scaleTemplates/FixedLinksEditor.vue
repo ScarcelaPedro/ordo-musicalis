@@ -1,13 +1,15 @@
 <script setup lang="ts">
 // Fixed links of a recurrence (TASK-0117, ADR-0006): any function can have fixed people, not
 // only Música. Same flow as the manual scale form -- function first, then only the people who
-// have that function in their profile; instrument only for Música, liturgical role only for
-// Acólitos, ministry always optional. Shared by scaleTemplates/Create.vue and Edit.vue.
+// have that function in their profile; instrument (optional) only for Música, liturgical role
+// only for Acólitos. Picking a ministry adds all of its members at once (TASK-0120) instead of a
+// single person. Shared by scaleTemplates/Create.vue and Edit.vue.
 import { ref, computed, onMounted, watch } from 'vue'
 import { TrashIcon } from '@heroicons/vue/24/outline'
 import client from '@/api/client'
 import { useFlashStore } from '@/stores/flash'
 import { FUNCAO_LITURGICA_LABELS, assignmentRole } from '@/utils/scaleRole'
+import { teamMembersForFixedLinks } from '@/utils/recurrence'
 import Avatar from '@/components/Avatar.vue'
 import Badge from '@/components/Badge.vue'
 import InputLabel from '@/components/InputLabel.vue'
@@ -23,6 +25,7 @@ interface Servidor {
   ativo?: boolean
   instruments: { instrumentId: number; instrument: { id: number; nome: string } }[]
   categorias: { categoriaId: number }[]
+  teams: { teamId: number }[]
 }
 interface FixedLink {
   id: number
@@ -51,6 +54,8 @@ const emptyDraft = () => ({
   funcaoLiturgica: null as string | null,
 })
 const draft = ref(emptyDraft())
+// Optional instrument per ministry member, keyed by servidor id (Música only).
+const memberInstruments = ref<Record<number, number | null>>({})
 
 onMounted(async () => {
   try {
@@ -87,7 +92,8 @@ const eligibleServidores = computed(() => {
 
 const selectedServidor = computed(() => servidores.value.find((s) => s.id === draft.value.servidorId) ?? null)
 const draftTeams = computed(() => teams.value.filter((t) => t.categoria.id === draft.value.categoriaId))
-const showInstrument = computed(() => draft.value.categoriaId === musicaId.value && !!selectedServidor.value?.instruments.length)
+const isMusica = computed(() => draft.value.categoriaId === musicaId.value)
+const showInstrument = computed(() => isMusica.value && !!selectedServidor.value?.instruments.length)
 const showFuncaoLiturgica = computed(() => draft.value.categoriaId === acolitosId.value)
 
 watch(() => draft.value.categoriaId, (categoriaId) => {
@@ -95,9 +101,22 @@ watch(() => draft.value.categoriaId, (categoriaId) => {
 })
 
 watch(() => draft.value.servidorId, () => {
-  // Same default as the scale form: first registered instrument, still editable.
-  draft.value.instrumentId = showInstrument.value ? selectedServidor.value!.instruments[0].instrumentId : null
+  // Instrument is optional: starts empty, picked only when it matters.
+  draft.value.instrumentId = null
 })
+
+watch(() => draft.value.teamId, () => {
+  draft.value.servidorId = null
+  draft.value.instrumentId = null
+  draft.value.funcaoLiturgica = null
+  memberInstruments.value = {}
+})
+
+const teamMembers = computed(() =>
+  draft.value.teamId && draft.value.categoriaId
+    ? teamMembersForFixedLinks(servidores.value, draft.value.teamId, draft.value.categoriaId, linkedIds.value)
+    : { eligible: [], missingFunction: [] },
+)
 
 // Grouped by function in category order, like the generated scale will show them.
 const groups = computed(() => {
@@ -135,6 +154,34 @@ async function addLink() {
     flash.set('success', 'Vínculo fixo adicionado!')
   } catch (e: any) {
     flash.set('error', e.response?.data?.message ?? 'Erro ao adicionar vínculo')
+  } finally {
+    adding.value = false
+  }
+}
+
+async function addTeamMembers() {
+  const { categoriaId, teamId } = draft.value
+  const members = teamMembers.value.eligible
+  if (!categoriaId || !teamId || !members.length) return
+  adding.value = true
+  try {
+    const results = await Promise.allSettled(
+      members.map((m) =>
+        client.post('/vinculos-fixos', {
+          scaleTemplateId: props.scaleTemplateId,
+          servidorId: m.id,
+          categoriaId,
+          teamId,
+          instrumentId: isMusica.value ? memberInstruments.value[m.id] ?? null : null,
+        }),
+      ),
+    )
+    const created = results.flatMap((r) => (r.status === 'fulfilled' ? [r.value.data as FixedLink] : []))
+    links.value.push(...created)
+    const failed = results.length - created.length
+    if (failed) flash.set('error', `${created.length} vínculo(s) adicionado(s), ${failed} não puderam ser adicionados.`)
+    else flash.set('success', `${created.length} vínculo(s) fixo(s) adicionado(s)!`)
+    draft.value = { ...emptyDraft(), categoriaId }
   } finally {
     adding.value = false
   }
@@ -205,45 +252,90 @@ async function removeLink(l: FixedLink) {
               <option v-for="c in categoriasOrdenadas" :key="c.id" :value="c.id">{{ c.nome }}</option>
             </Select>
           </div>
-          <div>
-            <InputLabel value="Servidor" for="input-vinculo-servidor" :required="true" />
-            <Select
-              id="input-vinculo-servidor" v-model="draft.servidorId" class="mt-1"
-              :disabled="!draft.categoriaId || !eligibleServidores.length"
-            >
-              <option value="">
-                {{ !draft.categoriaId ? 'Escolha a função primeiro' : eligibleServidores.length ? 'Selecione' : 'Ninguém disponível nesta função' }}
-              </option>
-              <option v-for="s in eligibleServidores" :key="s.id" :value="s.id">{{ s.nome }}</option>
-            </Select>
-          </div>
-          <div v-if="showInstrument">
-            <InputLabel value="Instrumento" for="input-vinculo-instrument" />
-            <Select id="input-vinculo-instrument" v-model="draft.instrumentId" class="mt-1">
-              <option v-for="i in selectedServidor!.instruments" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
-            </Select>
-          </div>
-          <div v-if="showFuncaoLiturgica">
-            <InputLabel value="Função litúrgica (opcional)" for="input-vinculo-funcao" />
-            <Select id="input-vinculo-funcao" v-model="draft.funcaoLiturgica" class="mt-1">
-              <option value="">Sem função litúrgica</option>
-              <option v-for="(label, value) in FUNCAO_LITURGICA_LABELS" :key="value" :value="value">{{ label }}</option>
-            </Select>
-          </div>
           <div v-if="draftTeams.length">
             <InputLabel value="Ministério (opcional)" for="input-vinculo-team" />
             <Select id="input-vinculo-team" v-model="draft.teamId" class="mt-1">
-              <option value="">Sem ministério</option>
+              <option value="">Nenhum (escolher um servidor)</option>
               <option v-for="t in draftTeams" :key="t.id" :value="t.id">{{ t.nome }}</option>
             </Select>
           </div>
+
+          <template v-if="!draft.teamId">
+            <div>
+              <InputLabel value="Servidor" for="input-vinculo-servidor" :required="true" />
+              <Select
+                id="input-vinculo-servidor" v-model="draft.servidorId" class="mt-1"
+                :disabled="!draft.categoriaId || !eligibleServidores.length"
+              >
+                <option value="">
+                  {{ !draft.categoriaId ? 'Escolha a função primeiro' : eligibleServidores.length ? 'Selecione' : 'Ninguém disponível nesta função' }}
+                </option>
+                <option v-for="s in eligibleServidores" :key="s.id" :value="s.id">{{ s.nome }}</option>
+              </Select>
+            </div>
+            <div v-if="showInstrument">
+              <InputLabel value="Instrumento (opcional)" for="input-vinculo-instrument" />
+              <Select id="input-vinculo-instrument" v-model="draft.instrumentId" class="mt-1">
+                <option value="">Sem instrumento</option>
+                <option v-for="i in selectedServidor!.instruments" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
+              </Select>
+            </div>
+            <div v-if="showFuncaoLiturgica">
+              <InputLabel value="Função litúrgica (opcional)" for="input-vinculo-funcao" />
+              <Select id="input-vinculo-funcao" v-model="draft.funcaoLiturgica" class="mt-1">
+                <option value="">Sem função litúrgica</option>
+                <option v-for="(label, value) in FUNCAO_LITURGICA_LABELS" :key="value" :value="value">{{ label }}</option>
+              </Select>
+            </div>
+          </template>
         </div>
-        <p v-if="draft.categoriaId && !eligibleServidores.length" class="mt-3 text-caption text-gray-500 dark:text-gray-400">
-          Só aparecem servidores com essa função marcada no cadastro e que ainda não têm vínculo nesta recorrência.
-        </p>
-        <SecondaryButton type="button" class="mt-4" :loading="adding" :disabled="!draft.servidorId" @click="addLink">
-          {{ adding ? 'Adicionando...' : 'Adicionar vínculo' }}
-        </SecondaryButton>
+
+        <template v-if="draft.teamId">
+          <p class="mt-4 text-caption text-gray-600 dark:text-gray-400">
+            Todos os servidores deste ministério serão adicionados como vínculo fixo.
+          </p>
+          <ul v-if="teamMembers.eligible.length" class="mt-2 space-y-2">
+            <li
+              v-for="m in teamMembers.eligible" :key="m.id"
+              class="flex flex-wrap items-center gap-2.5 rounded-lg border border-gray-100 bg-gray-50/70 p-2.5 dark:border-gray-700 dark:bg-gray-900/40"
+            >
+              <Avatar :name="m.nome" size="sm" />
+              <p class="min-w-0 flex-1 truncate text-body-sm font-semibold text-gray-800 dark:text-gray-100">{{ m.nome }}</p>
+              <div v-if="isMusica && m.instruments.length" class="w-full sm:w-48">
+                <Select
+                  :model-value="memberInstruments[m.id] ?? ''"
+                  @update:model-value="(v) => (memberInstruments[m.id] = v ? Number(v) : null)"
+                  :aria-label="`Instrumento de ${m.nome} (opcional)`"
+                >
+                  <option value="">Sem instrumento</option>
+                  <option v-for="i in m.instruments" :key="i.instrumentId" :value="i.instrumentId">{{ i.instrument.nome }}</option>
+                </Select>
+              </div>
+            </li>
+          </ul>
+          <p v-else class="mt-2 text-body-sm text-gray-600 dark:text-gray-400">
+            Nenhum servidor deste ministério para adicionar: todos já têm vínculo nesta recorrência ou estão inativos.
+          </p>
+          <p v-if="teamMembers.missingFunction.length" class="mt-2 text-caption text-gray-500 dark:text-gray-400">
+            Não serão adicionados por não terem essa função marcada no cadastro:
+            {{ teamMembers.missingFunction.map((s) => s.nome).join(', ') }}.
+          </p>
+          <SecondaryButton
+            type="button" class="mt-4" :loading="adding"
+            :disabled="!teamMembers.eligible.length" @click="addTeamMembers"
+          >
+            {{ adding ? 'Adicionando...' : `Adicionar todos (${teamMembers.eligible.length})` }}
+          </SecondaryButton>
+        </template>
+
+        <template v-else>
+          <p v-if="draft.categoriaId && !eligibleServidores.length" class="mt-3 text-caption text-gray-500 dark:text-gray-400">
+            Só aparecem servidores com essa função marcada no cadastro e que ainda não têm vínculo nesta recorrência.
+          </p>
+          <SecondaryButton type="button" class="mt-4" :loading="adding" :disabled="!draft.servidorId" @click="addLink">
+            {{ adding ? 'Adicionando...' : 'Adicionar vínculo' }}
+          </SecondaryButton>
+        </template>
       </div>
     </template>
   </section>
