@@ -16,7 +16,7 @@ import { computeCoverage, coveragePercent, type CoverageCategory } from '@/utils
 import Skeleton from '@/components/Skeleton.vue'
 import { parseDateOnly } from '@/utils/date'
 import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
-import { assignmentRole, assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
+import { assignmentRole, assignmentRoleLabel, resolveAssignment, scheduledPeople, type RoleLookups } from '@/utils/scaleRole'
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 import { gentleScrollIntoView } from '@/utils/scroll'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
@@ -161,14 +161,21 @@ const myNextScaleDetail = ref<{ id: number; repertoire?: { items: unknown[] } | 
 const coverageCategorias = ref<CoverageCategory[]>([])
 const teamCategoryById = ref(new Map<number, number>())
 
+type TeamWithCategory = { id: number; nome: string; categoriaId: number; categoria?: { nome: string } | null }
+
 async function loadCoverageLookups() {
   if (!auth.isStaff) return
   const [categoriasRes, teamsRes] = await Promise.all([
     client.get<CoverageCategory[]>('/categorias').catch(() => ({ data: [] as CoverageCategory[] })),
-    client.get<{ id: number; categoriaId: number }[]>('/teams').catch(() => ({ data: [] as { id: number; categoriaId: number }[] })),
+    client.get<TeamWithCategory[]>('/teams').catch(() => ({ data: [] as TeamWithCategory[] })),
   ])
   coverageCategorias.value = categoriasRes.data
   teamCategoryById.value = new Map(teamsRes.data.map((t) => [t.id, t.categoriaId]))
+  // Same responses also name each person's ministry in the day card (TASK-0127).
+  roleLookups.value = {
+    categoriasById: new Map(categoriasRes.data.map((c) => [c.id, c])),
+    teamsById: new Map(teamsRes.data.map((t) => [t.id, t])),
+  }
 }
 
 const coverageRows = computed(() => computeCoverage(scales.value, coverageCategorias.value, teamCategoryById.value))
@@ -743,7 +750,7 @@ function formatFullDate(iso: string) {
               </div>
               <LiturgicalInfo v-if="selectedDayLiturgy" class="mt-1" :liturgia="selectedDayLiturgy.liturgia" :cor="selectedDayLiturgy.cor" />
 
-              <ul v-if="selectedDayScales.length" class="mt-3 space-y-2">
+              <ul v-if="selectedDayScales.length" class="mt-3 space-y-4">
                 <li v-for="scale in selectedDayScales" :key="scale.id">
                   <RouterLink
                     :to="`/escalas/${scale.id}`"
@@ -761,6 +768,32 @@ function formatFullDate(iso: string) {
                     </span>
                     <ChevronRightIcon class="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
                   </RouterLink>
+                  <!-- Who is scheduled (TASK-0127): visible to everyone, including people who
+                       have not confirmed yet; status is text + icon, never color alone. -->
+                  <div class="mt-2 px-3">
+                    <p class="text-label uppercase text-gray-600 dark:text-gray-400">Escalados</p>
+                    <ul v-if="scheduledPeople(scale.servidores, roleLookups).length" class="mt-1 space-y-1">
+                      <li
+                        v-for="person in scheduledPeople(scale.servidores, roleLookups)"
+                        :key="person.id"
+                        class="flex items-start justify-between gap-2 text-body-sm"
+                      >
+                        <span class="min-w-0">
+                          <span class="block truncate font-medium text-gray-800 dark:text-gray-100">{{ person.nome }}</span>
+                          <span v-if="person.role" class="block truncate text-caption text-gray-600 dark:text-gray-400">{{ person.role }}</span>
+                        </span>
+                        <span
+                          class="inline-flex shrink-0 items-center gap-1 text-caption"
+                          :class="person.confirmed ? 'text-green-700 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'"
+                        >
+                          <CheckCircleIcon v-if="person.confirmed" class="h-4 w-4" aria-hidden="true" />
+                          <ClockIcon v-else class="h-4 w-4" aria-hidden="true" />
+                          {{ person.confirmed ? 'Confirmado' : 'Aguardando confirmação' }}
+                        </span>
+                      </li>
+                    </ul>
+                    <p v-else class="mt-1 text-body-sm text-gray-600 dark:text-gray-400">Ninguém escalado ainda.</p>
+                  </div>
                 </li>
               </ul>
               <p v-else class="mt-3 text-body-sm text-gray-600 dark:text-gray-400">Nenhuma celebração criada neste dia.</p>

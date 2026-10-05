@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignmentRole, assignmentRoleLabel, resolveAssignment } from '@/utils/scaleRole'
+import { assignmentRole, assignmentRoleLabel, resolveAssignment, scheduledPeople } from '@/utils/scaleRole'
 
 describe('assignmentRole', () => {
   it('shows the ministry of any kind of server, not only musicians', () => {
@@ -37,5 +37,32 @@ describe('resolveAssignment', () => {
     expect(assignmentRoleLabel(resolveAssignment({ categoria: { nome: 'Acólitos e Ancilas' }, categoriaId: 4 }, lookups))).toBe('Acólitos e Ancilas')
     expect(assignmentRoleLabel(resolveAssignment({ categoriaId: 99 }, lookups))).toBeNull()
     expect(resolveAssignment(null, lookups)).toBeNull()
+  })
+})
+
+describe('scheduledPeople', () => {
+  const lookups = { categoriasById: new Map([[4, { nome: 'Leitores' }]]), teamsById: new Map() }
+  const person = (id: number, nome: string, status: string, categoriaId: number | null = null) => ({
+    servidor: { id, nome },
+    status,
+    categoriaId,
+  })
+
+  it('lists invited and confirmed people, flagging who has confirmed', () => {
+    const result = scheduledPeople([person(1, 'Ana', 'convidado', 4), person(2, 'Bia', 'confirmado', 4)], lookups)
+    expect(result).toEqual([
+      { id: 1, nome: 'Ana', role: 'Leitores', confirmed: false },
+      { id: 2, nome: 'Bia', role: 'Leitores', confirmed: true },
+    ])
+  })
+
+  it('leaves out declined and replaced assignments', () => {
+    const result = scheduledPeople([person(1, 'Ana', 'recusado'), person(2, 'Bia', 'substituido'), person(3, 'Caio', 'convidado')], lookups)
+    expect(result.map((p) => p.nome)).toEqual(['Caio'])
+  })
+
+  it('groups by ministry and puts people without one last', () => {
+    const result = scheduledPeople([person(1, 'Zé', 'convidado'), person(2, 'Bia', 'convidado', 4), person(3, 'Ana', 'convidado', 4)], lookups)
+    expect(result.map((p) => p.nome)).toEqual(['Ana', 'Bia', 'Zé'])
   })
 })

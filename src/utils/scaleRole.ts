@@ -66,3 +66,31 @@ export function resolveAssignment<T extends AssignmentLike>(
     team: pivot.team ?? (pivot.teamId != null ? lookups.teamsById.get(pivot.teamId) ?? null : null),
   }
 }
+
+export interface ScheduledPerson {
+  id: number
+  nome: string
+  role: string | null
+  confirmed: boolean
+}
+
+/**
+ * Who is scheduled for a celebration, as shown in the dashboard day card (TASK-0127): invited
+ * and confirmed people both count -- the person is on the scale even before confirming. Declined
+ * and replaced assignments are left out, since that person is no longer serving. Sorted by
+ * ministry, then name, so people of the same ministry stay together.
+ */
+export function scheduledPeople<T extends AssignmentLike & { status: string; servidor: { id: number; nome: string } }>(
+  assignments: T[],
+  lookups: RoleLookups,
+): ScheduledPerson[] {
+  return assignments
+    .filter((a) => a.status === 'convidado' || a.status === 'confirmado')
+    .map((a) => ({
+      id: a.servidor.id,
+      nome: a.servidor.nome,
+      role: assignmentRoleLabel(resolveAssignment(a, lookups)),
+      confirmed: a.status === 'confirmado',
+    }))
+    .sort((x, y) => (x.role ?? '\uffff').localeCompare(y.role ?? '\uffff', 'pt-BR') || x.nome.localeCompare(y.nome, 'pt-BR'))
+}
