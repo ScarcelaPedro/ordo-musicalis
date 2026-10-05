@@ -17,6 +17,7 @@ import { parseDateOnly } from '@/utils/date'
 import { currentAndNextMonthKeys, selectUpcoming } from '@/utils/upcoming'
 import { assignmentRole, assignmentRoleLabel, resolveAssignment, type RoleLookups } from '@/utils/scaleRole'
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
+import { gentleScrollIntoView } from '@/utils/scroll'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
 import { ChevronRightIcon, ClockIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import LiturgicalInfo from '@/components/scale/LiturgicalInfo.vue'
@@ -235,10 +236,12 @@ const selectedDayKey = ref<string | null>(null)
 
 async function toggleSelectedDay(dateKey: string) {
   selectedDayKey.value = selectedDayKey.value === dateKey ? null : dateKey
-  if (!selectedDayKey.value) return
-  // On desktop the card sits below a tall grid -- bring it into view (no jump if already visible).
+  // Only days with celebrations take the user to the times (TASK-0118); an empty day just shows
+  // its short "no celebration" note in place. No motion if the card is already fully visible.
+  if (!selectedDayKey.value || !hasEvents(selectedDayKey.value)) return
   await nextTick()
-  document.getElementById('selected-day-title')?.closest('section')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  const card = document.getElementById('selected-day-title')?.closest('section')
+  if (card) gentleScrollIntoView(card)
 }
 
 watch([currentMonth, currentYear], () => { selectedDayKey.value = null })
