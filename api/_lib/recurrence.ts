@@ -64,6 +64,36 @@ export function buildFixedAssignments(links: FixedLink[], legacyTeamId: number |
   }))
 }
 
+export interface GeneratedScaleTemplate {
+  horario: string
+  celebracao: string
+  teamId: number | null
+  observacoes: string | null
+}
+
+/**
+ * Data of a scale generated from a recurrence. Generated celebrations are born confirmed
+ * (TASK-0121): the recurrence and its fixed links were already reviewed, so they don't go
+ * through the draft step of a manual scale.
+ */
+export function buildGeneratedScale<S>(
+  tpl: GeneratedScaleTemplate,
+  dataCelebracao: Date,
+  comunidadeId: number,
+  servidores: S[],
+) {
+  return {
+    dataCelebracao,
+    horario: tpl.horario,
+    celebracao: tpl.celebracao,
+    teamId: tpl.teamId,
+    comunidadeId,
+    observacoes: tpl.observacoes,
+    status: 'confirmada' as const,
+    servidores: servidores.length ? { create: servidores } : undefined,
+  }
+}
+
 export interface FixedLinkInput {
   categoriaId?: unknown
   teamId?: unknown

@@ -96,7 +96,7 @@ async function gerar() {
           {{ generating ? 'Gerando...' : 'Gerar escalas' }}
         </PrimaryButton>
         <p class="text-sm text-gray-500 w-full dark:text-gray-400">
-          Cria as celebrações do mês escolhido a partir das recorrências ativas abaixo. Não duplica escalas que já existirem na mesma data, horário e comunidade.
+          Cria as celebrações do mês escolhido a partir das recorrências ativas abaixo, já confirmadas. Não duplica escalas que já existirem na mesma data, horário e comunidade.
         </p>
       </div>
 

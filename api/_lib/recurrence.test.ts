@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFixedAssignments, normalizeFixedLink, occurrenceDays } from './recurrence'
+import { buildFixedAssignments, buildGeneratedScale, normalizeFixedLink, occurrenceDays } from './recurrence'
 
 // October 2026 starts on a Thursday; Sundays are 4, 11, 18, 25.
 describe('occurrenceDays', () => {
@@ -81,5 +81,18 @@ describe('normalizeFixedLink', () => {
       error: 'O ministério escolhido não pertence a essa função',
     })
     expect(normalizeFixedLink({ categoriaId: 1, teamId: 2 }, { ...ctx, teamCategoriaId: 1 })).toMatchObject({ data: { teamId: 2 } })
+  })
+})
+
+describe('buildGeneratedScale', () => {
+  const tpl = { horario: '10:00', celebracao: 'Missa', teamId: null, observacoes: null }
+
+  it('creates the celebration already confirmed', () => {
+    const data = buildGeneratedScale(tpl, new Date(2026, 9, 4), 1, [{ servidorId: 1 }])
+    expect(data).toMatchObject({ status: 'confirmada', comunidadeId: 1, servidores: { create: [{ servidorId: 1 }] } })
+  })
+
+  it('omits the nested create when there are no fixed links', () => {
+    expect(buildGeneratedScale(tpl, new Date(2026, 9, 4), 1, []).servidores).toBeUndefined()
   })
 })

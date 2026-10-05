@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
 import { requireAnyTeamOwnership } from '../_middleware/teamScope'
-import { buildFixedAssignments, occurrenceDays } from '../_lib/recurrence'
+import { buildFixedAssignments, buildGeneratedScale, occurrenceDays } from '../_lib/recurrence'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -140,17 +140,7 @@ router.post('/generate', authenticate, requireRole('admin', 'coordenador'), asyn
       })
       if (exists) { puladas++; continue }
 
-      await prisma.scale.create({
-        data: {
-          dataCelebracao,
-          horario: tpl.horario,
-          celebracao: tpl.celebracao,
-          teamId: tpl.teamId,
-          comunidadeId,
-          observacoes: tpl.observacoes,
-          servidores: servidores.length ? { create: servidores } : undefined,
-        },
-      })
+      await prisma.scale.create({ data: buildGeneratedScale(tpl, dataCelebracao, comunidadeId, servidores) })
       criadas++
     }
   }
