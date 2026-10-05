@@ -13,6 +13,41 @@
   --color-canvas: 17 24 39; /* gray-900 -- same dark background already in use */
 }
 
+/* Delicate scrollbars: thin rounded thumb on a transparent track, theme-aware. */
+:root {
+  --scrollbar-thumb: rgb(148 163 184 / 0.45); /* slate-400 */
+  --scrollbar-thumb-hover: rgb(100 116 139 / 0.7); /* slate-500 */
+}
+.dark {
+  --scrollbar-thumb: rgb(75 85 99 / 0.6); /* gray-600 */
+  --scrollbar-thumb-hover: rgb(107 114 128 / 0.8); /* gray-500 */
+}
+/* Chromium/Safari: the pseudo-elements allow the rounded "floating" pill look. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border: 3px solid transparent; /* inset the thumb so it reads as a thin pill */
+  border-radius: 9999px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+/* Firefox only -- Chromium 121+ would let these override the pill styling above. */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+}
+
 @media print {
   nav, .no-print {
     display: none !important;
