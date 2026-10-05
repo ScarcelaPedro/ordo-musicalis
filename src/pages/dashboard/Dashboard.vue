@@ -254,11 +254,6 @@ function hasEvents(dateKey: string) {
   return (scalesByDate.value[dateKey]?.length ?? 0) > 0
 }
 
-// Scale chips/cards stay neutral: they sit on top of the liturgical cell color, and the old
-// colored chips (green "confirmada", amber morning, blue evening) read as liturgical
-// information (SPEC-003.1 §24). Status is shown by icon + text (chip) or Badge (list) instead;
-// the time of day is already written on the chip.
-const SCALE_CHIP_CLASS = 'border-gray-200 bg-white/90 text-gray-800 hover:border-primary-300 hover:bg-white dark:border-gray-600 dark:bg-gray-900/80 dark:text-gray-100 dark:hover:border-primary-500'
 
 const totalScales = computed(() => scales.value.length)
 const confirmed   = computed(() => scales.value.filter(s => s.status === 'confirmada').length)
@@ -711,9 +706,8 @@ function formatFullDate(iso: string) {
           </Select>
         </div>
 
-        <!-- Desktop: grade completa com chips (mantida igual). Mobile (TASK-0008 §31): grade
-             compacta (só marcador de dia) + lista abaixo com informação completa, resolvendo o
-             min-w-[560px]/scroll horizontal que forçava o mobile a rolar. -->
+        <!-- Desktop: full grid. Mobile (TASK-0008 §31): compact grid (day marker only); the day's
+             celebrations open in the day card on tap, with no month-long list (TASK-0126). -->
         <Calendar
           v-model:month="currentMonth"
           v-model:year="currentYear"
@@ -783,31 +777,6 @@ function formatFullDate(iso: string) {
               {{ scalesByDate[dateKey].length }}
               <span class="sr-only">{{ scalesByDate[dateKey].length === 1 ? 'celebração' : 'celebrações' }}</span>
             </span>
-          </template>
-
-          <template #list-item="{ day, dateKey, isToday: dayIsToday }">
-            <p class="mb-2 text-label uppercase tracking-wide text-gray-600 dark:text-gray-400">
-              Dia {{ day }}<span v-if="dayIsToday"> · Hoje</span>
-            </p>
-            <div class="space-y-2">
-              <RouterLink
-                v-for="scale in scalesByDate[dateKey] ?? []"
-                :key="scale.id"
-                :to="`/escalas/${scale.id}`"
-                class="flex items-center justify-between gap-3 rounded-xl border p-3 transition"
-                :class="SCALE_CHIP_CLASS"
-              >
-                <div class="min-w-0">
-                  <p class="truncate text-body-sm font-semibold">{{ scale.celebracao }}</p>
-                  <p class="truncate text-body-sm opacity-80">
-                    {{ formatFullDate(scale.dataCelebracao) }} · {{ scale.horario }}
-                    <template v-if="scale.comunidade"> · {{ scale.comunidade.nome }}</template>
-                  </p>
-                  <p v-if="scale.celebrante" class="truncate text-body-sm opacity-80">{{ scale.celebrante.nome }}</p>
-                </div>
-                <Badge :color="scale.status === 'confirmada' ? 'green' : 'yellow'" class="shrink-0">{{ scale.status }}</Badge>
-              </RouterLink>
-            </div>
           </template>
         </Calendar>
 

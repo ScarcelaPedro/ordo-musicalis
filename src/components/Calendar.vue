@@ -15,7 +15,8 @@
 // SPEC-003.1 visual language (TASK-0101): desktop cells are separate white tiles; when
 // `cellMarker` is given, the day's meaning (e.g. liturgical season) is a small dot in the
 // corner instead of a full-cell tint, so the tile stays readable. The compact mobile grid keeps
-// its own logic (TASK-0008 §31): tinted cell (`cellBackground`) + event dot + list below.
+// its own logic (TASK-0008 §31): tinted cell (`cellBackground`) + event dot; the day's
+// celebrations open in the `selected-day` slot on tap (TASK-0126).
 import { computed } from 'vue'
 import IconButton from './IconButton.vue'
 import Spinner from './Spinner.vue'
@@ -277,17 +278,9 @@ function desktopTileClass(day: number) {
     </div>
 
     <!-- Detail of the picked day, shared by desktop and mobile so there is a single card in the
-         DOM (TASK-0114/0115) -- content owned by the parent. -->
+         DOM (TASK-0114/0115) -- content owned by the parent. Mobile no longer lists the whole
+         month's celebrations below the grid (TASK-0126): a day's celebrations only show here once
+         it is tapped. -->
     <slot name="selected-day" />
-
-    <div class="md:hidden">
-      <div class="divide-y divide-gray-100 border-t border-gray-100 dark:divide-gray-700 dark:border-gray-700">
-        <template v-for="(day, idx) in cells" :key="idx">
-          <div v-if="day && hasEvents(dateKey(day))" class="px-4 py-3">
-            <slot name="list-item" :day="day" :date-key="dateKey(day)" :is-today="isToday(day)" />
-          </div>
-        </template>
-      </div>
-    </div>
   </div>
 </template>
