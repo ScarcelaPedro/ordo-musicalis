@@ -20,7 +20,7 @@ import { assignmentRole, assignmentRoleLabel, resolveAssignment, scheduledPeople
 import { LITURGICAL_COLORS, liturgicalColorLabel, liturgicalColorStyle } from '@/utils/liturgicalColors'
 import { gentleScrollIntoView } from '@/utils/scroll'
 import { CheckCircleIcon } from '@heroicons/vue/20/solid'
-import { ChevronRightIcon, ClockIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import { ChevronDownIcon, ChevronRightIcon, ClockIcon, MapPinIcon, PlusIcon, UserIcon, UsersIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 import LiturgicalInfo from '@/components/scale/LiturgicalInfo.vue'
 
 const auth = useAuthStore()
@@ -253,6 +253,14 @@ async function toggleSelectedDay(dateKey: string) {
 }
 
 watch([currentMonth, currentYear], () => { selectedDayKey.value = null })
+
+// One celebration of the day card expanded at a time (TASK-0128); a new day starts collapsed.
+const expandedScaleId = ref<number | null>(null)
+watch(selectedDayKey, () => { expandedScaleId.value = null })
+
+function toggleExpandedScale(id: number) {
+  expandedScaleId.value = expandedScaleId.value === id ? null : id
+}
 
 const selectedDayScales = computed(() => (selectedDayKey.value ? scalesByDate.value[selectedDayKey.value] ?? [] : []))
 const selectedDayLiturgy = computed(() => (selectedDayKey.value ? liturgiaByDate.value[selectedDayKey.value] ?? null : null))
@@ -750,11 +758,16 @@ function formatFullDate(iso: string) {
               </div>
               <LiturgicalInfo v-if="selectedDayLiturgy" class="mt-1" :liturgia="selectedDayLiturgy.liturgia" :cor="selectedDayLiturgy.cor" />
 
-              <ul v-if="selectedDayScales.length" class="mt-3 space-y-4">
-                <li v-for="scale in selectedDayScales" :key="scale.id">
-                  <RouterLink
-                    :to="`/escalas/${scale.id}`"
-                    class="flex min-h-14 items-center gap-3 rounded-lg border border-gray-200 px-3 py-2 transition hover:border-primary-300 hover:bg-primary-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:border-gray-700 dark:hover:border-primary-500 dark:hover:bg-gray-800"
+              <ul v-if="selectedDayScales.length" class="mt-3 space-y-2">
+                <li v-for="scale in selectedDayScales" :key="scale.id" class="rounded-lg border border-gray-200 dark:border-gray-700">
+                  <!-- Tapping a celebration expands who is scheduled (TASK-0128); the list stays
+                       hidden until then so the day card is not crowded. -->
+                  <button
+                    type="button"
+                    class="flex min-h-14 w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition hover:bg-primary-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:bg-gray-800"
+                    :aria-expanded="expandedScaleId === scale.id"
+                    :aria-controls="`scheduled-${scale.id}`"
+                    @click="toggleExpandedScale(scale.id)"
                   >
                     <span class="w-14 shrink-0 text-h4 font-semibold tabular-nums text-primary-700 dark:text-primary-300">{{ scale.horario }}</span>
                     <span class="min-w-0 flex-1">
@@ -766,11 +779,19 @@ function formatFullDate(iso: string) {
                         </span>
                       </span>
                     </span>
-                    <ChevronRightIcon class="h-4 w-4 shrink-0 text-gray-400" aria-hidden="true" />
-                  </RouterLink>
+                    <ChevronDownIcon
+                      class="h-4 w-4 shrink-0 text-gray-400 transition-transform"
+                      :class="expandedScaleId === scale.id ? 'rotate-180' : ''"
+                      aria-hidden="true"
+                    />
+                  </button>
                   <!-- Who is scheduled (TASK-0127): visible to everyone, including people who
                        have not confirmed yet; status is text + icon, never color alone. -->
-                  <div class="mt-2 px-3">
+                  <div
+                    v-if="expandedScaleId === scale.id"
+                    :id="`scheduled-${scale.id}`"
+                    class="border-t border-gray-100 px-3 pb-3 pt-2 dark:border-gray-700"
+                  >
                     <p class="text-label uppercase text-gray-600 dark:text-gray-400">Escalados</p>
                     <ul v-if="scheduledPeople(scale.servidores, roleLookups).length" class="mt-1 space-y-1">
                       <li
@@ -793,6 +814,13 @@ function formatFullDate(iso: string) {
                       </li>
                     </ul>
                     <p v-else class="mt-1 text-body-sm text-gray-600 dark:text-gray-400">Ninguém escalado ainda.</p>
+                    <RouterLink
+                      :to="`/escalas/${scale.id}`"
+                      class="mt-3 inline-flex min-h-11 items-center gap-1 text-body-sm font-semibold text-primary-700 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:text-primary-300"
+                    >
+                      Ver escala completa
+                      <ChevronRightIcon class="h-4 w-4" aria-hidden="true" />
+                    </RouterLink>
                   </div>
                 </li>
               </ul>
