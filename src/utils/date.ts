@@ -8,3 +8,8 @@ export function parseDateOnly(iso: string | null | undefined): Date | null {
   if (!iso) return null
   return new Date(iso.slice(0, 10) + 'T12:00:00')
 }
+
+/** Returns the month of `date` (local time) as "YYYY-MM", the value format of `<input type="month">`. */
+export function toMonthValue(date: Date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}

@@ -13,15 +13,14 @@ import Modal from '@/components/Modal.vue'
 import TertiaryButton from '@/components/TertiaryButton.vue'
 import SecondaryButton from '@/components/SecondaryButton.vue'
 import DangerButton from '@/components/DangerButton.vue'
-import { parseDateOnly } from '@/utils/date'
+import { parseDateOnly, toMonthValue } from '@/utils/date'
 
 const auth = useAuthStore()
 const flash = useFlashStore()
 const scales = ref<any[]>([])
-const teams = ref<any[]>([])
 const comunidades = ref<any[]>([])
-const filterMes = ref('')
-const filterTeam = ref('')
+// Opens on the current month so the list isn't flooded with every scale ever created.
+const filterMes = ref(toMonthValue())
 const filterComunidade = ref('')
 // Não existia estado de loading nesta tela (achado confirmado em docs/tasks/0012-*.md) --
 // corrigido nesta task.
@@ -35,7 +34,6 @@ async function load() {
   error.value = false
   const params: Record<string, string> = {}
   if (filterMes.value) params.mes = filterMes.value
-  if (filterTeam.value) params.teamId = filterTeam.value
   if (filterComunidade.value) params.comunidadeId = filterComunidade.value
   try {
     const { data } = await client.get('/scales', { params })
@@ -48,8 +46,7 @@ async function load() {
 }
 
 onMounted(async () => {
-  const [, tm, cm] = await Promise.all([load(), client.get('/teams'), client.get('/comunidades')])
-  teams.value = tm.data
+  const [, cm] = await Promise.all([load(), client.get('/comunidades')])
   comunidades.value = cm.data
 })
 
@@ -108,10 +105,6 @@ async function copiarLinkPublico() {
     <Card :bordered="false" class="!p-0 overflow-hidden">
       <div class="p-4 border-b border-gray-100 flex flex-wrap gap-4 dark:border-gray-700">
         <input v-model="filterMes" @change="load" type="month" aria-label="Filtrar por mês" class="border-gray-300 rounded-md shadow-sm text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100" />
-        <select v-model="filterTeam" @change="load" aria-label="Filtrar por ministério" class="border-gray-300 rounded-md shadow-sm text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
-          <option value="">Todos os ministérios</option>
-          <option v-for="t in teams" :key="t.id" :value="t.id">{{ t.nome }}</option>
-        </select>
         <select v-if="comunidades.length > 1" v-model="filterComunidade" @change="load" aria-label="Filtrar por comunidade" class="border-gray-300 rounded-md shadow-sm text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
           <option value="">Todas as comunidades</option>
           <option v-for="c in comunidades" :key="c.id" :value="c.id">{{ c.nome }}</option>
@@ -135,7 +128,6 @@ async function copiarLinkPublico() {
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Data</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Celebração</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Comunidade</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Ministério</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Status</th>
                 <th class="px-6 py-3"></th>
               </tr>
@@ -150,7 +142,6 @@ async function copiarLinkPublico() {
                   <div class="text-xs text-gray-600 dark:text-gray-400">{{ s.horario }}</div>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ s.comunidade?.nome ?? '—' }}</td>
-                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ s.team?.nome ?? '—' }}</td>
                 <td class="px-6 py-4">
                   <Badge :color="s.status === 'confirmada' ? 'green' : 'yellow'">{{ s.status }}</Badge>
                 </td>
@@ -163,7 +154,7 @@ async function copiarLinkPublico() {
                 </td>
               </tr>
               <tr v-if="scales.length === 0">
-                <td colspan="6" class="px-6 py-8 text-center text-gray-600 dark:text-gray-400">Nenhuma escala encontrada.</td>
+                <td colspan="5" class="px-6 py-8 text-center text-gray-600 dark:text-gray-400">Nenhuma escala encontrada.</td>
               </tr>
             </tbody>
           </table>
@@ -179,7 +170,6 @@ async function copiarLinkPublico() {
               </p>
             </div>
             <div class="flex flex-wrap gap-1">
-              <Badge v-if="s.team" color="purple">{{ s.team.nome }}</Badge>
               <Badge :color="s.status === 'confirmada' ? 'green' : 'yellow'">{{ s.status }}</Badge>
             </div>
             <div class="flex items-center gap-2">

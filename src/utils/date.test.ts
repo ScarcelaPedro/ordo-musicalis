@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseDateOnly } from '@/utils/date'
+import { parseDateOnly, toMonthValue } from '@/utils/date'
 
 describe('parseDateOnly', () => {
   it('keeps the calendar day of a UTC-midnight date-only value', () => {
@@ -17,5 +17,12 @@ describe('parseDateOnly', () => {
     expect(parseDateOnly(null)).toBeNull()
     expect(parseDateOnly(undefined)).toBeNull()
     expect(parseDateOnly('')).toBeNull()
+  })
+})
+
+describe('toMonthValue', () => {
+  it('formats the local month as YYYY-MM with zero padding', () => {
+    expect(toMonthValue(new Date(2026, 0, 31))).toBe('2026-01')
+    expect(toMonthValue(new Date(2026, 9, 5))).toBe('2026-10')
   })
 })
