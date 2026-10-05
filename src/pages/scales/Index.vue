@@ -46,9 +46,36 @@ async function load() {
 }
 
 onMounted(async () => {
-  const [, cm] = await Promise.all([load(), client.get('/comunidades')])
+  const [, cm, cel] = await Promise.all([
+    load(),
+    client.get('/comunidades'),
+    auth.isStaff ? client.get('/celebrantes') : Promise.resolve({ data: [] }),
+  ])
   comunidades.value = cm.data
+  celebrantes.value = cel.data
 })
+
+// Quick celebrant assignment straight from the list: a single-field PATCH instead of opening
+// and saving the whole scale form.
+const celebrantes = ref<{ id: number; nome: string }[]>([])
+const savingCelebrante = ref<number | null>(null)
+
+async function setCelebrante(s: any, value: string) {
+  const celebranteId = value ? Number(value) : null
+  const previous = { celebranteId: s.celebranteId, celebrante: s.celebrante }
+  s.celebranteId = celebranteId
+  s.celebrante = celebrantes.value.find((c) => c.id === celebranteId) ?? null
+  savingCelebrante.value = s.id
+  try {
+    await client.patch(`/scales/${s.id}`, { celebranteId })
+    flash.set('success', celebranteId ? 'Celebrante definido.' : 'Celebrante removido.')
+  } catch (e: any) {
+    Object.assign(s, previous)
+    flash.set('error', e.response?.data?.message ?? 'Erro ao salvar celebrante')
+  } finally {
+    savingCelebrante.value = null
+  }
+}
 
 function formatDate(d: string) {
   return parseDateOnly(d)!.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -128,6 +155,7 @@ async function copiarLinkPublico() {
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Data</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Celebração</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Comunidade</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Celebrante</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase dark:text-gray-400">Status</th>
                 <th class="px-6 py-3"></th>
               </tr>
@@ -142,6 +170,16 @@ async function copiarLinkPublico() {
                   <div class="text-xs text-gray-600 dark:text-gray-400">{{ s.horario }}</div>
                 </td>
                 <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">{{ s.comunidade?.nome ?? '—' }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                  <select v-if="auth.isStaff" :value="s.celebranteId ?? ''" :disabled="savingCelebrante === s.id"
+                    @change="setCelebrante(s, ($event.target as HTMLSelectElement).value)"
+                    :aria-label="`Celebrante de ${s.celebracao}`"
+                    class="w-full min-w-40 border-gray-300 rounded-md shadow-sm text-sm disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+                    <option value="">— Sem celebrante —</option>
+                    <option v-for="c in celebrantes" :key="c.id" :value="c.id">{{ c.nome }}</option>
+                  </select>
+                  <template v-else>{{ s.celebrante?.nome ?? '—' }}</template>
+                </td>
                 <td class="px-6 py-4">
                   <Badge :color="s.status === 'confirmada' ? 'green' : 'yellow'">{{ s.status }}</Badge>
                 </td>
@@ -154,7 +192,7 @@ async function copiarLinkPublico() {
                 </td>
               </tr>
               <tr v-if="scales.length === 0">
-                <td colspan="5" class="px-6 py-8 text-center text-gray-600 dark:text-gray-400">Nenhuma escala encontrada.</td>
+                <td colspan="6"class="px-6 py-8 text-center text-gray-600 dark:text-gray-400">Nenhuma escala encontrada.</td>
               </tr>
             </tbody>
           </table>
@@ -169,6 +207,14 @@ async function copiarLinkPublico() {
                 <span v-if="s.comunidade"> · {{ s.comunidade.nome }}</span>
               </p>
             </div>
+            <select v-if="auth.isStaff" :value="s.celebranteId ?? ''" :disabled="savingCelebrante === s.id"
+              @change="setCelebrante(s, ($event.target as HTMLSelectElement).value)"
+              :aria-label="`Celebrante de ${s.celebracao}`"
+              class="w-full min-h-11 border-gray-300 rounded-md shadow-sm text-sm disabled:opacity-60 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100">
+              <option value="">— Sem celebrante —</option>
+              <option v-for="c in celebrantes" :key="c.id" :value="c.id">{{ c.nome }}</option>
+            </select>
+            <p v-else-if="s.celebrante" class="text-xs text-gray-600 dark:text-gray-400">Celebrante: {{ s.celebrante.nome }}</p>
             <div class="flex flex-wrap gap-1">
               <Badge :color="s.status === 'confirmada' ? 'green' : 'yellow'">{{ s.status }}</Badge>
             </div>
