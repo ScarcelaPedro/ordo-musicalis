@@ -23,11 +23,15 @@ recolhidos para melhorar a visualização.
   vira um botão (chevron, `aria-expanded`/`aria-controls`) que recolhe/expande o corpo. O slot
   `actions` (ex. "Ver todas") continua visível com o card recolhido.
 - O estado aberto/fechado é lembrado por navegador (`localStorage`, chave `collapsed:<storageKey>`)
-  via `src/utils/collapsedState.ts`, com fallback para "aberto" se o storage faltar ou falhar.
+  via `src/utils/collapsedState.ts`, com fallback para o estado padrão do card se o storage faltar
+  ou falhar.
   É só conveniência de quem está vendo, não dado do sistema.
+- Os três cards começam **recolhidos** por padrão (`default-collapsed`, pedido do usuário em
+  2026-10-05). Quem abrir um card o mantém aberto: os dois estados ficam gravados (`1`/`0`).
 - Aplicado aos três cards citados em `src/pages/dashboard/Dashboard.vue`. "Próxima celebração",
   "Situação das escalas" e o calendário não mudaram (não foram pedidos).
 
 ## Progresso
 
 - 2026-10-05: implementado, testes (`collapsedState.test.ts`) e build ok. Concluída.
+- 2026-10-05: cards passam a iniciar recolhidos por padrão.

@@ -462,7 +462,7 @@ function formatFullDate(iso: string) {
 
           <!-- 2) Próximas celebrações. Side cards are collapsible (TASK-0122): the dashboard
                carries a lot of information, so each admin can close what they do not need. -->
-          <CollapsibleCard v-if="loadingUpcoming || laterCelebrations.length" title-id="upcoming-title" storage-key="dashboard.upcoming">
+          <CollapsibleCard v-if="loadingUpcoming || laterCelebrations.length" title-id="upcoming-title" storage-key="dashboard.upcoming" default-collapsed>
             <template #title>Próximas celebrações</template>
             <template #actions>
               <RouterLink to="/escalas" class="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-300">Ver todas</RouterLink>
@@ -492,7 +492,7 @@ function formatFullDate(iso: string) {
           </CollapsibleCard>
 
           <!-- 3) Pendências de confirmação -->
-          <CollapsibleCard v-if="pendencias.length" title-id="pending-title" storage-key="dashboard.pending">
+          <CollapsibleCard v-if="pendencias.length" title-id="pending-title" storage-key="dashboard.pending" default-collapsed>
             <template #title>
               Pendências de confirmação
               <span class="ml-1 whitespace-nowrap text-body-sm font-normal text-gray-500 dark:text-gray-400">({{ pendencias.length }})</span>
@@ -513,7 +513,7 @@ function formatFullDate(iso: string) {
 
           <!-- 5) Cobertura dos ministérios (TASK-0103, ADR-0005): real categories, any count;
                scrolls inside the card when there are many, instead of stretching the dashboard. -->
-          <CollapsibleCard v-if="coverageRows.length" title-id="coverage-title" storage-key="dashboard.coverage">
+          <CollapsibleCard v-if="coverageRows.length" title-id="coverage-title" storage-key="dashboard.coverage" default-collapsed>
             <template #title>Cobertura dos ministérios</template>
             <p class="-mt-2 mb-4 text-caption text-gray-600 dark:text-gray-400">
               Celebrações com ao menos um servidor escalado · {{ capitalizeFirst(shownMonthLabel) }}<template v-if="filterComunidadeId"> · comunidade filtrada</template>

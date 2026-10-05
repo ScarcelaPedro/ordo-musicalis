@@ -1,15 +1,17 @@
 <script setup lang="ts">
 // Card whose body can be collapsed from its header (TASK-0122). The `actions` slot (e.g. a
 // "Ver todas" link) stays visible while collapsed. With `storageKey`, the open/closed state is
-// remembered per browser.
+// remembered per browser; `defaultCollapsed` is the state before the viewer ever toggles it.
 import { ref } from 'vue'
 import { ChevronDownIcon } from '@heroicons/vue/24/outline'
 import { browserStorage, loadCollapsed, saveCollapsed } from '@/utils/collapsedState'
 
-const props = defineProps<{ titleId: string; storageKey?: string }>()
+const props = defineProps<{ titleId: string; storageKey?: string; defaultCollapsed?: boolean }>()
 
 const contentId = `${props.titleId}-content`
-const collapsed = ref(props.storageKey ? loadCollapsed(browserStorage(), props.storageKey) : false)
+const collapsed = ref(
+  props.storageKey ? loadCollapsed(browserStorage(), props.storageKey, props.defaultCollapsed) : props.defaultCollapsed,
+)
 
 function toggle() {
   collapsed.value = !collapsed.value
