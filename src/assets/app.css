@@ -17,10 +17,6 @@
    paint it with the page canvas so the track blends in (also avoids white overscroll areas). */
 html {
   background-color: rgb(var(--color-canvas));
-  color-scheme: light;
-}
-html.dark {
-  color-scheme: dark;
 }
 
 /* Delicate scrollbars: thin rounded thumb on a transparent track, theme-aware. */
