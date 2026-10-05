@@ -391,8 +391,10 @@ function formatFullDate(iso: string) {
 
     <!-- Desktop: 3-column grid (reference layout, SPEC-003.1 §5/§22) -- staff: highlight + calendar
          on the left, short lists on the right. DOM order is the mobile priority order (§28):
-         next celebration → upcoming → pending → month status → calendar. -->
-    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+         next celebration → upcoming → pending → month status → calendar.
+         lg:grid-rows-[auto_1fr]: the side column spans both rows; without it, when that column is
+         taller, the extra height was split into row 1 too, leaving a gap under the highlight card. -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:grid-rows-[auto_1fr]">
 
       <!-- Coordenador -- prioridades da TASK-0008 (§5.2) na linguagem da SPEC-003.1. Itens
            "Funções sem servidor" e "Conflitos" seguem FORA desta tela: dependem de dado que a API
@@ -559,7 +561,7 @@ function formatFullDate(iso: string) {
            pendências → disponibilidade → conteúdo. Sem estatísticas, dados de outros servidores
            nem comunicações (não há módulo). "Alterações importantes" segue omitido: depende de
            um indicador de alteração que não existe (TASK-0008/TASK-0041). -->
-      <div v-if="!auth.isStaff" class="grid grid-cols-1 gap-6 lg:col-span-3 lg:grid-cols-3">
+      <div v-if="!auth.isStaff" class="grid grid-cols-1 gap-6 lg:col-span-3 lg:grid-cols-3 lg:grid-rows-[auto_1fr]">
 
         <!-- 1) Sua próxima escala (informação + ação principal) -->
         <section class="lg:col-span-2" aria-labelledby="my-next-title">
