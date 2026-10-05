@@ -6,6 +6,7 @@ import { useThemeStore } from '@/stores/theme'
 import AuthenticatedLayout from '@/layouts/AuthenticatedLayout.vue'
 import Calendar from '@/components/Calendar.vue'
 import Badge from '@/components/Badge.vue'
+import CollapsibleCard from '@/components/CollapsibleCard.vue'
 import Select from '@/components/Select.vue'
 import brasaoUrl from '@/assets/images/brasao-paroquia.png'
 import PrimaryButton from '@/components/PrimaryButton.vue'
@@ -459,12 +460,13 @@ function formatFullDate(iso: string) {
         <!-- Coluna lateral (desktop) -->
         <div class="space-y-6 lg:col-start-3 lg:row-span-2 lg:row-start-1">
 
-          <!-- 2) Próximas celebrações -->
-          <section v-if="loadingUpcoming || laterCelebrations.length" class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="upcoming-title">
-            <div class="mb-3 flex items-center justify-between gap-2">
-              <h3 id="upcoming-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Próximas celebrações</h3>
+          <!-- 2) Próximas celebrações. Side cards are collapsible (TASK-0122): the dashboard
+               carries a lot of information, so each admin can close what they do not need. -->
+          <CollapsibleCard v-if="loadingUpcoming || laterCelebrations.length" title-id="upcoming-title" storage-key="dashboard.upcoming">
+            <template #title>Próximas celebrações</template>
+            <template #actions>
               <RouterLink to="/escalas" class="inline-flex min-h-11 shrink-0 items-center whitespace-nowrap text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-300">Ver todas</RouterLink>
-            </div>
+            </template>
             <div v-if="loadingUpcoming" class="space-y-3">
               <Skeleton height="h-12" rounded="rounded-lg" />
               <Skeleton height="h-12" rounded="rounded-lg" />
@@ -487,14 +489,14 @@ function formatFullDate(iso: string) {
                 </RouterLink>
               </li>
             </ul>
-          </section>
+          </CollapsibleCard>
 
           <!-- 3) Pendências de confirmação -->
-          <section v-if="pendencias.length" class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="pending-title">
-            <h3 id="pending-title" class="mb-3 text-body font-semibold text-gray-800 dark:text-gray-100">
+          <CollapsibleCard v-if="pendencias.length" title-id="pending-title" storage-key="dashboard.pending">
+            <template #title>
               Pendências de confirmação
               <span class="ml-1 whitespace-nowrap text-body-sm font-normal text-gray-500 dark:text-gray-400">({{ pendencias.length }})</span>
-            </h3>
+            </template>
             <ul class="space-y-2">
               <li v-for="p in pendencias" :key="p.scaleServidorId">
                 <RouterLink :to="`/escalas/${p.scaleId}`"
@@ -507,13 +509,13 @@ function formatFullDate(iso: string) {
                 </RouterLink>
               </li>
             </ul>
-          </section>
+          </CollapsibleCard>
 
           <!-- 5) Cobertura dos ministérios (TASK-0103, ADR-0005): real categories, any count;
                scrolls inside the card when there are many, instead of stretching the dashboard. -->
-          <section v-if="coverageRows.length" class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="coverage-title">
-            <h3 id="coverage-title" class="text-body font-semibold text-gray-800 dark:text-gray-100">Cobertura dos ministérios</h3>
-            <p class="mb-4 text-caption text-gray-600 dark:text-gray-400">
+          <CollapsibleCard v-if="coverageRows.length" title-id="coverage-title" storage-key="dashboard.coverage">
+            <template #title>Cobertura dos ministérios</template>
+            <p class="-mt-2 mb-4 text-caption text-gray-600 dark:text-gray-400">
               Celebrações com ao menos um servidor escalado · {{ capitalizeFirst(shownMonthLabel) }}<template v-if="filterComunidadeId"> · comunidade filtrada</template>
             </p>
             <p v-if="!totalScales" class="text-body-sm text-gray-600 dark:text-gray-400">Nenhuma celebração neste mês.</p>
@@ -535,7 +537,7 @@ function formatFullDate(iso: string) {
                 </div>
               </li>
             </ul>
-          </section>
+          </CollapsibleCard>
 
           <!-- 4) Situação das escalas (mês exibido no calendário) -->
           <section class="rounded-xl bg-white p-5 shadow-card dark:bg-gray-800 dark:shadow-none" aria-labelledby="month-status-title">
