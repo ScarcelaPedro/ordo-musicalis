@@ -2,15 +2,22 @@ import { Router, Response } from 'express'
 import { PrismaClient } from '@prisma/client'
 import { authenticate, AuthRequest } from '../_middleware/auth'
 import { requireRole } from '../_middleware/roles'
+import { buildMassReport } from '../_lib/massReport'
 
 const router = Router()
 const prisma = new PrismaClient()
 
-router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+// Report period from ?inicio=&fim= (YYYY-MM-DD), defaulting to the current month.
+function parsePeriod(req: AuthRequest) {
   const { inicio, fim } = req.query as Record<string, string>
   const hoje = new Date()
   const gte = inicio ? new Date(inicio) : new Date(hoje.getFullYear(), hoje.getMonth(), 1)
   const lte = fim ? new Date(fim) : new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0)
+  return { gte, lte }
+}
+
+router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+  const { gte, lte } = parsePeriod(req)
 
   const scales = await prisma.scale.findMany({
     where: { dataCelebracao: { gte, lte } },
@@ -97,6 +104,22 @@ router.get('/resumo', authenticate, requireRole('admin', 'coordenador'), async (
     porMinisterio: resumoMinisterios,
     porCategoria: resumoCategorias,
   })
+})
+
+// Masses and Liturgies of the Word per community, and per celebrant (TASK-0123).
+router.get('/missas', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+  const { gte, lte } = parsePeriod(req)
+
+  const scales = await prisma.scale.findMany({
+    where: { dataCelebracao: { gte, lte } },
+    select: {
+      celebracao: true,
+      comunidade: { select: { id: true, nome: true } },
+      celebrante: { select: { id: true, nome: true } },
+    },
+  })
+
+  return res.json({ periodo: { inicio: gte, fim: lte }, ...buildMassReport(scales) })
 })
 
 export default router
