@@ -127,6 +127,7 @@ model Servidor {
   vinculosFixos VinculoFixo[]
   windowResponses AvailabilityWindowResponse[]
   substituicoesComoSubstituto Substituicao[] @relation("SubstitutoMusico")
+  comunidadesCoordenadas ComunidadeCoordenador[]
 
   @@map("servidores")
 }
@@ -182,8 +183,24 @@ model Comunidade {
 
   scales Scale[]
   scaleTemplates ScaleTemplate[]
+  coordenadores ComunidadeCoordenador[]
 
   @@map("comunidades")
+}
+
+// Community coordinators (ADR-0009): a server with login who, only in this community, can edit the
+// servers scheduled in celebrations and approve/reject substitutions. Managed by admins only.
+model ComunidadeCoordenador {
+  id           Int      @id @default(autoincrement())
+  comunidadeId Int      @map("comunidade_id")
+  servidorId   Int      @map("servidor_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  comunidade Comunidade @relation(fields: [comunidadeId], references: [id], onDelete: Cascade)
+  servidor   Servidor   @relation(fields: [servidorId], references: [id], onDelete: Cascade)
+
+  @@unique([comunidadeId, servidorId])
+  @@map("comunidade_coordenador")
 }
 
 model CategoriaFuncao {

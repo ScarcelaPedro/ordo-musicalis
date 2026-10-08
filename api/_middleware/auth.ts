@@ -10,7 +10,18 @@ export interface AuthRequest extends Request {
     email: string
     role: string
     servidorId?: number | null
+    /** Communities this user's server coordinates (ADR-0009); empty for most users. */
+    coordinatedCommunityIds: number[]
   }
+}
+
+// Shared by authenticate, /auth/login and /auth/me so the three always agree on the user's scope.
+export const userScopeInclude = {
+  servidor: { select: { id: true, comunidadesCoordenadas: { select: { comunidadeId: true } } } },
+} as const
+
+export function coordinatedCommunityIdsOf(user: { servidor: { comunidadesCoordenadas: { comunidadeId: number }[] } | null }): number[] {
+  return user.servidor?.comunidadesCoordenadas.map((c) => c.comunidadeId) ?? []
 }
 
 export async function authenticate(req: AuthRequest, res: Response, next: NextFunction) {
@@ -24,7 +35,7 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
     const payload = jwt.verify(token, process.env.JWT_SECRET!) as unknown as { sub: number }
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      include: { servidor: { select: { id: true } } },
+      include: userScopeInclude,
     })
     if (!user) return res.status(401).json({ message: 'Usuário não encontrado' })
 
@@ -33,6 +44,7 @@ export async function authenticate(req: AuthRequest, res: Response, next: NextFu
       email: user.email,
       role: user.role,
       servidorId: user.servidor?.id ?? null,
+      coordinatedCommunityIds: coordinatedCommunityIdsOf(user),
     }
     next()
   } catch {

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { Resend } from 'resend'
-import { authenticate, AuthRequest } from '../_middleware/auth'
+import { authenticate, AuthRequest, coordinatedCommunityIdsOf, userScopeInclude } from '../_middleware/auth'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -49,6 +49,7 @@ router.post('/register', async (req: Request, res: Response) => {
       email: user.email,
       role: user.role,
       servidorId: servidor.id,
+      comunidadesCoordenadas: [], // a brand-new user coordinates nothing (ADR-0009)
     },
   })
 })
@@ -61,7 +62,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
   const user = await prisma.user.findUnique({
     where: { email },
-    include: { servidor: { select: { id: true } } },
+    include: userScopeInclude,
   })
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ message: 'Credenciais inválidas' })
@@ -76,6 +77,7 @@ router.post('/login', async (req: Request, res: Response) => {
       email: user.email,
       role: user.role,
       servidorId: user.servidor?.id ?? null,
+      comunidadesCoordenadas: coordinatedCommunityIdsOf(user),
     },
   })
 })
@@ -83,7 +85,7 @@ router.post('/login', async (req: Request, res: Response) => {
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    include: { servidor: { select: { id: true } } },
+    include: userScopeInclude,
   })
   if (!user) return res.status(404).json({ message: 'Usuário não encontrado' })
 
@@ -93,6 +95,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
     email: user.email,
     role: user.role,
     servidorId: user.servidor?.id ?? null,
+    comunidadesCoordenadas: coordinatedCommunityIdsOf(user),
   })
 })
 
