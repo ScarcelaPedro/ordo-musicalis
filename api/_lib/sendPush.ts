@@ -58,8 +58,13 @@ export async function sendPushToServidores(prisma: PrismaClient, servidorIds: nu
   await sendPushToUsers(prisma, servidores.map((s) => s.userId!), payload)
 }
 
-export async function sendPushToStaff(prisma: PrismaClient, teamId: number | null, payload: PushPayload) {
+export async function sendPushToStaff(prisma: PrismaClient, teamId: number | null, payload: PushPayload, comunidadeId?: number | null) {
   if (!vapidConfigured) return
+  await sendPushToUsers(prisma, await staffRecipientUserIds(prisma, teamId, comunidadeId), payload)
+}
+
+/** Users notified about a refusal: admins, the assignment's ministry lead and the community's coordinators. */
+export async function staffRecipientUserIds(prisma: PrismaClient, teamId: number | null, comunidadeId?: number | null): Promise<number[]> {
   const admins = await prisma.user.findMany({ where: { role: 'admin' }, select: { id: true } })
   const userIds = new Set(admins.map((a) => a.id))
 
@@ -68,5 +73,11 @@ export async function sendPushToStaff(prisma: PrismaClient, teamId: number | nul
     if (team?.responsavel?.userId) userIds.add(team.responsavel.userId)
   }
 
-  await sendPushToUsers(prisma, Array.from(userIds), payload)
+  // Coordinators of the scale's community also decide substitutions there (ADR-0009).
+  if (comunidadeId) {
+    const coordinators = await prisma.comunidadeCoordenador.findMany({ where: { comunidadeId }, select: { servidor: { select: { userId: true } } } })
+    for (const c of coordinators) if (c.servidor.userId) userIds.add(c.servidor.userId)
+  }
+
+  return Array.from(userIds)
 }

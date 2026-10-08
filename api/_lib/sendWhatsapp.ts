@@ -43,7 +43,7 @@ export async function sendWhatsappToServidores(prisma: PrismaClient, servidorIds
   await Promise.all(servidores.map((s) => sendWhatsappToNumber(s.telefone!, text)))
 }
 
-export async function sendWhatsappToStaff(prisma: PrismaClient, teamId: number | null, text: string) {
+export async function sendWhatsappToStaff(prisma: PrismaClient, teamId: number | null, text: string, comunidadeId?: number | null) {
   if (!configured) return
   const admins = await prisma.user.findMany({
     where: { role: 'admin' },
@@ -55,6 +55,12 @@ export async function sendWhatsappToStaff(prisma: PrismaClient, teamId: number |
   if (teamId) {
     const team = await prisma.team.findUnique({ where: { id: teamId }, select: { responsavel: { select: { telefone: true } } } })
     if (team?.responsavel?.telefone) telefones.add(team.responsavel.telefone)
+  }
+
+  // Coordinators of the scale's community also decide substitutions there (ADR-0009).
+  if (comunidadeId) {
+    const coordinators = await prisma.comunidadeCoordenador.findMany({ where: { comunidadeId }, select: { servidor: { select: { telefone: true } } } })
+    for (const c of coordinators) if (c.servidor.telefone) telefones.add(c.servidor.telefone)
   }
 
   await Promise.all(Array.from(telefones).map((t) => sendWhatsappToNumber(t, text)))

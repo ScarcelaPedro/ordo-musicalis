@@ -328,14 +328,16 @@ router.patch('/:id/recusar', authenticate, async (req: AuthRequest, res: Respons
 
   // Notifica o responsável pelo ministério da própria escalação (não "o" ministério da
   // escala, que não existe mais como conceito único) -- mais preciso e funciona mesmo pra
-  // escalações sem ministério algum (só admin é avisado nesse caso).
+  // escalações sem ministério algum (só admin é avisado nesse caso). Also notifies the scale's
+  // community coordinators, who can approve the substitution (ADR-0009).
   sendPushToStaff(prisma, pivot.teamId, {
     title: 'Recusa de escalação',
     body: `${pivot.servidor.nome} não poderá servir em ${pivot.scale.celebracao} (${formatDataCurta(pivot.scale.dataCelebracao)}). Precisa de substituto.`,
     url: '/substituicoes',
-  }).catch((err) => console.error('push recusar', err))
+  }, pivot.scale.comunidadeId).catch((err) => console.error('push recusar', err))
   sendWhatsappToStaff(prisma, pivot.teamId,
-    `*Recusa de escalação* ⚠️\n${pivot.servidor.nome} não poderá servir em *${pivot.scale.celebracao}* (${formatDataCurta(pivot.scale.dataCelebracao)}). Precisa de substituto.`
+    `*Recusa de escalação* ⚠️\n${pivot.servidor.nome} não poderá servir em *${pivot.scale.celebracao}* (${formatDataCurta(pivot.scale.dataCelebracao)}). Precisa de substituto.`,
+    pivot.scale.comunidadeId,
   ).catch((err) => console.error('whatsapp recusar', err))
 
   return res.json(updated)

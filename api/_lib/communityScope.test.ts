@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canManageScaleServers, canUseSchedulingTools, partitionCoordinatorIds } from './communityScope'
+import { canDecideSubstitution, canManageScaleServers, canUseSchedulingTools, partitionCoordinatorIds, substitutionScopeWhere } from './communityScope'
 
 describe('partitionCoordinatorIds', () => {
   const eligible = [
@@ -55,5 +55,51 @@ describe('canUseSchedulingTools', () => {
     expect(canUseSchedulingTools({ role: 'coordenador', coordinatedCommunityIds: [] })).toBe(true)
     expect(canUseSchedulingTools({ role: 'musico', coordinatedCommunityIds: [3] })).toBe(true)
     expect(canUseSchedulingTools({ role: 'musico', coordinatedCommunityIds: [] })).toBe(false)
+  })
+})
+
+describe('substitutionScopeWhere', () => {
+  it('lets admins see everything', () => {
+    expect(substitutionScopeWhere({ role: 'admin', coordinatedCommunityIds: [] })).toEqual({})
+  })
+
+  it('keeps the ministry rule for ministry coordinators', () => {
+    expect(substitutionScopeWhere({ role: 'coordenador', servidorId: 7, coordinatedCommunityIds: [] })).toEqual({
+      OR: [{ scaleServidor: { scale: { team: { responsavelId: 7 } } } }],
+    })
+  })
+
+  it('scopes community coordinators to their communities', () => {
+    expect(substitutionScopeWhere({ role: 'musico', servidorId: 3, coordinatedCommunityIds: [1, 2] })).toEqual({
+      OR: [{ scaleServidor: { scale: { comunidadeId: { in: [1, 2] } } } }],
+    })
+  })
+
+  it('unions both rules when a ministry coordinator also coordinates a community', () => {
+    const where = substitutionScopeWhere({ role: 'coordenador', servidorId: 7, coordinatedCommunityIds: [2] })
+    expect(where).toEqual({
+      OR: [
+        { scaleServidor: { scale: { team: { responsavelId: 7 } } } },
+        { scaleServidor: { scale: { comunidadeId: { in: [2] } } } },
+      ],
+    })
+  })
+
+  it('returns null for a regular server', () => {
+    expect(substitutionScopeWhere({ role: 'musico', servidorId: 3, coordinatedCommunityIds: [] })).toBeNull()
+  })
+
+  it('never matches anything for a ministry coordinator without a server profile', () => {
+    expect(substitutionScopeWhere({ role: 'coordenador', servidorId: null, coordinatedCommunityIds: [] })).toEqual({
+      OR: [{ scaleServidor: { scale: { team: { responsavelId: -1 } } } }],
+    })
+  })
+})
+
+describe('canDecideSubstitution', () => {
+  it('follows the same OR rule as the team edit', () => {
+    expect(canDecideSubstitution({ role: 'musico', coordinatedCommunityIds: [1] }, { comunidadeId: 1 }, false)).toBe(true)
+    expect(canDecideSubstitution({ role: 'musico', coordinatedCommunityIds: [1] }, { comunidadeId: 2 }, false)).toBe(false)
+    expect(canDecideSubstitution({ role: 'coordenador', coordinatedCommunityIds: [] }, { comunidadeId: 2 }, true)).toBe(true)
   })
 })

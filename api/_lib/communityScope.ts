@@ -42,3 +42,28 @@ export function canManageScaleServers(user: ScopeUser, scale: { comunidadeId: nu
 export function canUseSchedulingTools(user: ScopeUser): boolean {
   return user.role === 'admin' || user.role === 'coordenador' || user.coordinatedCommunityIds.length > 0
 }
+
+/**
+ * Prisma `where` for the substitutions a user may see (TASK-0131, ADR-0009), rule "OR":
+ * - admin: all (`{}`);
+ * - ministry coordinator: those whose scale's (legacy) ministry they are responsible for -- the
+ *   rule that already existed;
+ * - community coordinator: those whose scale is in a community they coordinate.
+ * Returns `null` when the user may see none (caller answers 403).
+ */
+export function substitutionScopeWhere(user: ScopeUser & { servidorId?: number | null }): Record<string, unknown> | null {
+  if (user.role === 'admin') return {}
+  const or: Record<string, unknown>[] = []
+  if (user.role === 'coordenador') {
+    or.push({ scaleServidor: { scale: { team: { responsavelId: user.servidorId ?? -1 } } } })
+  }
+  if (user.coordinatedCommunityIds.length) {
+    or.push({ scaleServidor: { scale: { comunidadeId: { in: user.coordinatedCommunityIds } } } })
+  }
+  return or.length ? { OR: or } : null
+}
+
+/** Same "OR" rule as the team edit, applied to deciding one substitution of a given scale. */
+export function canDecideSubstitution(user: ScopeUser, scale: { comunidadeId: number }, ownsScaleTeam: boolean): boolean {
+  return canManageScaleServers(user, scale, ownsScaleTeam)
+}
