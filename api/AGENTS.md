@@ -19,7 +19,11 @@ Diretórios:
 - `api/index.ts` — monta o app Express, registra todas as rotas sob `/api/*` e o error handler central (mapeia códigos de erro do Prisma — `P2025`/`P2002`/`P2003` — para respostas HTTP apropriadas).
 - `api/server.ts` — entrypoint para rodar localmente (`npm run api:dev`), chama `app.listen`. Em produção (Vercel), `api/index.ts` é consumido diretamente como função serverless (ver `vercel.json`).
 - `api/_routes/` — um arquivo por recurso (`auth`, `servidores`, `teams`, `comunidades`, `categorias`, `celebrantes`, `scales`, `scaleTemplates`, `repertoire`, `repertoireItems`, `liturgia`, `availability`, `availabilityWindows`, `vinculosFixos`, `profile`, `instruments`, `substituicoes`, `public`, `reports`, `push`, `cron`).
-- `api/_middleware/` — `auth.ts` (valida JWT, popula `req.user`), `roles.ts` (autorização por papel — `admin`/`coordenador`/`musico`), `teamScope.ts` (escopo por equipe).
+- `api/_middleware/` — `auth.ts` (valida JWT, popula `req.user`, incluindo `coordinatedCommunityIds`), `roles.ts` (autorização por papel — `admin`/`coordenador`/`musico`), `teamScope.ts` (escopo por equipe).
+- Escopo por **comunidade** ([ADR-0009](../docs/decisions/0009-coordenacao-por-comunidade.md)): as regras ficam em `api/_lib/communityScope.ts` (funções puras, testadas), e o sincronismo da equipe de uma escala em `api/_lib/scaleServidoresSync.ts`.
+  - A equipe pode ser editada só pelo `PUT /scales/:id/servidores`, que autoriza pela comunidade **gravada** da escala.
+  - `PATCH /scales/:id` continua só para staff.
+  - **Não abra campos novos da escala para coordenadores de comunidade reaproveitando o PATCH.**
 - `api/_lib/` — utilitários: `date.ts`, `fetchLiturgia.ts` (integração com API pública de liturgia diária, ver `LITURGIA_API_URL`), `sendPush.ts`, `sendWhatsapp.ts` (integração com Evolution API, ver `evolution/docker-compose.yml`), `suggestServidores.ts` (sugestão de escalação).
 - `api/prisma/schema.prisma` — schema completo do banco (fonte de verdade do modelo de dados). `api/prisma/migrations/` — histórico de migrations. `api/prisma/seed.ts`/`seedJuly.ts` — scripts de seed.
 

@@ -35,7 +35,7 @@ O sistema permite o cadastro de usuários e servidores, gerenciamento de equipes
 
 **Aplicação / API** — [`api/`](../api/AGENTS.md)
 - Tecnologias: Node.js, Express, TypeScript.
-- Responsabilidades: regras de negócio, autenticação (JWT + bcrypt), autorização por papel e por equipe (middlewares `auth`/`roles`/`teamScope`), integrações externas (liturgia diária, e-mail, push, WhatsApp), endpoints REST sob `/api/*`.
+- Responsabilidades: regras de negócio, autenticação (JWT + bcrypt), autorização por papel, por equipe e por comunidade (middlewares `auth`/`roles`/`teamScope` e regras de `_lib/communityScope.ts`), integrações externas (liturgia diária, e-mail, push, WhatsApp), endpoints REST sob `/api/*`.
 
 **Persistência** — PostgreSQL (Supabase)
 - Tecnologias: PostgreSQL, Prisma ORM.
@@ -104,7 +104,9 @@ Modelo completo em [`api/prisma/schema.prisma`](../api/prisma/schema.prisma) (fo
 
 - **Autenticação**: JWT (`jsonwebtoken`), assinado com `JWT_SECRET`; token enviado pelo front-end como `Authorization: Bearer <token>` (ver [`src/api/client.ts`](../src/api/client.ts)).
 - **Senhas**: hash com `bcryptjs`.
-- **Autorização**: por papel (`admin`/`coordenador`/`musico`), aplicada tanto no roteamento do front-end (`meta.roles`) quanto nos middlewares da API.
+- **Autorização**: por papel (`admin`/`coordenador`/`musico`), aplicada tanto no roteamento do front-end (`meta.roles`) quanto nos middlewares da API, com dois recortes adicionais:
+  - **por ministério**: o `coordenador` gerencia as celebrações em que é responsável por algum ministério escalado (`teamScope`);
+  - **por comunidade** ([ADR-0009](decisions/0009-coordenacao-por-comunidade.md)): o admin vincula servidores com login como coordenadores de uma comunidade (`comunidade_coordenador`). Só nas comunidades vinculadas, eles podem editar os servidores das celebrações (`PUT /scales/:id/servidores`, nunca o `PATCH` completo) e decidir substituições. A regra é OR com a de ministério. `/auth/me` devolve `comunidadesCoordenadas` para o front-end; a API é a guarda real.
 - **Validação de entrada**: `zod` nos endpoints da API.
 - **CORS**: restrito à origem definida em `FRONTEND_URL`.
 - **Segredos**: nunca commitados — `.env.example` documenta as variáveis necessárias com placeholders; `.env*` está no `.gitignore`.
