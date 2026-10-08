@@ -59,4 +59,4 @@ Parte do acesso de **coordenador de comunidade** (pedido do usuário em 2026-10-
   **Verificação** (banco temporário + API local, curl): não-admin → 403 no GET e no PUT; servidor
   sem login → 422 `invalid:[3]`; admin adiciona a Xênia → `/auth/me` e o login passam a ter
   `comunidadesCoordenadas:[1]`; lista vazia remove → `[]`; comunidade inexistente → 404.
-  `tsc` da API, `npm run build` e `npm test` (77) passam.
+  `tsc` da API, `npm run build` e `npm test` (74, incluindo os 3 novos) passam.
