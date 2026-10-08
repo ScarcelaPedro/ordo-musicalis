@@ -18,3 +18,27 @@ export function partitionCoordinatorIds(
     invalid: unique.filter((id) => !withLogin.has(id)),
   }
 }
+
+export interface ScopeUser {
+  role: string
+  coordinatedCommunityIds: number[]
+}
+
+/**
+ * Who may change the servers scheduled in a scale (ADR-0009, rule "OR"):
+ * - admin;
+ * - a ministry coordinator (`coordenador`) who owns at least one ministry of the scale (the rule
+ *   that already existed for the full edit);
+ * - a coordinator of the scale's community -- always the community stored in the database, never
+ *   one sent by the client.
+ */
+export function canManageScaleServers(user: ScopeUser, scale: { comunidadeId: number }, ownsAnyScaleTeam: boolean): boolean {
+  if (user.role === 'admin') return true
+  if (user.role === 'coordenador' && ownsAnyScaleTeam) return true
+  return user.coordinatedCommunityIds.includes(scale.comunidadeId)
+}
+
+/** Staff or coordinator of at least one community: may use read-only scheduling helpers. */
+export function canUseSchedulingTools(user: ScopeUser): boolean {
+  return user.role === 'admin' || user.role === 'coordenador' || user.coordinatedCommunityIds.length > 0
+}

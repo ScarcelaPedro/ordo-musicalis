@@ -8,6 +8,8 @@ import { sendPushToServidores, sendPushToStaff, formatDataCurta } from '../_lib/
 import { sendWhatsappToServidores, sendWhatsappToStaff } from '../_lib/sendWhatsapp'
 import { hojeBrasilia } from '../_lib/date'
 import { celebrationNameFor } from '../_lib/deaconCelebration'
+import { applyScaleServidores, notifyAddedServidores, ScaleServidorInput } from '../_lib/scaleServidoresSync'
+import { canManageScaleServers, canUseSchedulingTools } from '../_lib/communityScope'
 
 const router = Router()
 const prisma = new PrismaClient()
@@ -123,7 +125,9 @@ router.post('/', authenticate, requireRole('admin', 'coordenador'), async (req: 
   return res.status(201).json(scale)
 })
 
-router.get('/sugestoes', authenticate, requireRole('admin', 'coordenador'), async (req: AuthRequest, res: Response) => {
+// Read-only helper used by the team step of the scale form -- also for community coordinators.
+router.get('/sugestoes', authenticate, async (req: AuthRequest, res: Response) => {
+  if (!canUseSchedulingTools(req.user!)) return res.status(403).json({ message: 'Sem permissão para esta ação' })
   const { data, horario, teamId, instrumentId, excludeIds } = req.query as Record<string, string>
   if (!data || !horario) {
     return res.status(422).json({ message: 'Informe data e horário' })
@@ -189,34 +193,10 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireA
   const id = Number(req.params.id)
   const { dataCelebracao, horario, celebracao, teamId, comunidadeId, celebranteId, observacoes, status, servidores, lembreteDiasAntes } = req.body
 
-  // Diff em vez de apagar-e-recriar: preserva o status (confirmado/recusado/
-  // substituído) de quem continua na escala, só mexe em quem entrou ou saiu.
+  // Team diff + notifications live in _lib/scaleServidoresSync (shared with PUT /:id/servidores).
   let addedServidorIds: number[] = []
   if (servidores !== undefined) {
-    const newList = servidores as { servidorId: number; instrumentId?: number | null; teamId?: number | null; categoriaId?: number | null; funcaoLiturgica?: FuncaoLiturgica | null }[]
-    const newIds = new Set(newList.map((s) => s.servidorId))
-    const existing = await prisma.scaleServidor.findMany({ where: { scaleId: id } })
-    const existingIds = new Set(existing.map((e) => e.servidorId))
-
-    const toRemove = existing.filter((e) => !newIds.has(e.servidorId))
-    const toAdd = newList.filter((s) => !existingIds.has(s.servidorId))
-    const toUpdate = newList.filter((s) => existingIds.has(s.servidorId))
-    addedServidorIds = toAdd.map((s) => s.servidorId)
-
-    if (toRemove.length) {
-      await prisma.scaleServidor.deleteMany({ where: { id: { in: toRemove.map((r) => r.id) } } })
-    }
-    for (const s of toUpdate) {
-      await prisma.scaleServidor.updateMany({
-        where: { scaleId: id, servidorId: s.servidorId },
-        data: { instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null, funcaoLiturgica: s.funcaoLiturgica ?? null },
-      })
-    }
-    if (toAdd.length) {
-      await prisma.scaleServidor.createMany({
-        data: toAdd.map((s) => ({ scaleId: id, servidorId: s.servidorId, instrumentId: s.instrumentId ?? null, teamId: s.teamId ?? null, categoriaId: s.categoriaId ?? null, funcaoLiturgica: s.funcaoLiturgica ?? null })),
-      })
-    }
+    addedServidorIds = await applyScaleServidores(prisma, id, servidores as ScaleServidorInput[])
   }
 
   // Deacons cannot celebrate Masses (ADR-0008): re-check whenever the celebrant or the name changes,
@@ -247,19 +227,54 @@ router.patch('/:id', authenticate, requireRole('admin', 'coordenador'), requireA
     include,
   })
 
-  if (addedServidorIds.length) {
-    sendPushToServidores(prisma, addedServidorIds, {
-      title: 'Nova escalação',
-      body: `Você foi escalado(a) para ${scale.celebracao} em ${formatDataCurta(scale.dataCelebracao)} às ${scale.horario}`,
-      url: `/escalas/${scale.id}`,
-    }).catch((err) => console.error('push patch scale', err))
-    sendWhatsappToServidores(prisma, addedServidorIds,
-      `*Nova escalação* 🎵\nVocê foi escalado(a) para *${scale.celebracao}* em ${formatDataCurta(scale.dataCelebracao)} às ${scale.horario}.`
-    ).catch((err) => console.error('whatsapp patch scale', err))
-  }
+  notifyAddedServidores(prisma, scale, addedServidorIds)
 
   return res.json(scale)
 })
+
+// Team-only edit (TASK-0130, ADR-0009): accepts ONLY the list of servers, so a community coordinator
+// can never touch date, status, celebrant or move the scale to another community. Access is decided
+// with the community STORED in the database (canManageScaleServers).
+router.put('/:id/servidores', authenticate, async (req: AuthRequest, res: Response) => {
+  const id = Number(req.params.id)
+  const stored = await prisma.scale.findUnique({ where: { id }, select: { id: true, comunidadeId: true } })
+  if (!stored) return res.status(404).json({ message: 'Escala não encontrada' })
+
+  const user = req.user!
+  let ownsAnyScaleTeam = false
+  if (user.role === 'coordenador' && user.servidorId) {
+    const teamIds = await resolveScaleTeamIds(req)
+    if (teamIds.length) {
+      const owned = await prisma.team.count({ where: { id: { in: teamIds }, responsavelId: user.servidorId } })
+      ownsAnyScaleTeam = owned > 0
+    }
+  }
+  if (!canManageScaleServers(user, stored, ownsAnyScaleTeam)) {
+    return res.status(403).json({ message: 'Você só pode editar a equipe de celebrações das comunidades que coordena ou com algum ministério seu escalado' })
+  }
+
+  const { servidores } = req.body as { servidores?: unknown }
+  if (!Array.isArray(servidores)) return res.status(422).json({ message: 'Informe a lista de servidores' })
+  const list = servidores as ScaleServidorInput[]
+  if (list.some((s) => !Number.isInteger(Number(s?.servidorId)))) {
+    return res.status(422).json({ message: 'Servidor inválido na lista' })
+  }
+  const servidorIds = [...new Set(list.map((s) => Number(s.servidorId)))]
+  const categoriaIds = [...new Set(list.map((s) => s.categoriaId).filter((c): c is number => c != null))]
+  const [servidoresFound, categoriasFound] = await Promise.all([
+    prisma.servidor.count({ where: { id: { in: servidorIds } } }),
+    prisma.categoriaFuncao.count({ where: { id: { in: categoriaIds } } }),
+  ])
+  if (servidoresFound !== servidorIds.length || categoriasFound !== categoriaIds.length) {
+    return res.status(422).json({ message: 'Servidor ou função inexistente na lista' })
+  }
+
+  const addedServidorIds = await applyScaleServidores(prisma, id, list.map((s) => ({ ...s, servidorId: Number(s.servidorId) })))
+  const scale = await prisma.scale.findUniqueOrThrow({ where: { id }, include })
+  notifyAddedServidores(prisma, scale, addedServidorIds)
+  return res.json(scale)
+})
+
 
 router.delete('/:id', authenticate, requireRole('admin', 'coordenador'), requireAnyTeamOwnership(resolveScaleTeamIds), async (req: AuthRequest, res: Response) => {
   await prisma.scale.delete({ where: { id: Number(req.params.id) } })
