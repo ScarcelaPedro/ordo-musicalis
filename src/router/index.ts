@@ -187,6 +187,15 @@ const router = createRouter({
       meta: { auth: true, roles: ['admin', 'coordenador'] },
     },
     {
+      // Team-only edit for community coordinators (TASK-0133, ADR-0009). No `roles`: a regular
+      // server can be a community coordinator; the page checks the scale's community and the API
+      // (PUT /scales/:id/servidores) enforces it.
+      path: '/escalas/:id/equipe',
+      name: 'scales.team',
+      component: () => import('@/pages/scales/EditTeam.vue'),
+      meta: { auth: true },
+    },
+    {
       path: '/minha-escala',
       name: 'scales.mine',
       component: () => import('@/pages/scales/MyScales.vue'),

@@ -75,7 +75,18 @@ const props = defineProps<{
   celebrantes: Celebrante[]
   categorias: Categoria[]
   loading?: boolean
+  /**
+   * 'team' (TASK-0133, ADR-0009): only the team step, for community coordinators -- opens on the
+   * team step, shows the celebration as read-only context and submits right from there. The
+   * parent sends only `servidores` to PUT /scales/:id/servidores.
+   */
+  mode?: 'full' | 'team'
+  /** Where "Cancelar" goes (team mode returns to the scale). */
+  cancelTo?: string
 }>()
+
+const isTeamMode = computed(() => props.mode === 'team')
+const cancelLink = computed(() => props.cancelTo ?? '/escalas')
 
 const emit = defineEmits<{ submit: [data: FormData] }>()
 
@@ -120,7 +131,7 @@ watch(() => props.comunidades, (lista) => {
 // task; Etapas 2-4 mantêm o conteúdo real de hoje até TASK-0044/0046/0047 -- ver
 // docs/decisions/0002-scaleform-migracao-incremental-4-etapas.md.
 const ETAPAS = ['Celebração', 'Equipe', 'Validação', 'Revisão']
-const etapaAtual = ref(1)
+const etapaAtual = ref(props.mode === 'team' ? 2 : 1)
 
 const etapa1Erros = reactive<Record<string, boolean>>({})
 
@@ -462,9 +473,16 @@ function detalheEntry(entry: ScaleServidor) {
 
 <template>
   <form @submit.prevent="emit('submit', form)" class="space-y-6">
-    <p class="text-label uppercase tracking-wide text-gray-600 dark:text-gray-400">
+    <p v-if="!isTeamMode" class="text-label uppercase tracking-wide text-gray-600 dark:text-gray-400">
       Etapa {{ etapaAtual }} de 4 — {{ ETAPAS[etapaAtual - 1] }}
     </p>
+    <!-- Team mode: the celebration is context only (cannot be changed here). -->
+    <div v-else class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-body-sm dark:border-gray-700 dark:bg-gray-900/40">
+      <p class="font-semibold text-gray-800 dark:text-gray-100">{{ form.celebracao || '—' }}</p>
+      <p class="text-gray-600 dark:text-gray-400">
+        {{ dataFormatada }}<span v-if="form.horario"> · {{ form.horario }}</span><span v-if="nomeComunidade"> · {{ nomeComunidade }}</span>
+      </p>
+    </div>
 
     <!-- Etapa 1 — Celebração (TASK-0043): campos principais (obrigatórios) separados dos
          secundários (opcionais), com validação inline antes de avançar. -->
@@ -522,7 +540,7 @@ function detalheEntry(entry: ScaleServidor) {
 
       <div class="flex items-center gap-4">
         <PrimaryButton type="button" @click="avancar">Avançar</PrimaryButton>
-        <RouterLink to="/escalas"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
+        <RouterLink :to="cancelLink"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
       </div>
     </template>
 
@@ -783,10 +801,14 @@ function detalheEntry(entry: ScaleServidor) {
       </div>
     </section>
 
-    <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+    <div v-if="!isTeamMode" class="flex flex-wrap items-center gap-3 sm:gap-4">
       <TertiaryButton type="button" @click="voltar">Voltar</TertiaryButton>
       <PrimaryButton type="button" @click="avancar">Avançar</PrimaryButton>
-      <RouterLink to="/escalas"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
+      <RouterLink :to="cancelLink"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
+    </div>
+    <div v-else class="flex flex-wrap items-center gap-3 sm:gap-4">
+      <PrimaryButton type="submit" :disabled="loading">{{ loading ? 'Salvando...' : 'Salvar equipe' }}</PrimaryButton>
+      <RouterLink :to="cancelLink"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
     </div>
     </template>
 
@@ -852,7 +874,7 @@ function detalheEntry(entry: ScaleServidor) {
       <div class="flex items-center gap-4">
         <TertiaryButton type="button" @click="voltar">Voltar</TertiaryButton>
         <PrimaryButton type="button" :disabled="!!obrigatoriosFaltando.length" @click="avancar">Avançar</PrimaryButton>
-        <RouterLink to="/escalas"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
+        <RouterLink :to="cancelLink"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
       </div>
     </template>
 
@@ -931,7 +953,7 @@ function detalheEntry(entry: ScaleServidor) {
         <SecondaryButton type="submit" :disabled="loading" @click="form.status = 'rascunho'">
           {{ loading ? 'Salvando...' : 'Salvar como rascunho' }}
         </SecondaryButton>
-        <RouterLink to="/escalas"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
+        <RouterLink :to="cancelLink"><SecondaryButton type="button">Cancelar</SecondaryButton></RouterLink>
       </div>
     </template>
   </form>

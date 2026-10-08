@@ -65,6 +65,9 @@ function formatDate(d: string) {
   return parseDateOnly(d)!.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
 }
 
+// Community coordinators who are not staff edit only the team (TASK-0133, ADR-0009).
+const canEditTeamOnly = computed(() => !auth.isStaff && auth.coordinatesCommunity(scale.value?.comunidadeId))
+
 const myPivot = () => auth.user?.servidorId
   ? scale.value?.servidores.find((s: any) => s.servidorId === auth.user!.servidorId)
   : null
@@ -207,6 +210,8 @@ async function confirmarExclusao() {
         <h2 class="text-h3 text-gray-900 dark:text-gray-50">{{ scale?.celebracao ?? '...' }}</h2>
         <div v-if="scale" class="flex flex-wrap gap-2 no-print">
           <PrimaryButton v-if="auth.isStaff" :to="`/escalas/${scale.id}/editar`">Editar</PrimaryButton>
+          <!-- Community coordinator (ADR-0009): only the team, only in the communities they coordinate. -->
+          <PrimaryButton v-else-if="canEditTeamOnly" :to="`/escalas/${scale.id}/equipe`">Editar equipe</PrimaryButton>
           <SecondaryButton :to="`/escalas/${scale.id}/liturgia`">Liturgia</SecondaryButton>
           <SecondaryButton v-if="auth.isStaff" :to="`/escalas/${scale.id}/repertorio`">Repertório</SecondaryButton>
           <SecondaryButton @click="imprimir">Imprimir</SecondaryButton>
@@ -320,8 +325,8 @@ async function confirmarExclusao() {
         <div v-if="gruposPorCategoria.length" class="space-y-5">
           <ScaleRole v-for="grupo in gruposPorCategoria" :key="grupo.categoria.id" :nome="grupo.categoria.nome" :count="grupo.servidores.length">
             <EmptyRole v-if="!grupo.servidores.length">
-              <template v-if="auth.isStaff" #action>
-                <RouterLink :to="`/escalas/${scale.id}/editar`" class="text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-400">
+              <template v-if="auth.isStaff || canEditTeamOnly" #action>
+                <RouterLink :to="auth.isStaff ? `/escalas/${scale.id}/editar` : `/escalas/${scale.id}/equipe`" class="text-body-sm font-semibold text-primary-600 hover:underline dark:text-primary-400">
                   Resolver
                 </RouterLink>
               </template>

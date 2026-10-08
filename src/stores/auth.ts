@@ -8,6 +8,8 @@ export interface AuthUser {
   email: string
   role: 'admin' | 'coordenador' | 'musico'
   servidorId: number | null
+  /** Communities this user coordinates (ADR-0009); only drives what the UI shows -- the API enforces. */
+  comunidadesCoordenadas?: number[]
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -19,6 +21,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isCoordenador = computed(() => user.value?.role === 'coordenador')
   const isStaff = computed(() => user.value?.role === 'admin' || user.value?.role === 'coordenador')
   const isMusico = computed(() => user.value?.role === 'musico')
+  const isCommunityCoordinator = computed(() => (user.value?.comunidadesCoordenadas?.length ?? 0) > 0)
+
+  function coordinatesCommunity(comunidadeId: number | null | undefined) {
+    return comunidadeId != null && (user.value?.comunidadesCoordenadas ?? []).includes(comunidadeId)
+  }
 
   async function login(email: string, password: string) {
     const { data } = await client.post('/auth/login', { email, password })
@@ -50,5 +57,5 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  return { user, token, isAuthenticated, isAdmin, isCoordenador, isStaff, isMusico, login, register, logout, fetchMe }
+  return { user, token, isAuthenticated, isAdmin, isCoordenador, isStaff, isMusico, isCommunityCoordinator, coordinatesCommunity, login, register, logout, fetchMe }
 })
