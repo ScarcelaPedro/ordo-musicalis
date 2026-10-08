@@ -1,7 +1,7 @@
 ---
-status: backlog
+status: em-andamento
 modulo: api
-owner:
+owner: Pedro Scarcela
 criado-em: 2026-10-08
 ---
 
