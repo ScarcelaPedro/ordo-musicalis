@@ -263,7 +263,9 @@ const router = createRouter({
       path: '/substituicoes',
       name: 'substitutions.index',
       component: () => import('@/pages/substitutions/Index.vue'),
-      meta: { auth: true, roles: ['admin', 'coordenador'] },
+      // Community coordinators (any role) also decide substitutions of their communities; the API
+      // scopes the list (TASK-0134, ADR-0009).
+      meta: { auth: true, roles: ['admin', 'coordenador'], allowCommunityCoordinator: true },
     },
 
     // Relatórios
@@ -329,7 +331,8 @@ router.beforeEach(async (to) => {
   }
 
   const roles = to.meta.roles as string[] | undefined
-  if (roles && auth.user && !roles.includes(auth.user.role)) {
+  const communityCoordinatorAllowed = !!to.meta.allowCommunityCoordinator && auth.isCommunityCoordinator
+  if (roles && auth.user && !roles.includes(auth.user.role) && !communityCoordinatorAllowed) {
     flash.set('warning', 'Você não tem permissão para acessar esta página.')
     return { name: 'dashboard' }
   }

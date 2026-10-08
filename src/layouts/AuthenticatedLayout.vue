@@ -149,10 +149,14 @@ const navGroups = computed<NavGroup[]>(() => {
       label: 'Escalas',
       icon: CalendarDaysIcon,
       iconActive: CalendarDaysIconSolid,
-      active: path === '/minha-escala' || path === '/disponibilidade',
+      active: path === '/minha-escala' || path === '/disponibilidade' || path.startsWith('/substituicoes'),
       children: [
         { to: '/minha-escala', label: 'Minha Escala', active: path === '/minha-escala' },
         { to: '/disponibilidade', label: 'Disponibilidade', active: path === '/disponibilidade' },
+        // Community coordinators decide substitutions of their communities (TASK-0134, ADR-0009).
+        ...(auth.isCommunityCoordinator
+          ? [{ to: '/substituicoes', label: 'Substituições', active: path.startsWith('/substituicoes') }]
+          : []),
       ],
     },
   ]
